@@ -1,0 +1,162 @@
+.tracking-page { padding: 32px 40px; max-width: 960px; margin: 0 auto; }
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  display: block;
+}
+
+.tracking-layout { display: grid; grid-template-columns: 1fr 300px; gap: 28px; }
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+.order-id { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+.order-time { font-size: 13px; color: #999; margin-top: 2px; }
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.status-badge.active { background: #fff0f0; color: #ff4444; }
+.status-badge.complete { background: #f0fdf4; color: #22c55e; }
+
+/* Progress Tracker */
+.progress-tracker {
+  background: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.stage-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  color: #aaa;
+  transition: all 0.3s;
+}
+.stage.done .stage-dot { background: var(--primary); color: #fff; }
+.stage.current .stage-dot { background: var(--primary); color: #fff; box-shadow: 0 0 0 4px var(--primary-light); }
+
+.stage-info { flex: 1; padding: 4px 0; }
+.stage-name { font-size: 15px; font-weight: 600; color: #1a1a1a; display: block; }
+.stage.done .stage-name { color: var(--primary); }
+.stage-sub { font-size: 12px; color: #aaa; }
+.stage.current .stage-sub { color: var(--primary); }
+
+.stage-line {
+  position: absolute;
+  left: 15px;
+  top: 36px;
+  width: 2px;
+  height: 28px;
+  background: #eee;
+  transition: background 0.3s;
+}
+.stage-line.filled { background: var(--primary); }
+
+/* Booking Summary */
+.booking-summary {
+  background: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 16px;
+  padding: 20px;
+}
+.booking-summary h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0 0 16px; }
+.bs-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+.bs-row:last-child { border: none; }
+.bs-row span { color: #888; }
+.bs-row strong { color: #1a1a1a; }
+.bs-row.total strong { color: var(--primary); font-size: 16px; }
+
+/* Operator Card */
+.operator-card {
+  background: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  height: fit-content;
+  position: sticky;
+  top: 80px;
+}
+.operator-card h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0 0 16px; }
+.op-avatar { font-size: 56px; margin-bottom: 8px; }
+.op-name { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+.op-rating { font-size: 14px; color: #f59e0b; margin: 4px 0; }
+.op-vehicle { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+.call-btn {
+  display: block;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  transition: background 0.2s;
+}
+.call-btn:hover { background: var(--primary-dark); }
+.call-btn.disabled { background: #ccc; cursor: default; pointer-events: none; }
+
+.vehicle-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+.vi-icon { font-size: 28px; }
+.vehicle-info strong { font-size: 14px; color: #1a1a1a; display: block; }
+.vehicle-info p { font-size: 12px; color: #888; margin: 2px 0 0; }
+
+.eta-box {
+  background: #fff9f0;
+  border: 1px solid #ffe0b2;
+  border-radius: 10px;
+  padding: 12px;
+}
+.eta-label { font-size: 12px; color: #888; }
+.eta-time { font-size: 22px; font-weight: 800; color: var(--primary); }
+
+.not-found { padding: 60px; text-align: center; }
+.not-found p { color: #aaa; font-size: 18px; margin-bottom: 16px; }
+.not-found button { background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 15px; }
+
+@media (max-width: 768px) {
+  .tracking-page { padding: 20px; }
+  .tracking-layout { grid-template-columns: 1fr; }
+}
