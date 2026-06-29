@@ -15,7 +15,7 @@ export default function AdminProducts() {
       <div className="admin-header">
         <div className="ah-with-back">
           <button className="back-icon-btn" onClick={() => navigate('/admin/more')}><HiChevronLeft /></button>
-          <div><h1>Products</h1><p>{allVehicles.length} vehicles listed</p></div>
+          <div><h1>Services</h1><p>{allVehicles.length} services listed</p></div>
         </div>
       </div>
 

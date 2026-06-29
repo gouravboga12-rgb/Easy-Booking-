@@ -21,7 +21,7 @@ export default function WorkerLayout() {
       <header className="worker-top-header">
         <div className="wth-brand">
           <MdConstruction className="wth-logo-icon" />
-          <span>Hire<b>Mee</b></span>
+          <span>Easy<b>Booking</b></span>
           <span className="wth-badge">Worker</span>
         </div>
         <div className="wth-user">

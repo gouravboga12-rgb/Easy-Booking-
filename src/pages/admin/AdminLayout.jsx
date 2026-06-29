@@ -34,7 +34,7 @@ export default function AdminLayout() {
       <header className="admin-top-header">
         <div className="ath-brand">
           <MdConstruction className="ath-logo-icon" />
-          <span>Hire<b>Mee</b></span>
+          <span>Easy<b>Booking</b></span>
           <span className="ath-badge">Admin</span>
         </div>
         <div className="ath-user" ref={dropRef}>

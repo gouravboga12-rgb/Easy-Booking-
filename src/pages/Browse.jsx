@@ -3,19 +3,19 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categories, allVehicles } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import { HiSearch, HiFilter, HiStar, HiClock, HiCheckCircle, HiShoppingCart, HiX, HiLocationMarker, HiCalendar } from 'react-icons/hi';
-import { GiCrane, GiBulldozer, GiRoad } from 'react-icons/gi';
-import { TbTruckDelivery } from 'react-icons/tb';
-import { FaTractor, FaRoad } from 'react-icons/fa';
-import { MdConstruction, MdEngineering } from 'react-icons/md';
+import { MdConstruction, MdEngineering, MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild } from 'react-icons/md';
+import { FaHammer } from 'react-icons/fa';
 import './Browse.css';
 
 const CAT_ICONS = {
-  excavation:   GiCrane,
-  transport:    TbTruckDelivery,
-  road:         FaRoad,
-  lifting:      GiCrane,
-  agricultural: FaTractor,
-  other:        MdEngineering,
+  contractors:           MdHomeWork,
+  'construction-labour': MdConstruction,
+  'interior-carpentry':  FaHammer,
+  professionals:         MdEngineering,
+  installations:         MdBuild,
+  housekeeping:          MdCleaningServices,
+  'drivers-logistics':   MdDirectionsCar,
+  'cooking-events':      MdRestaurant,
 };
 
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
@@ -61,14 +61,14 @@ export default function Browse() {
       {/* Header */}
       <div className="browse-header">
         <div>
-          <h1>Book a Vehicle</h1>
-          <p>{filtered.length} vehicles available</p>
+          <h1>Book a Service</h1>
+          <p>{filtered.length} services available</p>
         </div>
         <div className="search-wrap">
           <HiSearch className="search-icon" />
           <input
             className="search-input"
-            placeholder="Search JCB, Crane, Tipper..."
+            placeholder="Search Plumber, Electrician, Cook..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -78,7 +78,7 @@ export default function Browse() {
       {/* Category Tabs */}
       <div className="cat-tabs">
         <button className={activeCat === 'all' ? 'active' : ''} onClick={() => setActiveCat('all')}>
-          <MdConstruction className="tab-icon" /> All Vehicles
+          <MdBuild className="tab-icon" /> All Services
         </button>
         {categories.map(c => {
           const Icon = CAT_ICONS[c.id] || MdConstruction;
@@ -138,7 +138,7 @@ export default function Browse() {
         {filtered.length === 0 && (
           <div className="empty-state">
             <HiFilter style={{ width: 40, height: 40, color: '#ddd', marginBottom: 12 }} />
-            <p>No vehicles found. Try a different search.</p>
+            <p>No services found. Try a different search.</p>
           </div>
         )}
       </div>
@@ -159,8 +159,8 @@ export default function Browse() {
               </div>
             </div>
             <label>
-              <span><HiLocationMarker className="cm-lbl-icon" /> Site Location</span>
-              <input placeholder="Enter site address" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+              <span><HiLocationMarker className="cm-lbl-icon" /> Service Address</span>
+              <input placeholder="Enter service address" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
             </label>
             <label>
               <span><HiCalendar className="cm-lbl-icon" /> Date</span>

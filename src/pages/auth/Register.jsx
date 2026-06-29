@@ -83,7 +83,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Hire<b>Mee</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
 
         {/* Step indicator */}
         {step > 0 && (
@@ -100,8 +100,8 @@ export default function Register() {
         {/* Step 0: Role Selection */}
         {step === 0 && (
           <>
-            <h1>Join HireMee</h1>
-            <p className="auth-sub">How would you like to use HireMee?</p>
+            <h1>Join EasyBooking</h1>
+            <p className="auth-sub">How would you like to use EasyBooking?</p>
             <div className="role-cards">
               <button className="role-card" onClick={() => handleRoleSelect('customer')}>
                 <div className="rc-icon customer">🏗️</div>
@@ -233,8 +233,8 @@ export default function Register() {
           {role === 'worker' ? (
             <>
               <div className="av-icon">👷</div>
-              <h2>Earn with HireMee</h2>
-              <p>Join thousands of verified workers earning daily on HireMee.</p>
+              <h2>Earn with EasyBooking</h2>
+              <p>Join thousands of verified workers earning daily on EasyBooking.</p>
               <div className="av-features">
                 <div>✅ Get jobs near your location</div>
                 <div>✅ Instant payment on completion</div>
@@ -245,7 +245,7 @@ export default function Register() {
           ) : (
             <>
               <div className="av-icon">🚜</div>
-              <h2>Join 12M+ customers on HireMee</h2>
+              <h2>Join 12M+ customers on EasyBooking</h2>
               <p>Get verified operators, live tracking, and instant booking for all your construction needs.</p>
               <div className="av-features">
                 <div>✅ Verified & insured operators</div>

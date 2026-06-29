@@ -7,21 +7,19 @@ import {
   HiClipboardList, HiCog, HiLogout,
   HiShoppingCart, HiLocationMarker, HiUser,
 } from 'react-icons/hi';
-import { MdConstruction, MdEngineering } from 'react-icons/md';
-import { GiCrane, GiPickelhaube } from 'react-icons/gi';
-import { FaTractor, FaRoad, FaSpa, FaLeaf } from 'react-icons/fa';
-import { TbTruckDelivery } from 'react-icons/tb';
+import { MdConstruction, MdEngineering, MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild } from 'react-icons/md';
+import { FaHammer } from 'react-icons/fa';
 import './Navbar.css';
 
 const CAT_NAV = [
-  { id: 'excavation',  label: 'Excavation',  Icon: GiPickelhaube  },
-  { id: 'transport',   label: 'Transport',   Icon: TbTruckDelivery },
-  { id: 'road',        label: 'Road',        Icon: FaRoad          },
-  { id: 'lifting',     label: 'Lifting',     Icon: GiCrane         },
-  { id: 'agricultural',label: 'Agricultural',Icon: FaTractor       },
-  { id: 'native',      label: 'Native',      Icon: FaLeaf          },
-  { id: 'beauty',      label: 'Beauty',      Icon: FaSpa           },
-  { id: 'other',       label: 'Other',       Icon: MdEngineering   },
+  { id: 'contractors',          label: 'Contractors & Civil',       Icon: MdHomeWork },
+  { id: 'construction-labour',  label: 'Construction & Site Labour', Icon: MdConstruction },
+  { id: 'interior-carpentry',   label: 'Interior & Carpentry',      Icon: FaHammer },
+  { id: 'professionals',        label: 'Maintenance Professionals', Icon: MdEngineering },
+  { id: 'installations',        label: 'Technical Installations',   Icon: MdBuild },
+  { id: 'housekeeping',         label: 'Housekeeping & Cleaning',   Icon: MdCleaningServices },
+  { id: 'drivers-logistics',    label: 'Drivers & Logistics',       Icon: MdDirectionsCar },
+  { id: 'cooking-events',       label: 'Cooking & Events',          Icon: MdRestaurant },
 ];
 
 export default function Navbar() {
@@ -64,7 +62,7 @@ export default function Navbar() {
         <div className="nav-left">
           <Link to="/" className="brand">
             <MdConstruction className="brand-logo" />
-            <span>Hire<b>Mee</b></span>
+            <span>Easy<b>Booking</b></span>
           </Link>
           <div className="location-row">
             <HiLocationMarker className="loc-icon" />

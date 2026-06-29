@@ -11,17 +11,16 @@ import {
 import {
   MdConstruction, MdEngineering,
   MdSecurity, MdOutlineVerified,
+  MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild
 } from 'react-icons/md';
-import { FaTractor, FaRoad, FaSpa, FaLeaf } from 'react-icons/fa';
-import { GiCrane, GiPickelhaube } from 'react-icons/gi';
-import { TbTruckDelivery } from 'react-icons/tb';
+import { FaHammer } from 'react-icons/fa';
 import './Home.css';
 
 const BANNERS = [
-  { id: 1, tag: 'Most Booked', title: 'JCB on Demand', sub: 'Backhoe Loader at your site in 60 mins', cta: 'Book JCB', vehicleId: 'jcb', bg: 'linear-gradient(120deg,#1a1a2e,#16213e)', accent: '#ff6b00', img: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=700&q=80' },
-  { id: 2, tag: 'Instant Booking', title: 'Crane Hire Made Easy', sub: 'Tower & Mobile cranes for any project', cta: 'Book Crane', vehicleId: 'crane', bg: 'linear-gradient(120deg,#0f3460,#533483)', accent: '#fbbf24', img: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=700&q=80' },
-  { id: 3, tag: 'Fast Delivery', title: 'Tipper Trucks Ready', sub: 'Sand, gravel & debris transport — same day', cta: 'Book Tipper', vehicleId: 'dump-truck', bg: 'linear-gradient(120deg,#134e4a,#065f46)', accent: '#34d399', img: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=700&q=80' },
-  { id: 4, tag: 'Heavy Lifting', title: 'Bulldozer & Grader', sub: 'Land leveling & road construction experts', cta: 'Book Now', vehicleId: 'bulldozer', bg: 'linear-gradient(120deg,#7c2d12,#9a3412)', accent: '#fb923c', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700&q=80' },
+  { id: 1, tag: 'Most Booked', title: 'Electricians & Plumbers', sub: 'Verified professionals at your doorstep in 60 mins', cta: 'Book Electrician', vehicleId: 'electricians', bg: 'linear-gradient(120deg,#1a1a2e,#16213e)', accent: '#ff6b00', img: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=700&q=80' },
+  { id: 2, tag: 'Instant Booking', title: 'Deep Cleaning Staff', sub: 'Expert housekeepers & deep cleaning for your home', cta: 'Book Cleaner', vehicleId: 'cleaning-staff', bg: 'linear-gradient(120deg,#0f3460,#533483)', accent: '#fbbf24', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=700&q=80' },
+  { id: 3, tag: 'Fast Booking', title: 'Construction & Site Labour', sub: 'Experienced masons, welders & fabricators on demand', cta: 'Book Labour', vehicleId: 'construction-labour', bg: 'linear-gradient(120deg,#134e4a,#065f46)', accent: '#34d399', img: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=700&q=80' },
+  { id: 4, tag: 'Gourmet Dining', title: 'Cooking Chefs & Home Cooks', sub: 'Hire private chefs & daily home cooks instantly', cta: 'Book Cook', vehicleId: 'home-cooks', bg: 'linear-gradient(120deg,#7c2d12,#9a3412)', accent: '#fb923c', img: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=700&q=80' },
 ];
 
 const WHY = [
@@ -29,30 +28,30 @@ const WHY = [
   { Icon: HiLocationMarker,  t: 'Live GPS Tracking',   d: 'Track your vehicle from dispatch to site in real-time', color: '#ef4444' },
   { Icon: MdSecurity,        t: 'Transparent Pricing', d: 'No hidden charges. Pay only what you see', color: '#10b981' },
   { Icon: HiLightningBolt,   t: 'Instant Booking',     d: 'Confirm your booking in under 60 seconds', color: '#f59e0b' },
-  { Icon: HiShieldCheck,     t: 'Insured Vehicles',    d: 'All machinery is fully insured for your safety', color: '#8b5cf6' },
+  { Icon: HiShieldCheck,     t: 'Insured Services',    d: 'All service delivery is fully insured for your safety', color: '#8b5cf6' },
   { Icon: HiPhone,           t: '24/7 Support',        d: 'Our team is always available to assist you', color: '#06b6d4' },
 ];
 
 const CAT_ICONS = {
-  excavation:   GiPickelhaube,
-  transport:    TbTruckDelivery,
-  road:         FaRoad,
-  lifting:      GiCrane,
-  agricultural: FaTractor,
-  native:       FaLeaf,
-  beauty:       FaSpa,
-  other:        MdEngineering,
+  contractors:           MdHomeWork,
+  'construction-labour': MdConstruction,
+  'interior-carpentry':  FaHammer,
+  professionals:         MdEngineering,
+  installations:         MdBuild,
+  housekeeping:          MdCleaningServices,
+  'drivers-logistics':   MdDirectionsCar,
+  'cooking-events':      MdRestaurant,
 };
 
 const CAT_COLORS = {
-  excavation:   '#f59e0b',
-  transport:    '#3b82f6',
-  road:         '#6b7280',
-  lifting:      '#8b5cf6',
-  agricultural: '#84cc16',
-  native:       '#10b981',
-  beauty:       '#ec4899',
-  other:        '#06b6d4',
+  contractors:           '#ff6b00',
+  'construction-labour': '#f59e0b',
+  'interior-carpentry':  '#8b5cf6',
+  professionals:         '#3b82f6',
+  installations:         '#ec4899',
+  housekeeping:          '#10b981',
+  'drivers-logistics':   '#84cc16',
+  'cooking-events':      '#06b6d4',
 };
 
 export default function Home() {
@@ -74,7 +73,7 @@ export default function Home() {
       <div className="home-search-bar">
         <button className="home-search-btn" onClick={() => navigate('/browse')}>
           <HiSearch className="hs-icon" />
-          <span>Search for JCB, Crane, Tipper...</span>
+          <span>Search for Plumber, Electrician, Cook...</span>
         </button>
       </div>
 
@@ -113,7 +112,7 @@ export default function Home() {
           {[
             { Icon: HiStar,     val: '4.8★', label: 'Service Rating' },
             { Icon: HiUsers,    val: '12M+',  label: 'Customers Globally' },
-            { Icon: HiTruck,    val: '500+',  label: 'Verified Vehicles' },
+            { Icon: HiUsers,    val: '5000+',  label: 'Verified Professionals' },
             { Icon: HiLocationMarker, val: '50+', label: 'Cities Covered' },
           ].map(({ Icon, val, label }, i) => (
             <Fragment key={label}>
@@ -176,7 +175,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h2>{cat.label}</h2>
-                    <span className="cat-section-count">{cat.vehicles.length} vehicles</span>
+                    <span className="cat-section-count">{cat.vehicles.length} services</span>
                   </div>
                 </div>
                 <button className="see-all-btn" onClick={() => navigate(`/browse?cat=${cat.id}`)}>See all <HiChevronRight style={{ width: 14, height: 14, verticalAlign: 'middle' }} /></button>
@@ -212,13 +211,13 @@ export default function Home() {
       {/* ── How it works ── */}
       <section className="section section-dark">
         <div className="section-inner">
-          <h2 className="white-h2">How HireMee Works</h2>
-          <p className="white-sub">Book construction vehicles in 3 simple steps</p>
+          <h2 className="white-h2">How EasyBooking Works</h2>
+          <p className="white-sub">Book skilled services in 3 simple steps</p>
           <div className="steps-row">
             {[
-              { n: '01', Icon: HiLocationMarker, t: 'Set Your Location',  d: 'Enter your construction site address' },
-              { n: '02', Icon: GiCrane,         t: 'Choose Vehicle',    d: 'Pick from 20+ machines with live availability' },
-              { n: '03', Icon: HiCheckCircle,    t: 'Confirm & Track',    d: 'Book instantly and track your operator live' },
+              { n: '01', Icon: HiLocationMarker, t: 'Set Your Location',  d: 'Enter your service address' },
+              { n: '02', Icon: MdBuild,            t: 'Choose Service',    d: 'Pick from 25+ services with live availability' },
+              { n: '03', Icon: HiCheckCircle,    t: 'Confirm & Track',    d: 'Book instantly and track your provider live' },
             ].map(({ n, Icon, t, d }) => (
               <div key={n} className="step-card">
                 <div className="step-num">{n}</div>
@@ -229,7 +228,7 @@ export default function Home() {
             ))}
           </div>
           <button className="cta-big" onClick={() => navigate('/browse')}>
-            Book Your First Vehicle <HiArrowRight style={{ width: 18, height: 18, verticalAlign: 'middle' }} />
+            Book Your First Service <HiArrowRight style={{ width: 18, height: 18, verticalAlign: 'middle' }} />
           </button>
         </div>
       </section>
@@ -237,7 +236,7 @@ export default function Home() {
       {/* ── Why HireMee ── */}
       <section className="section">
         <div className="section-inner">
-          <h2>Why Choose HireMee?</h2>
+          <h2>Why Choose EasyBooking?</h2>
           <div className="why-grid">
             {WHY.map(({ Icon, t, d, color }) => (
               <div key={t} className="why-card">

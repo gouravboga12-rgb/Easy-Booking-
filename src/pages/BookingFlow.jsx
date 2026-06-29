@@ -25,7 +25,7 @@ export default function BookingFlow() {
   const [form, setForm] = useState({ location: '', date: '', duration: 1, notes: '' });
   const [step, setStep] = useState(1);
 
-  if (!vehicle) return <div className="not-found">Vehicle not found.</div>;
+  if (!vehicle) return <div className="not-found">Service not found.</div>;
 
   const total = vehicle.rate * form.duration;
 
@@ -43,8 +43,8 @@ export default function BookingFlow() {
   };
 
   const FEATURES = [
-    { Icon: MdOutlineVerified, text: 'Verified Operator' },
-    { Icon: HiShieldCheck,     text: 'Insured Vehicle'  },
+    { Icon: MdOutlineVerified, text: 'Verified Provider' },
+    { Icon: HiShieldCheck,     text: 'Insured Service'  },
     { Icon: MdGpsFixed,        text: 'Live Tracking'    },
     { Icon: GiAutoRepair,      text: 'On-site Support'  },
   ];
@@ -60,7 +60,7 @@ export default function BookingFlow() {
         <div className="booking-form-wrap">
           <div className="booking-steps">
             <span className={step >= 1 ? 'done' : ''}>
-              <span className="step-circle">1</span> Site Details
+              <span className="step-circle">1</span> Service Details
             </span>
             <span className="sep-line" />
             <span className={step >= 2 ? 'done' : ''}>
@@ -74,10 +74,10 @@ export default function BookingFlow() {
 
               <label>
                 <span className="lbl-text">
-                  <HiLocationMarker className="lbl-icon" /> Site Location
+                  <HiLocationMarker className="lbl-icon" /> Service Address
                 </span>
                 <input
-                  placeholder="Enter site address or landmark"
+                  placeholder="Enter service address or landmark"
                   value={form.location}
                   onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
                 />

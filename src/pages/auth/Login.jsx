@@ -6,9 +6,9 @@ import { MdConstruction } from 'react-icons/md';
 import './Auth.css';
 
 const DEMOS = [
-  { label: 'Admin', email: 'admin@hiremee.in', password: 'admin123', color: '#d97706' },
-  { label: 'Worker', email: 'ravi@hiremee.in', password: 'worker123', color: '#2563eb' },
-  { label: 'Customer', email: 'customer@hiremee.in', password: 'cust123', color: '#16a34a' },
+  { label: 'Admin', email: 'admin@easybooking.in', password: 'admin123', color: '#d97706' },
+  { label: 'Worker', email: 'ravi@easybooking.in', password: 'worker123', color: '#2563eb' },
+  { label: 'Customer', email: 'customer@easybooking.in', password: 'cust123', color: '#16a34a' },
 ];
 
 export default function Login() {
@@ -36,7 +36,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Hire<b>Mee</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
         <h1>Welcome back</h1>
         <p className="auth-sub">Login to your account</p>
 
@@ -74,11 +74,11 @@ export default function Login() {
 
       <div className="auth-visual">
         <div className="av-content">
-          <div className="av-icon">🏗️</div>
-          <h2>India's #1 Construction Vehicle Platform</h2>
-          <p>Book JCBs, Cranes, Tippers & more — on demand, at your site.</p>
+          <div className="av-icon">👷</div>
+          <h2>India's #1 On-Demand Services Platform</h2>
+          <p>Book Masons, Electricians, Painters, Cooks & more — on demand, at your doorstep.</p>
           <div className="av-stats">
-            <div><strong>500+</strong><span>Vehicles</span></div>
+            <div><strong>5000+</strong><span>Professionals</span></div>
             <div><strong>50+</strong><span>Cities</span></div>
             <div><strong>4.8★</strong><span>Rating</span></div>
           </div>

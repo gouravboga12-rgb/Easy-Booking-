@@ -3,7 +3,7 @@ import { HiCube, HiChartBar, HiCurrencyRupee, HiChevronRight, HiDotsHorizontal }
 import './Admin.css';
 
 const MORE_ITEMS = [
-  { to: '/admin/products', icon: HiCube,          label: 'Products',  desc: 'Manage vehicle listings',       color: '#3b82f6' },
+  { to: '/admin/products', icon: HiCube,          label: 'Services',  desc: 'Manage service listings',       color: '#3b82f6' },
   { to: '/admin/reports',  icon: HiChartBar,       label: 'Reports',   desc: 'Analytics & performance data',  color: '#8b5cf6' },
   { to: '/admin/payments', icon: HiCurrencyRupee,  label: 'Payments',  desc: 'Revenue & transaction history', color: '#10b981' },
 ];

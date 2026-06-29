@@ -82,6 +82,6 @@ export const useStore = create(
       getOrdersByWorker: (workerId) => get().orders.filter(o => o.operator?.id === workerId),
       getPendingOrders: () => get().orders.filter(o => o.status === 'pending'),
     }),
-    { name: 'hiremee-orders' }
+    { name: 'easybooking-orders' }
   )
 );
