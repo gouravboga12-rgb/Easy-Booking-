@@ -9,6 +9,11 @@
   top: 68px;
   z-index: 100;
 }
+@media (min-width: 769px) {
+  .home-search-bar {
+    display: none !important;
+  }
+}
 .home-search-btn {
   width: 100%;
   max-width: 600px;
@@ -377,6 +382,10 @@
   display: flex;
   align-items: center;
   padding: 32px 40px;
+  max-width: 1200px;
+  margin: 24px auto;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
 }
 .hb-content {
   max-width: 58%;

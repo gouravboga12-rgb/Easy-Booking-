@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categories } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import Footer from '../components/Footer';
@@ -74,10 +74,20 @@ const CAT_COLORS = {
 
 export default function Home() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [bannerIdx, setBannerIdx] = useState(0);
   const [showOffersModal, setShowOffersModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
   
+  useEffect(() => {
+    if (params.get('offers') === 'true') {
+      setShowOffersModal(true);
+      const newParams = new URLSearchParams(params);
+      newParams.delete('offers');
+      setParams(newParams, { replace: true });
+    }
+  }, [params, setParams, setShowOffersModal]);
+
   const services = useStore(s => s.services);
 
   const handleCopyCode = (code) => {
@@ -113,11 +123,8 @@ export default function Home() {
   };
 
   const getBannerStyle = (b) => {
-    let grad = 'linear-gradient(to right, rgba(26, 26, 46, 0.92) 40%, rgba(22, 33, 62, 0.35) 100%)';
-    if (b.id === 2) grad = 'linear-gradient(to right, rgba(15, 52, 96, 0.92) 40%, rgba(83, 52, 131, 0.35) 100%)';
-    else if (b.id === 3) grad = 'linear-gradient(to right, rgba(19, 78, 74, 0.92) 40%, rgba(6, 95, 70, 0.35) 100%)';
-    else if (b.id === 4) grad = 'linear-gradient(to right, rgba(124, 45, 18, 0.92) 40%, rgba(154, 52, 18, 0.35) 100%)';
-    
+    // Neutral dark gradient for readability, no colored effect (no blue/red/green tint)
+    const grad = 'linear-gradient(to right, rgba(0, 0, 0, 0.8) 35%, rgba(0, 0, 0, 0.1) 100%)';
     return {
       backgroundImage: `${grad}, url(${b.img})`,
       backgroundSize: 'cover',

@@ -24,7 +24,7 @@ export default function Browse() {
   const allVehicles = useStore(s => s.services);
   const [params] = useSearchParams();
   const [activeCat, setActiveCat] = useState(params.get('cat') || 'all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(params.get('q') || '');
   const [cartModal, setCartModal] = useState(null); // vehicle being added
   const [form, setForm] = useState({ location: '', date: '', duration: 1 });
   const [added, setAdded] = useState(null); // cartId of last added
@@ -47,6 +47,8 @@ export default function Browse() {
   useEffect(() => {
     const cat = params.get('cat');
     if (cat) setActiveCat(cat);
+    const q = params.get('q');
+    if (q !== null) setSearch(q);
   }, [params]);
 
   const filtered = allVehicles.filter(v => {
