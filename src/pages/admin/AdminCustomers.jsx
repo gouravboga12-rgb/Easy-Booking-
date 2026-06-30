@@ -5,14 +5,14 @@ import { HiUsers, HiPhone, HiMail, HiLockOpen, HiTrash, HiBan, HiClock, HiChevro
 import './Admin.css';
 
 export default function AdminCustomers() {
-  const getCustomers = useAuthStore(s => s.getCustomers);
+  const users = useAuthStore(s => s.users);
   const toggleBlockUser = useAuthStore(s => s.toggleBlockUser);
   const deleteUser = useAuthStore(s => s.deleteUser);
   const resetUserPassword = useAuthStore(s => s.resetUserPassword);
   
   const orders = useStore(s => s.orders);
   
-  const customers = getCustomers();
+  const customers = users.filter(u => u.role === 'customer');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [resettingUserId, setResettingUserId] = useState(null);

@@ -12,8 +12,8 @@ export default function AdminOrders() {
   const assignWorker = useStore(s => s.assignWorker);
   const cancelOrder = useStore(s => s.cancelOrder);
   const advanceStage = useStore(s => s.advanceStage);
-  const getWorkers = useAuthStore(s => s.getWorkers);
-  const workers = getWorkers();
+  const users = useAuthStore(s => s.users);
+  const workers = users.filter(u => u.role === 'worker');
 
   const [filter, setFilter] = useState('all');
   const [assignModal, setAssignModal] = useState(null);

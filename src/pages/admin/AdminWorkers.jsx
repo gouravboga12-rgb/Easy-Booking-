@@ -17,14 +17,14 @@ const CATEGORIES = [
 ];
 
 export default function AdminWorkers() {
-  const getWorkers = useAuthStore(s => s.getWorkers);
+  const users = useAuthStore(s => s.users);
   const approveWorker = useAuthStore(s => s.approveWorker);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
   const updateWorkerProfile = useAuthStore(s => s.updateWorkerProfile);
   
   const orders = useStore(s => s.orders);
   
-  const workers = getWorkers();
+  const workers = users.filter(u => u.role === 'worker');
   const pendingWorkers = workers.filter(w => !w.approved);
   const activeWorkers = workers.filter(w => w.approved);
 

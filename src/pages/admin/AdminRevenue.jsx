@@ -8,8 +8,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function AdminRevenue() {
   const orders = useStore(s => s.orders);
-  const getWorkers = useAuthStore(s => s.getWorkers);
-  const workers = getWorkers();
+  const users = useAuthStore(s => s.users);
+  const workers = users.filter(u => u.role === 'worker');
 
   const [period, setPeriod] = useState('monthly');
 

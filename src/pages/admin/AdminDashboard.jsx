@@ -12,10 +12,9 @@ import './Admin.css';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const orders = useStore(s => s.orders);
-  const getWorkers = useAuthStore(s => s.getWorkers);
-  const getCustomers = useAuthStore(s => s.getCustomers);
-  const workers = getWorkers();
-  const customers = getCustomers();
+  const users = useAuthStore(s => s.users);
+  const workers = users.filter(u => u.role === 'worker');
+  const customers = users.filter(u => u.role === 'customer');
 
   const completed   = orders.filter(o => o.status === 'completed');
   const active      = orders.filter(o => ['assigned', 'active'].includes(o.status));

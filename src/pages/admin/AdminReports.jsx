@@ -7,10 +7,9 @@ import './Admin.css';
 
 export default function AdminReports() {
   const orders = useStore(s => s.orders);
-  const getWorkers = useAuthStore(s => s.getWorkers);
-  const getCustomers = useAuthStore(s => s.getCustomers);
-  const workers = getWorkers();
-  const customers = getCustomers();
+  const users = useAuthStore(s => s.users);
+  const workers = users.filter(u => u.role === 'worker');
+  const customers = users.filter(u => u.role === 'customer');
 
   const [reportType, setReportType] = useState('bookings');
 

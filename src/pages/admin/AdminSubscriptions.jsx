@@ -23,8 +23,8 @@ const COUPONS_INIT = [
 
 export default function AdminSubscriptions() {
   const orders = useStore(s => s.orders);
-  const getWorkers = useAuthStore(s => s.getWorkers);
-  const workers = getWorkers();
+  const users = useAuthStore(s => s.users);
+  const workers = users.filter(u => u.role === 'worker');
 
   const [tab, setTab] = useState('plans');
   const [plans, setPlans] = useState(DEFAULT_PLANS);
