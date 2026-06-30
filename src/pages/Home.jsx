@@ -23,6 +23,24 @@ const BANNERS = [
   { id: 4, tag: 'Gourmet Dining', title: 'Cooking Chefs & Home Cooks', sub: 'Hire private chefs & daily home cooks instantly', cta: 'Book Cook', vehicleId: 'home-cooks', bg: 'linear-gradient(120deg,#7c2d12,#9a3412)', accent: '#fb923c', img: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=700&q=80' },
 ];
 
+const CAT_IMAGES = {
+  contractors:           'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=150&q=80',
+  'construction-labour': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150&q=80',
+  'interior-carpentry':  'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=150&q=80',
+  professionals:         'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=150&q=80',
+  installations:         'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=150&q=80',
+  housekeeping:          'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&q=80',
+  'drivers-logistics':   'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=150&q=80',
+  'cooking-events':      'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=150&q=80',
+};
+
+const OFFERS = [
+  { id: 1, discount: '30% OFF', desc: 'On first booking', bg: 'linear-gradient(135deg, #f59e0b, #d97706)', code: 'FIRST30' },
+  { id: 2, discount: 'BOGO OFFER', desc: 'Buy 1 Get 1 free hours', bg: 'linear-gradient(135deg, #ec4899, #be185d)', code: 'BOGOHR' },
+  { id: 3, discount: '₹150 FLAT', desc: 'On plumbing services', bg: 'linear-gradient(135deg, #10b981, #047857)', code: 'PLUMB150' },
+  { id: 4, discount: 'FREE SANITIZE', desc: 'With RO service', bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', code: 'ROSAN' },
+];
+
 const WHY = [
   { Icon: MdOutlineVerified, t: 'Verified Operators',  d: 'All operators are background-checked and certified', color: '#3b82f6' },
   { Icon: HiLocationMarker,  t: 'Live GPS Tracking',   d: 'Track your vehicle from dispatch to site in real-time', color: '#ef4444' },
@@ -57,7 +75,55 @@ const CAT_COLORS = {
 export default function Home() {
   const navigate = useNavigate();
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [showOffersModal, setShowOffersModal] = useState(false);
+  const [copiedCode, setCopiedCode] = useState('');
+  
   const services = useStore(s => s.services);
+
+  const handleCopyCode = (code) => {
+    const triggerFeedback = () => {
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(''), 2000);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(code)
+        .then(triggerFeedback)
+        .catch(() => fallbackCopy(code, triggerFeedback));
+    } else {
+      fallbackCopy(code, triggerFeedback);
+    }
+  };
+
+  const fallbackCopy = (code, cb) => {
+    try {
+      const el = document.createElement('textarea');
+      el.value = code;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      cb();
+    } catch (err) {
+      cb();
+    }
+  };
+
+  const getBannerStyle = (b) => {
+    let grad = 'linear-gradient(to right, rgba(26, 26, 46, 0.92) 40%, rgba(22, 33, 62, 0.35) 100%)';
+    if (b.id === 2) grad = 'linear-gradient(to right, rgba(15, 52, 96, 0.92) 40%, rgba(83, 52, 131, 0.35) 100%)';
+    else if (b.id === 3) grad = 'linear-gradient(to right, rgba(19, 78, 74, 0.92) 40%, rgba(6, 95, 70, 0.35) 100%)';
+    else if (b.id === 4) grad = 'linear-gradient(to right, rgba(124, 45, 18, 0.92) 40%, rgba(154, 52, 18, 0.35) 100%)';
+    
+    return {
+      backgroundImage: `${grad}, url(${b.img})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  };
 
   const highlightedServices = services
     .filter(v => ['plumbers', 'electricians', 'cleaning-staff', 'carpenters', 'painters', 'ac-technicians'].includes(v.id))
@@ -85,8 +151,29 @@ export default function Home() {
         </button>
       </div>
 
+      {/* ── Top Category Scroll Boxes ── */}
+      <div className="top-categories-container">
+        <div className="top-categories-row">
+          {categories.map(cat => {
+            const imgUrl = CAT_IMAGES[cat.id] || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80';
+            return (
+              <div
+                key={cat.id}
+                className="top-cat-item"
+                onClick={() => navigate(`/browse?cat=${cat.id}`)}
+              >
+                <div className="top-cat-box">
+                  <img src={imgUrl} alt={cat.label} />
+                </div>
+                <span>{cat.label.split(' & ')[0]}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Hero Banner ── */}
-      <section className="hero-banner" style={{ background: banner.bg }}>
+      <section className="hero-banner" style={getBannerStyle(banner)}>
         <div className="hb-content">
           <span className="hb-tag">
             <HiLightningBolt style={{ width: 12, height: 12 }} /> {banner.tag}
@@ -104,13 +191,41 @@ export default function Home() {
             <button className="hb-browse" onClick={() => navigate('/browse')}>Browse All</button>
           </div>
         </div>
-        <div className="hb-visual">
-          <img src={banner.img} alt={banner.title} className="hb-img" />
-        </div>
         <div className="hb-dots">
           {BANNERS.map((_, i) => (
             <button key={i} className={`dot ${i === bannerIdx ? 'active' : ''}`} onClick={() => setBannerIdx(i)} />
           ))}
+        </div>
+      </section>
+
+      {/* ── Best Offers For You ── */}
+      <section className="section offers-section" style={{ padding: '20px 0 20px', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+        <div className="section-inner">
+          <div className="section-header" style={{ marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+              <span>🔥</span> Best Offers For You
+            </h2>
+            <button className="see-all-btn" onClick={() => setShowOffersModal(true)} style={{ padding: '4px 10px' }}>
+              View All <HiChevronRight style={{ verticalAlign: 'middle', width: 14, height: 14 }} />
+            </button>
+          </div>
+          <div className="h-scroll" style={{ paddingBottom: '4px' }}>
+            {OFFERS.map(o => (
+              <div
+                key={o.id}
+                className="offer-card"
+                style={{ background: o.bg }}
+                onClick={() => handleCopyCode(o.code)}
+              >
+                <div className="offer-percent">%</div>
+                <div className="offer-body">
+                  <strong>{o.discount}</strong>
+                  <span>{o.desc}</span>
+                  <div className="offer-code-pill">Code: {o.code}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -258,6 +373,36 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Offers Modal */}
+      {showOffersModal && (
+        <div className="view-all-modal-overlay" onClick={() => setShowOffersModal(false)}>
+          <div className="view-all-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔥 Active Promo Coupons</h2>
+              <button className="modal-close" onClick={() => setShowOffersModal(false)}>×</button>
+            </div>
+            <p className="modal-sub">Click on any coupon code to copy it instantly and apply during booking checkout!</p>
+            <div className="modal-coupons-list">
+              {OFFERS.map(o => (
+                <div key={o.id} className="modal-coupon-item" style={{ borderLeft: `5px solid ${o.bg.split(',')[1].trim().replace(')', '')}` }}>
+                  <div className="mc-left">
+                    <strong>{o.discount}</strong>
+                    <span>{o.desc}</span>
+                  </div>
+                  <button
+                    className="mc-copy-btn"
+                    onClick={() => handleCopyCode(o.code)}
+                    style={{ background: copiedCode === o.code ? '#10b981' : '#1a1a2e' }}
+                  >
+                    {copiedCode === o.code ? 'Copied! ✓' : `Copy: ${o.code}`}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

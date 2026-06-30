@@ -7,20 +7,8 @@ import {
   HiClipboardList, HiCog, HiLogout,
   HiShoppingCart, HiLocationMarker, HiUser,
 } from 'react-icons/hi';
-import { MdConstruction, MdEngineering, MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild } from 'react-icons/md';
-import { FaHammer } from 'react-icons/fa';
+import { MdConstruction } from 'react-icons/md';
 import './Navbar.css';
-
-const CAT_NAV = [
-  { id: 'contractors',          label: 'Contractors & Civil',       Icon: MdHomeWork },
-  { id: 'construction-labour',  label: 'Construction & Site Labour', Icon: MdConstruction },
-  { id: 'interior-carpentry',   label: 'Interior & Carpentry',      Icon: FaHammer },
-  { id: 'professionals',        label: 'Maintenance Professionals', Icon: MdEngineering },
-  { id: 'installations',        label: 'Technical Installations',   Icon: MdBuild },
-  { id: 'housekeeping',         label: 'Housekeeping & Cleaning',   Icon: MdCleaningServices },
-  { id: 'drivers-logistics',    label: 'Drivers & Logistics',       Icon: MdDirectionsCar },
-  { id: 'cooking-events',       label: 'Cooking & Events',          Icon: MdRestaurant },
-];
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -121,20 +109,6 @@ export default function Navbar() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* ── Category Nav Row ── */}
-      <div className="cat-nav-row">
-        {CAT_NAV.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            className="cat-nav-item"
-            onClick={() => navigate(`/browse?cat=${id}`)}
-          >
-            <Icon className="cat-nav-icon" />
-            <span>{label}</span>
-          </button>
-        ))}
       </div>
     </nav>
   );

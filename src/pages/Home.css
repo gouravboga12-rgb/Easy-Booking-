@@ -6,7 +6,7 @@
   padding: 10px 24px;
   border-bottom: 1px solid #f0f0f0;
   position: sticky;
-  top: 112px;
+  top: 68px;
   z-index: 100;
 }
 .home-search-btn {
@@ -310,3 +310,320 @@
   cursor: pointer; font-family: inherit; transition: opacity 0.18s;
 }
 .sc-book:hover { opacity: 0.85; }
+
+/* ── Top Categories Scroll Boxes ── */
+.top-categories-container {
+  background: #fff;
+  border-bottom: 1.5px solid #f3f4f6;
+  padding: 14px 0 16px;
+}
+.top-categories-row {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.top-categories-row::-webkit-scrollbar { display: none; }
+
+.top-cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 76px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.top-cat-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  transition: all 0.22s ease;
+  background: #f9fafb;
+}
+.top-cat-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.top-cat-item:hover .top-cat-box {
+  border-color: var(--primary);
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(255,107,0,0.18);
+}
+.top-cat-item span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #374151;
+  text-align: center;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* ── Shortened Background Banner Override ── */
+.hero-banner {
+  height: 280px;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  padding: 32px 40px;
+}
+.hb-content {
+  max-width: 58%;
+  gap: 10px;
+}
+.hb-content h1 {
+  font-size: 38px;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+.hb-content p {
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.85);
+}
+
+/* ── Best Offers For You ── */
+.offer-card {
+  flex: 0 0 210px;
+  height: 96px;
+  border-radius: 16px;
+  padding: 16px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+.offer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+.offer-percent {
+  font-size: 56px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.12);
+  position: absolute;
+  left: 8px;
+  line-height: 1;
+  user-select: none;
+}
+.offer-body {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  width: 100%;
+}
+.offer-body strong {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+.offer-body span {
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.offer-code-pill {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.22);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ── Coupon Modal Overlay ── */
+.view-all-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+.view-all-modal-card {
+  background: #fff;
+  width: 100%;
+  max-width: 460px;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.2);
+  text-align: left;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0;
+}
+.modal-close {
+  background: #f3f4f6;
+  color: #666;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-close:hover { background: #e5e7eb; color: #111; }
+.modal-sub {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+.modal-coupons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.modal-coupon-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  gap: 12px;
+}
+.mc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mc-left strong {
+  font-size: 15px;
+  color: #1a1a1a;
+  font-weight: 800;
+}
+.mc-left span {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+.mc-copy-btn {
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.mc-copy-btn:hover { opacity: 0.9; }
+
+/* ── Home Wording & Responsive Overrides ── */
+@media (max-width: 768px) {
+  .top-categories-container {
+    padding: 10px 0 12px !important;
+  }
+  .top-categories-row {
+    padding: 0 12px !important;
+    gap: 12px !important;
+  }
+  .top-cat-item {
+    width: 68px !important;
+  }
+  .top-cat-box {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 14px !important;
+  }
+  .top-cat-item span {
+    font-size: 9.5px !important;
+  }
+
+  .hero-banner {
+    height: 180px !important;
+    padding: 20px 24px !important;
+    border-radius: 16px !important;
+    margin: 16px 12px !important;
+  }
+  .hb-content {
+    max-width: 85% !important;
+    gap: 4px !important;
+  }
+  .hb-content h1 {
+    font-size: 22px !important;
+  }
+  .hb-content p {
+    font-size: 11px !important;
+    margin-bottom: 12px !important;
+  }
+  .hb-cta {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+  .hb-browse {
+    display: none !important;
+  }
+
+  .offers-section .section-inner {
+    padding: 0 12px !important;
+  }
+  .offer-card {
+    flex: 0 0 180px !important;
+    height: 80px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+  .offer-percent {
+    font-size: 46px !important;
+  }
+  .offer-body strong {
+    font-size: 13.5px !important;
+  }
+  .offer-body span {
+    font-size: 10px !important;
+  }
+  .offer-code-pill {
+    font-size: 8.5px !important;
+  }
+}
+

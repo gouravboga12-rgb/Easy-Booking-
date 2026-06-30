@@ -68,7 +68,7 @@ function Layout() {
   return (
     <>
       {!isAdminOrWorker && <Navbar />}
-      <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '112px' }}>
+      <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '68px' }}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />
