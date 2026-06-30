@@ -249,3 +249,45 @@
 }
 .drop-guest-header strong { display: block; font-size: 14px; color: #1a1a1a; }
 .drop-guest-header span { font-size: 12px; color: #aaa; }
+
+/* ── Responsive Mobile & Tablet Layouts ── */
+@media (max-width: 768px) {
+  .avatar-name {
+    display: none !important;
+  }
+  .chevron-icon {
+    display: none !important;
+  }
+  .avatar-btn {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+  .user-menu {
+    gap: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .nav-inner {
+    padding: 0 12px !important;
+  }
+  .cat-nav-row {
+    padding: 0 12px 10px !important;
+  }
+  .cart-label {
+    display: none !important;
+  }
+  .cart-btn {
+    padding: 8px 10px !important;
+    gap: 0 !important;
+    margin-right: 0 !important;
+  }
+  .brand {
+    font-size: 19px !important;
+    gap: 4px !important;
+  }
+  .brand-logo {
+    font-size: 22px !important;
+  }
+}
