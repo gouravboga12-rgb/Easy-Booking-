@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuthStore } from './store/useAuthStore';
 
 import Home from './pages/Home';
 import Browse from './pages/Browse';
@@ -13,6 +14,9 @@ import Cart from './pages/Cart';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import WorkerLogin from './pages/auth/WorkerLogin';
+import WorkerRegister from './pages/auth/WorkerRegister';
+import AdminLogin from './pages/auth/AdminLogin';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -23,6 +27,11 @@ import AdminMore from './pages/admin/AdminMore';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminReports from './pages/admin/AdminReports';
 import AdminPayments from './pages/admin/AdminPayments';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminRevenue from './pages/admin/AdminRevenue';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminCMS from './pages/admin/AdminCMS';
+import AdminNotifications from './pages/admin/AdminNotifications';
 
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import WorkerLayout from './pages/worker/WorkerLayout';
@@ -40,9 +49,20 @@ function ScrollToTop() {
   return null;
 }
 
+function AdminRouteWrapper() {
+  const user = useAuthStore(s => s.user);
+  if (!user) {
+    return <AdminLogin />;
+  }
+  if (user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  return <AdminLayout />;
+}
+
 function Layout() {
   const { pathname } = useLocation();
-  const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker');
+  const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
 
   return (
     <>
@@ -56,6 +76,12 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
+          {/* Worker Login/Signup */}
+          <Route path="/login-worker" element={<WorkerLogin />} />
+          <Route path="/login-workers" element={<WorkerLogin />} />
+          <Route path="/register-worker" element={<WorkerRegister />} />
+          <Route path="/register-workers" element={<WorkerRegister />} />
+
           {/* Customer */}
           <Route path="/book/:id" element={<BookingFlow />} />
           <Route path="/track/:id" element={<OrderTracking />} />
@@ -66,15 +92,20 @@ function Layout() {
           } />
 
           {/* Admin */}
-          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
+          <Route path="/admin" element={<AdminRouteWrapper />}>
             <Route index element={<AdminDashboard />} />
             <Route path="orders"    element={<AdminOrders />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="workers"   element={<AdminWorkers />} />
-            <Route path="more"      element={<AdminMore />} />
-            <Route path="products"  element={<AdminProducts />} />
-            <Route path="reports"   element={<AdminReports />} />
-            <Route path="payments"  element={<AdminPayments />} />
+            <Route path="more"          element={<AdminMore />} />
+            <Route path="products"      element={<AdminProducts />} />
+            <Route path="reports"       element={<AdminReports />} />
+            <Route path="payments"      element={<AdminPayments />} />
+            <Route path="subscriptions" element={<AdminSubscriptions />} />
+            <Route path="revenue"       element={<AdminRevenue />} />
+            <Route path="categories"    element={<AdminCategories />} />
+            <Route path="cms"           element={<AdminCMS />} />
+            <Route path="notifications" element={<AdminNotifications />} />
           </Route>
 
           {/* Worker */}

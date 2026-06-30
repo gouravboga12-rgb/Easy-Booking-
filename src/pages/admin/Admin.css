@@ -42,12 +42,13 @@
   border-left: 4px solid;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-.stat-card.orange { border-color: #ff6b00; }
+.stat-card.orange { border-color: var(--primary); }
 .stat-card.yellow { border-color: #f59e0b; }
 .stat-card.blue   { border-color: #3b82f6; }
 .stat-card.green  { border-color: #22c55e; }
 .stat-card.purple { border-color: #8b5cf6; }
 .stat-card.teal   { border-color: #14b8a6; }
+.stat-card.red    { border-color: #ef4444; }
 
 .sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .sc-val { font-size: 24px; font-weight: 800; color: #1a1a1a; }
@@ -55,12 +56,13 @@
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
 }
-.sc-icon-wrap.orange { background: #fff3e8; color: #ff6b00; }
+.sc-icon-wrap.orange { background: var(--primary-light); color: var(--primary); }
 .sc-icon-wrap.yellow { background: #fef3c7; color: #d97706; }
 .sc-icon-wrap.blue   { background: #dbeafe; color: #2563eb; }
 .sc-icon-wrap.green  { background: #dcfce7; color: #16a34a; }
 .sc-icon-wrap.purple { background: #ede9fe; color: #7c3aed; }
 .sc-icon-wrap.teal   { background: #ccfbf1; color: #0d9488; }
+.sc-icon-wrap.red    { background: #fee2e2; color: #dc2626; }
 .sc-icon { width: 18px; height: 18px; }
 .sc-label { font-size: 12px; color: #888; font-weight: 500; }
 
@@ -529,7 +531,7 @@
   transition: opacity 0.18s;
 }
 .qa-btn:hover { opacity: 0.85; }
-.qa-btn.orange { background: #fff3e8; color: #ff6b00; }
+.qa-btn.orange { background: var(--primary-light); color: var(--primary); }
 .qa-btn.blue   { background: #dbeafe; color: #2563eb; }
 .qa-btn.green  { background: #dcfce7; color: #16a34a; }
 .qa-btn.purple { background: #ede9fe; color: #7c3aed; }

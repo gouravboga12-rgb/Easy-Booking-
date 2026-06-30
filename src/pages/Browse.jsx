@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { categories, allVehicles } from '../data/vehicles';
+import { categories } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import { HiSearch, HiFilter, HiStar, HiClock, HiCheckCircle, HiShoppingCart, HiX, HiLocationMarker, HiCalendar } from 'react-icons/hi';
 import { MdConstruction, MdEngineering, MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild } from 'react-icons/md';
@@ -21,6 +21,7 @@ const CAT_ICONS = {
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
 
 export default function Browse() {
+  const allVehicles = useStore(s => s.services);
   const [params] = useSearchParams();
   const [activeCat, setActiveCat] = useState(params.get('cat') || 'all');
   const [search, setSearch] = useState('');
@@ -49,6 +50,7 @@ export default function Browse() {
   }, [params]);
 
   const filtered = allVehicles.filter(v => {
+    if (v.id === 'admin-approved-category') return false; // Hide additional category from user side
     const matchCat = activeCat === 'all' || v.category === activeCat;
     const matchSearch =
       v.name.toLowerCase().includes(search.toLowerCase()) ||

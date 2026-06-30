@@ -41,9 +41,8 @@ export default function Footer() {
 
         <div className="footer-col">
           <h4>For Professionals</h4>
-          <Link to="/login">Register as Operator</Link>
-          <Link to="#">Partner with Us</Link>
-          <Link to="#">Operator App</Link>
+          <Link to="/register-worker">Register as Operator</Link>
+          <Link to="/login-worker">Operator Login</Link>
           <Link to="#">Safety Guidelines</Link>
         </div>
       </div>

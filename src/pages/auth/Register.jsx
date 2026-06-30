@@ -17,10 +17,7 @@ const VEHICLE_TYPES = [
 const EXPERIENCE_OPTIONS = ['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
 
 export default function Register() {
-  const [role, setRole] = useState(''); // 'customer' | 'worker'
-  const [step, setStep] = useState(0);  // 0: role, 1: form, 2: worker details, 3: otp
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
-  const [workerForm, setWorkerForm] = useState({ vehicleType: '', licenseNo: '', experience: '', aadhar: '', address: '' });
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,27 +25,15 @@ export default function Register() {
   const navigate = useNavigate();
 
   const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({ ...p, [key]: e.target.value })) });
-  const w = (key) => ({ value: workerForm[key], onChange: e => setWorkerForm(p => ({ ...p, [key]: e.target.value })) });
-
-  const handleRoleSelect = (r) => { setRole(r); setStep(1); };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
-    if (role === 'worker') { setStep(2); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
     setLoading(false);
-    setStep(3);
-  };
-
-  const handleWorkerNext = (e) => {
-    e.preventDefault();
-    setError('');
-    if (!workerForm.vehicleType) { setError('Please select a service/vehicle type'); return; }
-    if (!workerForm.licenseNo) { setError('License/ID number is required'); return; }
     setStep(3);
   };
 
@@ -61,15 +46,7 @@ export default function Register() {
     const data = {
       name: form.name, email: form.email,
       phone: form.phone, password: form.password,
-      role,
-      ...(role === 'worker' && {
-        vehicle: `${workerForm.vehicleType} • ${workerForm.licenseNo}`,
-        experience: workerForm.experience,
-        address: workerForm.address,
-        rating: 4.5,
-        jobsDone: 0,
-        available: false,
-      }),
+      role: 'customer',
     };
     const result = register(data);
     setLoading(false);
@@ -77,8 +54,9 @@ export default function Register() {
     navigate('/login');
   };
 
-  const STEPS = role === 'worker' ? ['Role', 'Details', 'Worker Info', 'OTP'] : ['Role', 'Details', 'OTP'];
-  const currentStep = step;
+  const [step, setStep] = useState(1);  // 1: form, 3: otp
+  const STEPS = ['Details', 'OTP'];
+  const currentStep = step === 1 ? 0 : 1;
 
   return (
     <div className="auth-page">
@@ -97,31 +75,10 @@ export default function Register() {
           </div>
         )}
 
-        {/* Step 0: Role Selection */}
-        {step === 0 && (
-          <>
-            <h1>Join EasyBooking</h1>
-            <p className="auth-sub">How would you like to use EasyBooking?</p>
-            <div className="role-cards">
-              <button className="role-card" onClick={() => handleRoleSelect('customer')}>
-                <div className="rc-icon customer">🏗️</div>
-                <strong>I'm a Customer</strong>
-                <span>Book vehicles & services for my projects</span>
-              </button>
-              <button className="role-card" onClick={() => handleRoleSelect('worker')}>
-                <div className="rc-icon worker">👷</div>
-                <strong>I'm a Worker</strong>
-                <span>Offer my services & earn money</span>
-              </button>
-            </div>
-            <p className="auth-switch">Already have an account? <Link to="/login">Login</Link></p>
-          </>
-        )}
-
         {/* Step 1: Basic Details */}
         {step === 1 && (
           <>
-            <h1>{role === 'worker' ? 'Worker Registration' : 'Create Account'}</h1>
+            <h1>Create Account</h1>
             <p className="auth-sub">Enter your basic details</p>
             <form onSubmit={handleFormSubmit}>
               <label>Full Name
@@ -141,55 +98,13 @@ export default function Register() {
               </label>
               {error && <div className="auth-error">⚠️ {error}</div>}
               <button type="submit" className="auth-submit" disabled={loading}>
-                <span>{role === 'worker' ? 'Next: Worker Details' : 'Send OTP'}</span>
+                <span>Send OTP</span>
                 <HiArrowRight style={{ width: 16, height: 16 }} />
               </button>
-              <button type="button" className="auth-back" onClick={() => { setStep(0); setError(''); }}>← Back</button>
-            </form>
-          </>
-        )}
-
-        {/* Step 2: Worker Details */}
-        {step === 2 && (
-          <>
-            <h1>Worker Details</h1>
-            <p className="auth-sub">Tell us about your skills & equipment</p>
-            <form onSubmit={handleWorkerNext}>
-              <label>Service / Vehicle Type
-                <div className="input-wrap">
-                  <HiTruck className="input-icon" />
-                  <select className="auth-select" value={workerForm.vehicleType} onChange={e => setWorkerForm(p => ({ ...p, vehicleType: e.target.value }))} required>
-                    <option value="">Select type...</option>
-                    {VEHICLE_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
-              </label>
-              <label>License / Vehicle Reg. No.
-                <div className="input-wrap"><HiIdentification className="input-icon" /><input placeholder="KA 05 AB 1234" {...w('licenseNo')} required /></div>
-              </label>
-              <label>Years of Experience
-                <div className="input-wrap">
-                  <HiBriefcase className="input-icon" />
-                  <select className="auth-select" value={workerForm.experience} onChange={e => setWorkerForm(p => ({ ...p, experience: e.target.value }))} required>
-                    <option value="">Select experience...</option>
-                    {EXPERIENCE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-              </label>
-              <label>Aadhar / ID Number
-                <div className="input-wrap"><HiIdentification className="input-icon" /><input placeholder="XXXX XXXX XXXX" {...w('aadhar')} /></div>
-              </label>
-              <label>Current Address
-                <div className="input-wrap">
-                  <MdEngineering className="input-icon" />
-                  <input placeholder="City, State" {...w('address')} />
-                </div>
-              </label>
-              {error && <div className="auth-error">⚠️ {error}</div>}
-              <button type="submit" className="auth-submit">
-                <span>Send OTP</span> <HiArrowRight style={{ width: 16, height: 16 }} />
-              </button>
-              <button type="button" className="auth-back" onClick={() => { setStep(1); setError(''); }}>← Back</button>
+              
+              <div className="auth-switch" style={{ marginTop: '16px' }}>
+                Already have an account? <Link to="/login">Login</Link>
+              </div>
             </form>
           </>
         )}
@@ -222,7 +137,7 @@ export default function Register() {
               <button type="submit" className="auth-submit" disabled={loading || otp.length !== 6}>
                 {loading ? 'Creating account...' : <><span>Verify & Create Account</span> <HiArrowRight style={{ width: 16, height: 16 }} /></>}
               </button>
-              <button type="button" className="auth-back" onClick={() => { setStep(role === 'worker' ? 2 : 1); setOtp(''); setError(''); }}>← Back</button>
+              <button type="button" className="auth-back" onClick={() => { setStep(1); setOtp(''); setError(''); }}>← Back</button>
             </form>
           </>
         )}
@@ -230,31 +145,15 @@ export default function Register() {
 
       <div className="auth-visual">
         <div className="av-content">
-          {role === 'worker' ? (
-            <>
-              <div className="av-icon">👷</div>
-              <h2>Earn with EasyBooking</h2>
-              <p>Join thousands of verified workers earning daily on EasyBooking.</p>
-              <div className="av-features">
-                <div>✅ Get jobs near your location</div>
-                <div>✅ Instant payment on completion</div>
-                <div>✅ Build your reputation & rating</div>
-                <div>✅ Flexible working hours</div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="av-icon">🚜</div>
-              <h2>Join 12M+ customers on EasyBooking</h2>
-              <p>Get verified operators, live tracking, and instant booking for all your construction needs.</p>
-              <div className="av-features">
-                <div>✅ Verified & insured operators</div>
-                <div>✅ Real-time GPS tracking</div>
-                <div>✅ Transparent pricing</div>
-                <div>✅ 24/7 support</div>
-              </div>
-            </>
-          )}
+          <div className="av-icon">🚜</div>
+          <h2>Join 12M+ customers on EasyBooking</h2>
+          <p>Get verified operators, live tracking, and instant booking for all your construction needs.</p>
+          <div className="av-features">
+            <div>✅ Verified & insured operators</div>
+            <div>✅ Real-time GPS tracking</div>
+            <div>✅ Transparent pricing</div>
+            <div>✅ 24/7 support</div>
+          </div>
         </div>
       </div>
     </div>

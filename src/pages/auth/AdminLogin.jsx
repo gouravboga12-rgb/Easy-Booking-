@@ -5,36 +5,38 @@ import { HiMail, HiLockClosed, HiArrowRight } from 'react-icons/hi';
 import { MdConstruction } from 'react-icons/md';
 import './Auth.css';
 
-export default function Login() {
+export default function AdminLogin() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotMsg, setShowForgotMsg] = useState(false);
   const { login, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setShowForgotMsg(false);
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
-    const result = login(form.email, form.password, 'customer');
+    const result = login(form.email, form.password, 'admin');
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    navigate('/');
+    navigate('/admin');
   };
 
   return (
     <div className="auth-page">
       <div className="auth-card">
         <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
-        <h1>Welcome back</h1>
-        <p className="auth-sub">Login to your account</p>
+        <h1>Admin Control Panel</h1>
+        <p className="auth-sub">Log in to manage operations</p>
 
         <form onSubmit={handleSubmit}>
           <label>Email
             <div className="input-wrap">
               <HiMail className="input-icon" />
-              <input type="email" placeholder="you@example.com" value={form.email}
+              <input type="email" placeholder="admin@easybooking.in" value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
             </div>
           </label>
@@ -47,22 +49,38 @@ export default function Login() {
           </label>
           {error && <div className="auth-error">⚠️ {error}</div>}
           <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Logging in...' : <><span>Login</span> <HiArrowRight style={{width:16,height:16}} /></>}
+            {loading ? 'Logging in...' : <><span>Login to Dashboard</span> <HiArrowRight style={{width:16,height:16}} /></>}
           </button>
         </form>
 
-        <p className="auth-switch">Don't have an account? <Link to="/register">Sign up</Link></p>
+        <div className="auth-switch" style={{ marginTop: '20px', textAlign: 'center' }}>
+          <button type="button" className="auth-switch-btn" onClick={() => setShowForgotMsg(true)}>
+            Forgot Password?
+          </button>
+        </div>
+
+        {showForgotMsg && (
+          <div className="otp-info" style={{ marginTop: '16px', background: '#fffbeb', borderColor: '#fde68a' }}>
+            <div>
+              <strong style={{ color: '#b45309' }}>Password Recovery</strong>
+              <p style={{ color: '#78350f', fontSize: '13px', lineHeight: '1.4', marginTop: '4px' }}>
+                Please contact our developers or operations team at <strong>admin-support@easybooking.in</strong> to securely verify your identity and reset your administrative password.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="auth-visual">
         <div className="av-content">
-          <div className="av-icon">👷</div>
-          <h2>India's #1 On-Demand Services Platform</h2>
-          <p>Book Masons, Electricians, Painters, Cooks & more — on demand, at your doorstep.</p>
-          <div className="av-stats">
-            <div><strong>5000+</strong><span>Professionals</span></div>
-            <div><strong>50+</strong><span>Cities</span></div>
-            <div><strong>4.8★</strong><span>Rating</span></div>
+          <div className="av-icon">🛡️</div>
+          <h2>Secure Admin Portal</h2>
+          <p>Access operations management tools, monitor real-time bookings, verify operator details, and generate billing reports.</p>
+          <div className="av-features">
+            <div>✅ Monitor all active customer orders</div>
+            <div>✅ Verify worker credentials & documents</div>
+            <div>✅ Manage pricing, logistics & services</div>
+            <div>✅ Generate platform analytics reports</div>
           </div>
         </div>
       </div>

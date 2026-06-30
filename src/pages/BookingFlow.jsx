@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { allVehicles } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import {
@@ -20,9 +19,17 @@ export default function BookingFlow() {
   const placeOrder = useStore(s => s.placeOrder);
   const addToCart = useStore(s => s.addToCart);
   const user = useAuthStore(s => s.user);
+  const allVehicles = useStore(s => s.services);
 
   const vehicle = allVehicles.find(v => v.id === id);
-  const [form, setForm] = useState({ location: '', date: '', duration: 1, notes: '' });
+  const [bookingType, setBookingType] = useState('instant');
+  const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
+  const [form, setForm] = useState({
+    location: '',
+    date: new Date().toISOString().split('T')[0],
+    duration: 1,
+    notes: ''
+  });
   const [step, setStep] = useState(1);
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
@@ -33,12 +40,28 @@ export default function BookingFlow() {
     const customer = user
       ? { id: user.id, name: user.name, phone: user.phone }
       : { name: 'Guest', phone: '' };
-    const order = placeOrder(vehicle, { ...form, total }, customer);
+    const order = placeOrder(
+      vehicle,
+      {
+        ...form,
+        date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
+        timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
+        bookingType,
+        total
+      },
+      customer
+    );
     navigate(`/track/${order.id}`);
   };
 
   const handleAddToCart = () => {
-    addToCart(vehicle, { ...form, total });
+    addToCart(vehicle, {
+      ...form,
+      date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
+      timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
+      bookingType,
+      total
+    });
     navigate('/cart');
   };
 
@@ -73,6 +96,54 @@ export default function BookingFlow() {
               <h2>Where & When?</h2>
 
               <label>
+                <span className="lbl-text">Booking Mode</span>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px', marginBottom: '14px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingType('instant');
+                      setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] }));
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      border: '1.5px solid',
+                      borderColor: bookingType === 'instant' ? 'var(--primary)' : '#eee',
+                      background: bookingType === 'instant' ? 'var(--primary-light)' : '#fff',
+                      color: bookingType === 'instant' ? 'var(--primary)' : '#444',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '13px'
+                    }}
+                  >
+                    ⚡ Instant Match (15 Min ETA)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingType('scheduled');
+                      setForm(f => ({ ...f, date: '' }));
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      border: '1.5px solid',
+                      borderColor: bookingType === 'scheduled' ? 'var(--primary)' : '#eee',
+                      background: bookingType === 'scheduled' ? 'var(--primary-light)' : '#fff',
+                      color: bookingType === 'scheduled' ? 'var(--primary)' : '#444',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '13px'
+                    }}
+                  >
+                    📅 Schedule for Later
+                  </button>
+                </div>
+              </label>
+
+              <label>
                 <span className="lbl-text">
                   <HiLocationMarker className="lbl-icon" /> Service Address
                 </span>
@@ -83,19 +154,39 @@ export default function BookingFlow() {
                 />
               </label>
 
-              <label>
-                <span className="lbl-text">
-                  <HiCalendar className="lbl-icon" /> Date
-                </span>
-                <input
-                  type="date"
-                  value={form.date}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                />
-              </label>
+              {bookingType === 'scheduled' && (
+                <>
+                  <label style={{ marginTop: '10px' }}>
+                    <span className="lbl-text">
+                      <HiCalendar className="lbl-icon" /> Select Date
+                    </span>
+                    <input
+                      type="date"
+                      value={form.date}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                    />
+                  </label>
+                  
+                  <label style={{ marginTop: '10px' }}>
+                    <span className="lbl-text">
+                      <HiClock className="lbl-icon" /> Preferred Time Slot
+                    </span>
+                    <select
+                      value={timeSlot}
+                      onChange={e => setTimeSlot(e.target.value)}
+                      style={{ padding: '12px', border: '1.5px solid #eee', borderRadius: '8px', width: '100%', fontSize: '14px', marginTop: '6px' }}
+                    >
+                      <option value="09:00 AM - 11:00 AM">09:00 AM - 11:00 AM</option>
+                      <option value="11:00 AM - 01:00 PM">11:00 AM - 01:00 PM</option>
+                      <option value="02:00 PM - 04:00 PM">02:00 PM - 04:00 PM</option>
+                      <option value="04:00 PM - 06:00 PM">04:00 PM - 06:00 PM</option>
+                    </select>
+                  </label>
+                </>
+              )}
 
-              <label>
+              <label style={{ marginTop: '10px' }}>
                 <span className="lbl-text">
                   <HiClock className="lbl-icon" /> Duration ({vehicle.unit === 'hr' ? 'Hours' : 'Trips'})
                 </span>
@@ -106,7 +197,7 @@ export default function BookingFlow() {
                 </div>
               </label>
 
-              <label>
+              <label style={{ marginTop: '10px' }}>
                 <span className="lbl-text">
                   <HiDocumentText className="lbl-icon" /> Special Instructions
                 </span>
@@ -120,8 +211,9 @@ export default function BookingFlow() {
 
               <button
                 className="btn-primary"
-                disabled={!form.location || !form.date}
+                disabled={!form.location || (bookingType === 'scheduled' && !form.date)}
                 onClick={() => setStep(2)}
+                style={{ marginTop: '14px' }}
               >
                 Continue <HiArrowRight style={{ width: 16, height: 16 }} />
               </button>
@@ -133,12 +225,16 @@ export default function BookingFlow() {
               <h2>Confirm Booking</h2>
               <div className="confirm-details">
                 <div className="cd-row">
+                  <span>Booking Mode</span>
+                  <strong>{bookingType === 'instant' ? '⚡ Instant Match' : '📅 Scheduled'}</strong>
+                </div>
+                <div className="cd-row">
                   <span><HiLoc className="cd-icon" /> Location</span>
                   <strong>{form.location}</strong>
                 </div>
                 <div className="cd-row">
-                  <span><HiCalendar className="cd-icon" /> Date</span>
-                  <strong>{form.date}</strong>
+                  <span><HiCalendar className="cd-icon" /> Date / Time</span>
+                  <strong>{bookingType === 'instant' ? 'Will approach in 15 minutes' : `${form.date} @ ${timeSlot}`}</strong>
                 </div>
                 <div className="cd-row">
                   <span><HiClock className="cd-icon" /> Duration</span>

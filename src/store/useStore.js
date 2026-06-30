@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { allVehicles } from '../data/vehicles';
 
 const ORDER_STAGES = ['Confirmed', 'Operator Assigned', 'En Route', 'On Site', 'Completed'];
 let _counter = 0;
@@ -10,6 +11,23 @@ export const useStore = create(
       orders: [],
       activeOrder: null,
       cart: [],
+      services: allVehicles,
+
+      addService: (newService) => {
+        set(s => ({ services: [...s.services, newService] }));
+      },
+
+      updateService: (id, updatedData) => {
+        set(s => ({
+          services: s.services.map(v => v.id === id ? { ...v, ...updatedData } : v)
+        }));
+      },
+
+      deleteService: (id) => {
+        set(s => ({
+          services: s.services.filter(v => v.id !== id)
+        }));
+      },
 
       addToCart: (vehicle, booking) => {
         const item = { cartId: `cart-${Date.now()}`, vehicle, booking };
@@ -34,19 +52,52 @@ export const useStore = create(
           placedAt: new Date().toLocaleTimeString(),
           createdAt: new Date().toISOString(),
           status: 'pending',
+          bookingType: booking.bookingType || 'instant',
+          rejectedWorkers: [],
+          completionImages: [],
         };
         set(s => ({ orders: [order, ...s.orders], activeOrder: order }));
         return order;
       },
 
       assignWorker: (orderId, worker) => {
-        set(s => ({
-          orders: s.orders.map(o =>
+        set(s => {
+          const updated = s.orders.map(o =>
             o.id === orderId
               ? { ...o, operator: worker, stage: 1, status: 'assigned' }
               : o
+          );
+          const updatedOrder = updated.find(o => o.id === orderId);
+          return {
+            orders: updated,
+            activeOrder: s.activeOrder?.id === orderId ? updatedOrder : s.activeOrder,
+          };
+        });
+      },
+
+      rejectOrder: (orderId, workerId) => {
+        set(s => ({
+          orders: s.orders.map(o =>
+            o.id === orderId
+              ? { ...o, rejectedWorkers: [...(o.rejectedWorkers || []), workerId] }
+              : o
           ),
         }));
+      },
+
+      uploadCompletionImages: (orderId, images) => {
+        set(s => {
+          const updated = s.orders.map(o =>
+            o.id === orderId
+              ? { ...o, completionImages: images }
+              : o
+          );
+          const updatedOrder = updated.find(o => o.id === orderId);
+          return {
+            orders: updated,
+            activeOrder: s.activeOrder?.id === orderId ? updatedOrder : s.activeOrder,
+          };
+        });
       },
 
       advanceStage: (orderId) => {

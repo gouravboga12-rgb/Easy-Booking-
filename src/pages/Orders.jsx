@@ -10,8 +10,8 @@ export default function Orders() {
     <div className="orders-empty">
       <div className="empty-icon">📋</div>
       <h2>No orders yet</h2>
-      <p>Book your first construction vehicle to get started.</p>
-      <button onClick={() => navigate('/browse')}>Browse Vehicles →</button>
+      <p>Book your first service to get started.</p>
+      <button onClick={() => navigate('/browse')}>Browse Services →</button>
     </div>
   );
 

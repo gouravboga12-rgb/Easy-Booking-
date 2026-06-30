@@ -1,22 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { HiLocationMarker, HiCalendar, HiClock, HiDocumentText, HiUser } from 'react-icons/hi';
 import './OrderTracking.css';
 
 export default function OrderTracking() {
   const { id } = useParams();
   const navigate = useNavigate();
   const orders = useStore(s => s.orders);
-  const advanceStage = useStore(s => s.advanceStage);
+  const user = useAuthStore(s => s.user);
+  const addWorkerReview = useAuthStore(s => s.addWorkerReview);
 
   const order = orders.find(o => o.id === id);
 
-  // Auto-advance stages for demo (simulates real-time updates)
-  useEffect(() => {
-    if (!order || order.stage >= order.stages.length - 1) return;
-    const timer = setTimeout(() => advanceStage(id), 4000);
-    return () => clearTimeout(timer);
-  }, [order?.stage, id]);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   if (!order) return (
     <div className="not-found">
@@ -25,7 +25,19 @@ export default function OrderTracking() {
     </div>
   );
 
-  const isComplete = order.stage === order.stages.length - 1;
+  const isComplete = order.status === 'completed' || order.stage === order.stages.length - 1;
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    if (!order.operator) return;
+    addWorkerReview(order.operator.id, {
+      author: user?.name || 'Customer Feedback',
+      rating: Number(rating),
+      comment,
+      date: new Date().toLocaleDateString()
+    });
+    setReviewSubmitted(true);
+  };
 
   return (
     <div className="tracking-page">
@@ -71,19 +83,69 @@ export default function OrderTracking() {
             <div className="bs-row"><span>⏱ Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
             <div className="bs-row total"><span>💰 Total</span><strong>₹{order.booking.total?.toLocaleString()}</strong></div>
           </div>
+
+          {/* Feedback/Review Submission */}
+          {isComplete && order.operator && (
+            <div className="booking-summary" style={{ marginTop: '20px', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+              <h3 style={{ color: '#065f46', margin: 0 }}>Rate Your Experience</h3>
+              <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 12px' }}>How was the service provided by {order.operator.name}?</p>
+              
+              {reviewSubmitted ? (
+                <div style={{ background: '#fff', border: '1px solid #a7f3d0', padding: '12px', borderRadius: '8px', color: '#15803d', fontSize: '13px', fontWeight: '600' }}>
+                  ✔️ Thank you! Your rating and comments have been shared with {order.operator.name}.
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#444' }}>Rating:</span>
+                    <select value={rating} onChange={e => setRating(e.target.value)} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}>
+                      <option value="5">⭐⭐⭐⭐⭐ Excellent (5/5)</option>
+                      <option value="4">⭐⭐⭐⭐ Good (4/5)</option>
+                      <option value="3">⭐⭐⭐ Average (3/5)</option>
+                      <option value="2">⭐⭐ Fair (2/5)</option>
+                      <option value="1">⭐ Poor (1/5)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <textarea
+                      placeholder={`Tell us how ${order.operator.name} did...`}
+                      value={comment}
+                      onChange={e => setComment(e.target.value)}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit' }}
+                      rows={3}
+                    />
+                  </div>
+                  <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                    Submit Rating & Review
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: Operator Card */}
         <div className="operator-card">
           <h3>Your Operator</h3>
-          <div className="op-avatar">👷</div>
-          <div className="op-name">{order.operator?.name ?? 'Assigning...'}</div>
-          <div className="op-rating">⭐ {order.operator?.rating ?? '-'}</div>
-          <div className="op-vehicle">{order.operator?.vehicle ?? ''}</div>
-          {order.operator?.phone ? (
-            <a href={`tel:${order.operator.phone}`} className="call-btn">📞 Call Operator</a>
+          {order.operator ? (
+            <>
+              <div className="op-avatar" style={{ overflow: 'hidden', width: '70px', height: '70px', borderRadius: '50%', margin: '0 auto 10px', border: '2px solid var(--primary-light)' }}>
+                <img src={order.operator.photo || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&q=80'} alt={order.operator.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div className="op-name">{order.operator.name}</div>
+              <div className="op-rating">⭐ {order.operator.rating}</div>
+              <div className="op-vehicle">{order.operator.vehicle}</div>
+              <a href={`tel:${order.operator.phone}`} className="call-btn">📞 Call Operator</a>
+            </>
           ) : (
-            <div className="call-btn disabled">📞 Operator being assigned</div>
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div className="op-avatar" style={{ fontSize: '32px' }}>🛰️</div>
+              <div className="op-name" style={{ color: 'var(--primary)', fontWeight: '700', animation: 'pulse 1.5s infinite', margin: '8px 0 4px' }}>Searching for Operator...</div>
+              <p style={{ fontSize: '12px', color: '#888', margin: 0, lineHeight: '1.4' }}>
+                We are matching your request with nearby verified service providers. This usually takes under 60 seconds.
+              </p>
+            </div>
           )}
 
           <div className="vehicle-info">
@@ -94,10 +156,12 @@ export default function OrderTracking() {
             </div>
           </div>
 
-          {!isComplete && (
+          {order.operator && !isComplete && (
             <div className="eta-box">
               <div className="eta-label">Estimated Arrival</div>
-              <div className="eta-time">~{Math.max(5, (order.stages.length - 1 - order.stage) * 8)} mins</div>
+              <div className="eta-time">
+                {order.stage === 1 ? 'Will approach in 15 minutes' : order.stage === 2 ? 'En Route (Approaching...)' : 'On Site (Working...)'}
+              </div>
             </div>
           )}
         </div>
