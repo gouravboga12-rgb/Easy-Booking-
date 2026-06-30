@@ -40,6 +40,7 @@ import WorkerOrders from './pages/worker/WorkerOrders';
 import WorkerHistory from './pages/worker/WorkerHistory';
 import WorkerWallet from './pages/worker/WorkerWallet';
 import WorkerProfile from './pages/worker/WorkerProfile';
+import UserProfile from './pages/UserProfile';
 
 import './App.css';
 
@@ -88,6 +89,11 @@ function Layout() {
           <Route path="/orders" element={
             <ProtectedRoute roles={['customer', 'admin']}>
               <Orders />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute roles={['customer', 'admin']}>
+              <UserProfile />
             </ProtectedRoute>
           } />
 

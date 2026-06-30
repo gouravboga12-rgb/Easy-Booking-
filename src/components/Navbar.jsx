@@ -94,9 +94,14 @@ export default function Navbar() {
                   <div className="drop-email">{user.email}</div>
                   <hr />
                   {user.role === 'customer' && (
-                    <Link to="/orders" className="drop-item" onClick={() => setDropOpen(false)}>
-                      <HiClipboardList className="drop-icon" /> My Orders
-                    </Link>
+                    <>
+                      <Link to="/profile" className="drop-item" onClick={() => setDropOpen(false)}>
+                        <HiUser className="drop-icon" /> My Profile
+                      </Link>
+                      <Link to="/orders" className="drop-item" onClick={() => setDropOpen(false)}>
+                        <HiClipboardList className="drop-icon" /> My Orders
+                      </Link>
+                    </>
                   )}
                   {user.role === 'admin' && (
                     <Link to="/admin" className="drop-item" onClick={() => setDropOpen(false)}>

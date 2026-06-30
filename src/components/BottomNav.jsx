@@ -43,7 +43,7 @@ export default function BottomNav() {
 
   const resolvedTabs = tabs.map(t => {
     if (t.label === 'Account' && user)
-      return { ...t, to: '/orders', Icon: HiUser, label: user.name.split(' ')[0] };
+      return { ...t, to: '/profile', Icon: HiUser, label: user.name.split(' ')[0] };
     return t;
   });
 

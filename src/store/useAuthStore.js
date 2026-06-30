@@ -8,7 +8,6 @@ const DEMO_USERS = [
   { id: 'w2', email: 'suresh@easybooking.in', password: 'worker123', role: 'worker', name: 'Suresh Reddy', phone: '+91 97654 32109', vehicle: 'Plumber • Lic. 48291', rating: 4.6, jobsDone: 98, available: true, approved: true, subscription: { active: true, plan: '₹99 Monthly', expiresAt: '2026-07-28' }, availability: { online: true, hours: '08:00 - 20:00', blockedDates: [], vacation: false }, wallet: { balance: 350, transactions: [] }, reviews: [{ author: 'Rohit K.', rating: 4, comment: 'Good plumbing service, resolved the issue quickly.', date: '2026-06-27' }], skills: ['Tap repair', 'Pipe leaks', 'Water Tank cleaning'], categories: ['professionals'], radius: 15, address: 'Indiranagar, Bangalore, KA', pan: 'FGHIJ5678K', aadhar: '987654321098', bank: 'Acct: 109283746, IFSC: ICIC0000456' },
   { id: 'w3', email: 'mohan@easybooking.in', password: 'worker123', role: 'worker', name: 'Mohan Das', phone: '+91 96543 21098', vehicle: 'Mason • Exp. 8 Yrs', rating: 4.9, jobsDone: 210, available: false, approved: false, subscription: { active: false, plan: 'none', expiresAt: null }, availability: { online: false, hours: '09:00 - 18:00', blockedDates: [], vacation: false }, wallet: { balance: 0, transactions: [] }, reviews: [], skills: ['Plastering', 'Cement work', 'Brick laying'], categories: ['construction-labour'], radius: 8, address: 'Whitefield, Bangalore, KA', pan: 'LMNOP9012Q', aadhar: '543210987654', bank: 'Acct: 564738291, IFSC: HDFC0000789' },
   { id: 'c1', email: 'customer@easybooking.in', password: 'cust123', role: 'customer', name: 'Arjun Sharma', phone: '+91 95432 10987' },
-  { id: 'c2', email: 'bogagourav10@gmail.com', password: 'cust123', role: 'customer', name: 'Gourav Boga', phone: '+91 98000 00002' },
 ];
 
 export const useAuthStore = create(
@@ -73,6 +72,14 @@ export const useAuthStore = create(
         set(s => {
           const updatedUsers = s.users.map(u => u.id === workerId ? { ...u, ...profileData } : u);
           const updatedUser = s.user?.id === workerId ? { ...s.user, ...profileData } : s.user;
+          return { users: updatedUsers, user: updatedUser };
+        });
+      },
+
+      updateUserProfile: (userId, profileData) => {
+        set(s => {
+          const updatedUsers = s.users.map(u => u.id === userId ? { ...u, ...profileData } : u);
+          const updatedUser = s.user?.id === userId ? { ...s.user, ...profileData } : s.user;
           return { users: updatedUsers, user: updatedUser };
         });
       },
