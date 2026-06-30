@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Reference images (local only)
+image copy.png
+image copy 2.png
