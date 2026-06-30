@@ -100,7 +100,7 @@ export default function WorkerProfile() {
     { Icon: HiUser,          label: 'Full Name',  val: user.name },
     { Icon: HiPhone,         label: 'Phone',      val: user.phone },
     { Icon: HiMail,          label: 'Email',      val: user.email },
-    { Icon: MdDirectionsCar, label: 'Vehicle Class', val: user.vehicle },
+    { Icon: MdBuild,         label: 'Service Class', val: user.vehicle },
     { Icon: HiStar,          label: 'Rating',     val: `${user.rating} ★` },
     { Icon: HiBriefcase,     label: 'Jobs Done',  val: user.jobsDone },
   ];

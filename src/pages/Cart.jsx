@@ -32,9 +32,9 @@ export default function Cart() {
       <div className="cart-empty">
         <HiShoppingCart className="empty-icon" />
         <h2>Your cart is empty</h2>
-        <p>Add vehicles to your cart to book them together</p>
+        <p>Add services to your cart to book them together</p>
         <button className="btn-primary" onClick={() => navigate('/browse')}>
-          Browse Vehicles
+          Browse Services
         </button>
       </div>
     );

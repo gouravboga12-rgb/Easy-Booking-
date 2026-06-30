@@ -32,7 +32,7 @@ export default function Footer() {
 
         <div className="footer-col">
           <h4>For Customers</h4>
-          <Link to="/browse">Browse Vehicles</Link>
+          <Link to="/browse">Browse Services</Link>
           <Link to="/orders">My Orders</Link>
           <Link to="#">EasyBooking Reviews</Link>
           <Link to="#">Categories Near You</Link>

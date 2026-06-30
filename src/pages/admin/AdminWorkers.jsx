@@ -263,7 +263,7 @@ export default function AdminWorkers() {
                 <input style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} required />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
-                Professional Vehicle Class:
+                Professional Service Class:
                 <input style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} value={editForm.vehicle} onChange={e => setEditForm(p => ({ ...p, vehicle: e.target.value }))} required />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
