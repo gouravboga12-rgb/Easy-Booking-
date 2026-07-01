@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { HiUser, HiPhone, HiMail, HiStar, HiBriefcase, HiLogout, HiMap, HiFolderOpen, HiCreditCard, HiCheckCircle } from 'react-icons/hi';
-import { MdDirectionsCar } from 'react-icons/md';
+import { MdDirectionsCar, MdBuild } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import './Worker.css';
 

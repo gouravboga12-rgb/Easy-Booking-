@@ -18,25 +18,64 @@ export default function WorkerLayout() {
 
   return (
     <div className="worker-layout">
-      <header className="worker-top-header">
-        <div className="wth-brand">
-          <MdConstruction className="wth-logo-icon" />
+      {/* Sidebar for Desktop & Tablet view */}
+      <aside className="worker-sidebar">
+        <div className="ws-brand">
+          <MdConstruction className="ws-logo-icon" />
           <span>Easy<b>Booking</b></span>
-          <span className="wth-badge">Worker</span>
+          <span className="ws-badge">Worker</span>
         </div>
-        <div className="wth-user">
-          <div className="wth-avatar">{user.name.charAt(0)}</div>
-          <div className="wth-info">
-            <strong>{user.name.split(' ')[0]}</strong>
-            <span className={`wth-status ${user.available ? 'online' : 'offline'}`}>
+        <div className="ws-user-profile">
+          <div className="ws-avatar">{user.name.charAt(0)}</div>
+          <div className="ws-user-info">
+            <strong>{user.name}</strong>
+            <span className={`ws-status ${user.available ? 'online' : 'offline'}`}>
               {user.available ? '● Online' : '○ Offline'}
             </span>
           </div>
         </div>
-      </header>
-      <div className="worker-content">
-        <Outlet />
+        <nav className="ws-nav">
+          {NAV.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/worker'}
+              className={({ isActive }) => `ws-nav-item ${isActive ? 'active' : ''}`}
+            >
+              <Icon className="ws-nav-icon" />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main content wrapper */}
+      <div className="worker-main">
+        {/* Mobile View Top Header */}
+        <header className="worker-top-header">
+          <div className="wth-brand">
+            <MdConstruction className="wth-logo-icon" />
+            <span>Easy<b>Booking</b></span>
+            <span className="wth-badge">Worker</span>
+          </div>
+          <div className="wth-user">
+            <div className="wth-avatar">{user.name.charAt(0)}</div>
+            <div className="wth-info">
+              <strong>{user.name.split(' ')[0]}</strong>
+              <span className={`wth-status ${user.available ? 'online' : 'offline'}`}>
+                {user.available ? '● Online' : '○ Offline'}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Dynamic content rendering */}
+        <main className="worker-content">
+          <Outlet />
+        </main>
       </div>
+
+      {/* Mobile View Bottom Navigation */}
       <nav className="worker-bottom-nav">
         {NAV.map(({ to, icon: Icon, label }) => (
           <NavLink

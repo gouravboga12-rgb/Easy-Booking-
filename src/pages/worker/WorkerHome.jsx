@@ -168,7 +168,7 @@ export default function WorkerHome() {
       </div>
 
       {/* Stats Cockpit */}
-      <div className="worker-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+      <div className="worker-stats">
         {STATS.map(({ Icon, val, label, color }) => (
           <div key={label} className="ws-card" style={{ padding: '16px', borderRadius: '12px', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="ws-icon-wrap" style={{ background: color + '12', color, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>

@@ -54,7 +54,7 @@ export default function WorkerWallet() {
       )}
 
       {/* Balance Cards */}
-      <div className="wallet-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+      <div className="wallet-cards">
         <div className="wallet-card primary" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: '#fff', padding: '16px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '12px', opacity: 0.85 }}>Available Balance</span>
           <strong style={{ fontSize: '22px', fontWeight: '800', margin: '4px 0 8px' }}>₹{available.toLocaleString()}</strong>
