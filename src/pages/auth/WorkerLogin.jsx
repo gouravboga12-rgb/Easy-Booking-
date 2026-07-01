@@ -35,7 +35,8 @@ export default function WorkerLogin() {
             <div className="input-wrap">
               <HiMail className="input-icon" />
               <input type="email" placeholder="worker@example.com" value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required
+                autoCapitalize="none" autoCorrect="off" />
             </div>
           </label>
           <label>Password

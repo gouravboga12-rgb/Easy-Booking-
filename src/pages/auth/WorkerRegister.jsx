@@ -165,7 +165,7 @@ export default function WorkerRegister() {
                 <div className="input-wrap"><HiUser className="input-icon" /><input placeholder="Ravi Kumar" value={form.name} onChange={e => handleBasicChange('name', e.target.value)} required /></div>
               </label>
               <label>Email
-                <div className="input-wrap"><HiMail className="input-icon" /><input type="email" placeholder="ravi@example.com" value={form.email} onChange={e => handleBasicChange('email', e.target.value)} required /></div>
+                <div className="input-wrap"><HiMail className="input-icon" /><input type="email" placeholder="ravi@example.com" value={form.email} onChange={e => handleBasicChange('email', e.target.value)} required autoCapitalize="none" autoCorrect="off" /></div>
               </label>
               <label>Phone / Mobile Number
                 <div className="input-wrap"><HiPhone className="input-icon" /><input type="tel" placeholder="+91 98765 43210" value={form.phone} onChange={e => handleBasicChange('phone', e.target.value)} required /></div>

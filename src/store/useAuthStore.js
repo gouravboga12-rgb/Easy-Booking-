@@ -17,7 +17,10 @@ export const useAuthStore = create(
       users: DEMO_USERS,
 
       login: (email, password, expectedRole) => {
-        const found = get().users.find(u => u.email === email && u.password === password);
+        const emailNormalized = email ? email.trim().toLowerCase() : '';
+        const found = get().users.find(
+          u => u.email.trim().toLowerCase() === emailNormalized && u.password === password
+        );
         if (!found) return { error: 'Invalid email or password' };
         if (expectedRole && found.role !== expectedRole) {
           return { error: `This page is for ${expectedRole} login only.` };
@@ -33,7 +36,8 @@ export const useAuthStore = create(
       },
 
       register: (data) => {
-        const exists = get().users.find(u => u.email === data.email);
+        const emailNormalized = data.email ? data.email.trim().toLowerCase() : '';
+        const exists = get().users.find(u => u.email.trim().toLowerCase() === emailNormalized);
         if (exists) return { error: 'Email already registered' };
         
         let newUser;
@@ -41,6 +45,7 @@ export const useAuthStore = create(
           newUser = {
             id: `w${Date.now()}`,
             ...data,
+            email: emailNormalized,
             approved: false,
             rating: 5.0,
             jobsDone: 0,
@@ -51,7 +56,11 @@ export const useAuthStore = create(
             reviews: [],
           };
         } else {
-          newUser = { id: `c${Date.now()}`, ...data };
+          newUser = { 
+            id: `c${Date.now()}`, 
+            ...data,
+            email: emailNormalized
+          };
         }
 
         set(s => ({ users: [...s.users, newUser] }));
