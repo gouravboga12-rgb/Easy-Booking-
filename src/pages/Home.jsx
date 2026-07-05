@@ -341,7 +341,7 @@ export default function Home() {
       {/* ── How it works ── */}
       <section className="section section-dark">
         <div className="section-inner">
-          <h2 className="white-h2">How EasyBooking Works</h2>
+          <h2 className="white-h2">How Parrow Skills Works</h2>
           <p className="white-sub">Book skilled services in 3 simple steps</p>
           <div className="steps-row">
             {[
@@ -366,7 +366,7 @@ export default function Home() {
       {/* ── Why HireMee ── */}
       <section className="section">
         <div className="section-inner">
-          <h2>Why Choose EasyBooking?</h2>
+          <h2>Why Choose Parrow Skills?</h2>
           <div className="why-grid">
             {WHY.map(({ Icon, t, d, color }) => (
               <div key={t} className="why-card">

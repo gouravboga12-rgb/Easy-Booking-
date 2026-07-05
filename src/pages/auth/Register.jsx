@@ -61,7 +61,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
 
         {/* Step indicator */}
         {step > 0 && (
@@ -146,7 +146,7 @@ export default function Register() {
       <div className="auth-visual">
         <div className="av-content">
           <div className="av-icon">🚜</div>
-          <h2>Join 12M+ customers on EasyBooking</h2>
+          <h2>Join 12M+ customers on Parrow Skills</h2>
           <p>Get verified operators, live tracking, and instant booking for all your construction needs.</p>
           <div className="av-features">
             <div>✅ Verified & insured operators</div>

@@ -26,7 +26,7 @@ export default function WorkerLogin() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
         <h1>Welcome back</h1>
         <p className="auth-sub">Login to your worker account</p>
 
@@ -58,8 +58,8 @@ export default function WorkerLogin() {
       <div className="auth-visual">
         <div className="av-content">
           <div className="av-icon">👷</div>
-          <h2>Earn with EasyBooking</h2>
-          <p>Join thousands of verified workers earning daily on EasyBooking.</p>
+          <h2>Earn with Parrow Skills</h2>
+          <p>Join thousands of verified workers earning daily on Parrow Skills.</p>
           <div className="av-features">
             <div>✅ Get jobs near your location</div>
             <div>✅ Instant payment on completion</div>

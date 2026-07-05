@@ -28,7 +28,7 @@ export default function AdminLogin() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
         <h1>Admin Control Panel</h1>
         <p className="auth-sub">Log in to manage operations</p>
 
@@ -36,7 +36,7 @@ export default function AdminLogin() {
           <label>Email
             <div className="input-wrap">
               <HiMail className="input-icon" />
-              <input type="email" placeholder="admin@easybooking.in" value={form.email}
+              <input type="email" placeholder="tameemansarkhan@gmail.com" value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required
                 autoCapitalize="none" autoCorrect="off" />
             </div>
@@ -65,7 +65,7 @@ export default function AdminLogin() {
             <div>
               <strong style={{ color: '#b45309' }}>Password Recovery</strong>
               <p style={{ color: '#78350f', fontSize: '13px', lineHeight: '1.4', marginTop: '4px' }}>
-                Please contact our developers or operations team at <strong>admin-support@easybooking.in</strong> to securely verify your identity and reset your administrative password.
+                Please contact our developers or operations team at <strong>admin-support@parrowskills.in</strong> to securely verify your identity and reset your administrative password.
               </p>
             </div>
           </div>

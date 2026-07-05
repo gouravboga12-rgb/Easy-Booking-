@@ -9,7 +9,7 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <MdConstruction className="footer-logo-icon" /> Easy<b>Booking</b>
+            <MdConstruction className="footer-logo-icon" /> Parrow <b>Skills</b>
           </Link>
           <p>India's #1 on-demand construction vehicle booking platform. Book JCBs, Cranes, Tippers & more — instantly.</p>
           <div className="footer-social">
@@ -34,7 +34,7 @@ export default function Footer() {
           <h4>For Customers</h4>
           <Link to="/browse">Browse Services</Link>
           <Link to="/orders">My Orders</Link>
-          <Link to="#">EasyBooking Reviews</Link>
+          <Link to="#">Parrow Skills Reviews</Link>
           <Link to="#">Categories Near You</Link>
           <Link to="#">Contact Us</Link>
         </div>
@@ -49,7 +49,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <p>* As on December 31, 2024</p>
-        <p>© Copyright 2026 EasyBooking Technologies India Limited. All rights reserved.</p>
+        <p>© Copyright 2026 Parrow Skills Technologies India Limited. All rights reserved.</p>
       </div>
     </footer>
   );

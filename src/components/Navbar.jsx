@@ -75,7 +75,7 @@ export default function Navbar() {
         <div className="nav-left">
           <Link to="/" className="brand">
             <MdConstruction className="brand-logo" />
-            <span>Easy<b>Booking</b></span>
+            <span>Parrow <b>Skills</b></span>
           </Link>
           
           {/* Location row for mobile (stacked) */}

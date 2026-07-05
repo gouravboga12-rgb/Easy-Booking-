@@ -22,7 +22,7 @@ export default function WorkerLayout() {
       <aside className="worker-sidebar">
         <div className="ws-brand">
           <MdConstruction className="ws-logo-icon" />
-          <span>Easy<b>Booking</b></span>
+          <span>Parrow <b>Skills</b></span>
           <span className="ws-badge">Worker</span>
         </div>
         <div className="ws-user-profile">
@@ -55,7 +55,7 @@ export default function WorkerLayout() {
         <header className="worker-top-header">
           <div className="wth-brand">
             <MdConstruction className="wth-logo-icon" />
-            <span>Easy<b>Booking</b></span>
+            <span>Parrow <b>Skills</b></span>
             <span className="wth-badge">Worker</span>
           </div>
           <div className="wth-user">

@@ -141,7 +141,7 @@ export default function WorkerRegister() {
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '540px', width: '100%' }}>
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Easy<b>Booking</b></Link>
+        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
 
         {/* Step indicator */}
         {step < 4 && (
@@ -374,8 +374,8 @@ export default function WorkerRegister() {
       <div className="auth-visual">
         <div className="av-content">
           <div className="av-icon">👷</div>
-          <h2>Earn with EasyBooking</h2>
-          <p>Join thousands of verified workers earning daily on EasyBooking.</p>
+          <h2>Earn with Parrow Skills</h2>
+          <p>Join thousands of verified workers earning daily on Parrow Skills.</p>
           <div className="av-features">
             <div>✅ Get jobs near your location</div>
             <div>✅ Instant payment on completion</div>

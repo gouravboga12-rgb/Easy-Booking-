@@ -1,0 +1,166 @@
+import express from 'express';
+import pool from '../config/db.js';
+import { authenticateToken } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// POST /api/orders (Place an order / create booking)
+router.post('/', authenticateToken, async (req, res) => {
+  const { customerId, workerId, location, date, duration, totalAmount, vehicleId, bookingType } = req.body;
+  
+  if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
+    return res.status(400).json({ message: 'Missing required order fields' });
+  }
+
+  try {
+    const id = `order-${Date.now()}`;
+    const status = workerId ? 'assigned' : 'pending';
+
+    await pool.query(
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, booking_date, duration, total_amount, vehicle_id, booking_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customerId, workerId || null, status, location, date, duration, totalAmount, vehicleId, bookingType || 'instant']
+    );
+
+    // Fetch the newly created order
+    const [orders] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    res.status(201).json(orders[0]);
+  } catch (err) {
+    console.error('Create order error:', err);
+    res.status(500).json({ message: 'Server error placing order' });
+  }
+});
+
+// GET /api/orders (List all orders - Admin view)
+router.get('/', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Forbidden. Admin access required' });
+  }
+
+  try {
+    const [orders] = await pool.query(`
+      SELECT b.*, 
+             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+             w.name AS worker_name, w.email AS worker_email, w.phone AS worker_phone
+      FROM bookings b
+      LEFT JOIN users c ON b.customer_id = c.id
+      LEFT JOIN users w ON b.worker_id = w.id
+      ORDER BY b.created_at DESC
+    `);
+    res.json(orders);
+  } catch (err) {
+    console.error('Fetch all orders error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/orders/customer/:id (List orders for a customer)
+router.get('/customer/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [orders] = await pool.query(`
+      SELECT b.*, 
+             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle
+      FROM bookings b
+      LEFT JOIN users w ON b.worker_id = w.id
+      WHERE b.customer_id = ?
+      ORDER BY b.created_at DESC
+    `, [id]);
+    res.json(orders);
+  } catch (err) {
+    console.error('Fetch customer orders error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/orders/worker/:id (List orders for a worker)
+router.get('/worker/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [orders] = await pool.query(`
+      SELECT b.*, 
+             c.name AS customer_name, c.phone AS customer_phone
+      FROM bookings b
+      LEFT JOIN users c ON b.customer_id = c.id
+      WHERE b.worker_id = ? OR b.status = 'pending'
+      ORDER BY b.created_at DESC
+    `, [id]);
+    res.json(orders);
+  } catch (err) {
+    console.error('Fetch worker orders error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/orders/:id/status (Accept, Complete, Cancel booking)
+router.put('/:id/status', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { status, workerId } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ message: 'Status is required' });
+  }
+
+  try {
+    const [existing] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const order = existing[0];
+
+    // Status logic updates
+    if (status === 'assigned' && workerId) {
+      // Worker accepting a pending job
+      await pool.query('UPDATE bookings SET status = ?, worker_id = ? WHERE id = ?', ['assigned', workerId, id]);
+    } else {
+      // General status transition (active, completed, cancelled)
+      await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
+    }
+
+    const [updated] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    res.json(updated[0]);
+  } catch (err) {
+    console.error('Update order status error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/orders/:id/review (Submit review for a worker)
+router.put('/:id/review', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+
+  if (!rating) {
+    return res.status(400).json({ message: 'Rating is required' });
+  }
+
+  try {
+    const [existing] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const order = existing[0];
+    if (!order.worker_id) {
+      return res.status(400).json({ message: 'Cannot review a booking without an assigned worker' });
+    }
+
+    // Record review (in an actual production app, we would have a reviews table, but for simplicity
+    // we can update the worker's average rating or insert the reviews JSON array.
+    // Let's update the worker's rating field in the users table.)
+    const [workers] = await pool.query('SELECT rating FROM users WHERE id = ?', [order.worker_id]);
+    if (workers.length > 0) {
+      const currentRating = parseFloat(workers[0].rating) || 5.0;
+      const newRating = ((currentRating * 4) + parseFloat(rating)) / 5; // simplified rolling average of last 5 reviews
+      await pool.query('UPDATE users SET rating = ? WHERE id = ?', [newRating, order.worker_id]);
+    }
+
+    res.json({ message: 'Review submitted successfully' });
+  } catch (err) {
+    console.error('Review submit error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+export default router;

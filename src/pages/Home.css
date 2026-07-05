@@ -241,7 +241,7 @@
 }
 .cta-big:hover { background: var(--primary-dark); transform: translateY(-2px); }
 
-/* ── Why EasyBooking ── */
+/* ── Why Parrow Skills ── */
 .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .why-card { background: #fff; border: 1.5px solid #eee; border-radius: 14px; padding: 24px; }
 .why-icon-wrap {

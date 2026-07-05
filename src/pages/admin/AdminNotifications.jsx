@@ -4,7 +4,7 @@ import { HiBell, HiMail, HiPhone, HiSpeakerphone, HiCheckCircle, HiUsers } from 
 import './Admin.css';
 
 const NOTIFICATION_HISTORY = [
-  { id: 'n1', title: 'Welcome to EasyBooking!', body: 'Start browsing verified professionals near you.', channel: 'push', audience: 'customers', sent: '2026-06-28 10:00', status: 'delivered' },
+  { id: 'n1', title: 'Welcome to Parrow Skills!', body: 'Start browsing verified professionals near you.', channel: 'push', audience: 'customers', sent: '2026-06-28 10:00', status: 'delivered' },
   { id: 'n2', title: 'Worker Subscription Reminder', body: 'Renew your subscription to keep receiving dispatch requests.', channel: 'sms', audience: 'workers', sent: '2026-06-27 15:30', status: 'delivered' },
   { id: 'n3', title: 'New Promo Code: SAVE100', body: 'Get ₹100 off on your next booking. Valid this week only!', channel: 'email', audience: 'all', sent: '2026-06-25 09:00', status: 'delivered' },
 ];

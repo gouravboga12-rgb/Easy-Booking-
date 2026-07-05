@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/useAuthStore';
+import { useStore } from './store/useStore';
 
 import Home from './pages/Home';
 import Browse from './pages/Browse';
@@ -64,6 +65,24 @@ function AdminRouteWrapper() {
 function Layout() {
   const { pathname } = useLocation();
   const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
+
+  const user = useAuthStore(s => s.user);
+  const fetchWorkers = useAuthStore(s => s.fetchWorkers);
+  const fetchOrdersForCustomer = useStore(s => s.fetchOrdersForCustomer);
+  const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
+  const fetchOrdersForAdmin = useStore(s => s.fetchOrdersForAdmin);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'admin') {
+      fetchWorkers();
+      fetchOrdersForAdmin();
+    } else if (user.role === 'customer') {
+      fetchOrdersForCustomer(user.id);
+    } else if (user.role === 'worker') {
+      fetchOrdersForWorker(user.id);
+    }
+  }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin]);
 
   return (
     <>
