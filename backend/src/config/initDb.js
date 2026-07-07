@@ -28,7 +28,7 @@ async function init() {
         aadhar VARCHAR(50),
         bank VARCHAR(255),
         available TINYINT(1) DEFAULT 1,
-        approved TINYINT(1) DEFAULT 0,
+        approved TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -64,7 +64,7 @@ async function init() {
       ['a1', 'tameemansarkhan@gmail.com', adminHash, 'admin', 'Admin User', '+91 98000 00001', null, 5.00, '[]', '[]', 10, 'Admin HQ, Sydney', null, null, null, 1, 1],
       ['w1', 'ravi@parrowskills.in', workerHash, 'worker', 'Ravi Kumar', '+91 98765 43210', 'Electrician • Lic. 09384', 4.80, JSON.stringify(['Wiring', 'Panel Repair', 'Short Circuit Detection']), JSON.stringify(['professionals']), 10, 'Marathahalli, Bangalore, KA', 'ABCDE1234F', '123456789012', 'Acct: 918273645, IFSC: SBIN0001234', 1, 1],
       ['w2', 'suresh@parrowskills.in', workerHash, 'worker', 'Suresh Reddy', '+91 97654 32109', 'Plumber • Lic. 48291', 4.60, JSON.stringify(['Tap repair', 'Pipe leaks', 'Water Tank cleaning']), JSON.stringify(['professionals']), 15, 'Indiranagar, Bangalore, KA', 'FGHIJ5678K', '987654321098', 'Acct: 109283746, IFSC: ICIC0000456', 1, 1],
-      ['w3', 'mohan@parrowskills.in', workerHash, 'worker', 'Mohan Das', '+91 96543 21098', 'Mason • Exp. 8 Yrs', 4.90, JSON.stringify(['Plastering', 'Cement work', 'Brick laying']), JSON.stringify(['construction-labour']), 8, 'Whitefield, Bangalore, KA', 'LMNOP9012Q', '543210987654', 'Acct: 564738291, IFSC: HDFC0000789', 0, 0],
+      ['w3', 'mohan@parrowskills.in', workerHash, 'worker', 'Mohan Das', '+91 96543 21098', 'Mason • Exp. 8 Yrs', 4.90, JSON.stringify(['Plastering', 'Cement work', 'Brick laying']), JSON.stringify(['construction-labour']), 8, 'Whitefield, Bangalore, KA', 'LMNOP9012Q', '543210987654', 'Acct: 564738291, IFSC: HDFC0000789', 0, 1],
       ['c1', 'customer@parrowskills.in', custHash, 'customer', 'Arjun Sharma', '+91 95432 10987', null, 5.00, '[]', '[]', 10, 'Sydney, AU', null, null, null, 1, 1]
     ];
 

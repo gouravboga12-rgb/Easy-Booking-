@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import {
   HiClipboardList, HiLightningBolt, HiCheckCircle,
   HiCurrencyRupee, HiUsers, HiArrowRight, HiStar,
-  HiBell, HiTag, HiX,
+  HiTag, HiX,
 } from 'react-icons/hi';
 import { MdPendingActions, MdEngineering } from 'react-icons/md';
 import './Admin.css';
@@ -25,7 +25,6 @@ export default function AdminDashboard() {
   const PLAN_PRICES = { '₹99 Monthly': 99, 'Premium Plan': 299, 'Featured Worker Plan': 499 };
   const subscriptionRevenue = workers.reduce((s, w) => s + (PLAN_PRICES[w.subscription?.plan] || 0), 0);
 
-  const pendingApprovals = workers.filter(w => !w.approved).length;
   const onlineWorkers   = workers.filter(w => w.available).length;
   const activeSubWorkers = workers.filter(w => w.subscription?.active).length;
 
@@ -39,7 +38,6 @@ export default function AdminDashboard() {
     { label: 'Total Workers',         val: `${workers.length}`,                    Icon: MdEngineering,    cls: 'orange', path: '/admin/workers' },
     { label: 'Workers Online',        val: `${onlineWorkers}/${workers.length}`,   Icon: HiUsers,          cls: 'green',  path: '/admin/workers' },
     { label: 'Active Subscriptions', val: activeSubWorkers,                        Icon: HiCheckCircle,    cls: 'blue',   path: '/admin/subscriptions' },
-    { label: 'Pending Approvals',     val: pendingApprovals,                       Icon: MdPendingActions, cls: 'yellow', path: '/admin/workers' },
     { label: 'Total Customers',       val: customers.length,                       Icon: HiUsers,          cls: 'purple', path: '/admin/customers' },
     { label: 'Cancelled Orders',      val: cancelled.length,                       Icon: HiX,              cls: 'red',    path: '/admin/orders' },
   ];
@@ -51,20 +49,6 @@ export default function AdminDashboard() {
       <div className="dash-welcome">
         <p>Here's your complete platform overview 👋</p>
       </div>
-
-      {/* Approval Alert */}
-      {pendingApprovals > 0 && (
-        <div
-          onClick={() => navigate('/admin/workers')}
-          style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
-        >
-          <HiBell style={{ color: '#d97706', width: '20px', height: '20px', flexShrink: 0 }} />
-          <span style={{ fontSize: '13px', fontWeight: '700', color: '#92400e' }}>
-            {pendingApprovals} worker{pendingApprovals > 1 ? 's' : ''} waiting for approval
-          </span>
-          <HiArrowRight style={{ marginLeft: 'auto', color: '#d97706', width: '16px', height: '16px' }} />
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -142,9 +126,6 @@ export default function AdminDashboard() {
                 <strong>{w.name}</strong>
                 <span>{w.categories?.join(', ') || w.vehicle || 'Worker'}</span>
               </div>
-              {!w.approved && (
-                <span style={{ fontSize: '10px', background: '#fef3c7', color: '#d97706', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', marginRight: 4 }}>PENDING</span>
-              )}
               {w.subscription?.active && (
                 <span style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', marginRight: 4 }}>SUB</span>
               )}

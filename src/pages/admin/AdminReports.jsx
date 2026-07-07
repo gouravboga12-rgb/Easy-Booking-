@@ -189,7 +189,6 @@ export default function AdminReports() {
             {[
               { label: 'Online & Available', count: workers.filter(w => w.available).length, color: '#10b981' },
               { label: 'Active Subscriptions', count: workers.filter(w => w.subscription?.active).length, color: '#8b5cf6' },
-              { label: 'Pending Approval', count: workers.filter(w => !w.approved).length, color: '#f59e0b' },
               { label: 'Blocked/Suspended', count: workers.filter(w => w.blocked).length, color: '#ef4444' },
             ].map(({ label, count, color }) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#fafafa', borderRadius: '8px', marginBottom: '8px', alignItems: 'center' }}>
@@ -255,7 +254,6 @@ export default function AdminReports() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {[
             { label: 'Platform Conversion Rate', val: orders.length ? `${Math.round(completed.length / orders.length * 100)}%` : '0%', desc: 'Bookings that completed successfully vs total placed', color: '#10b981' },
-            { label: 'Worker Activation Rate', val: workers.length ? `${Math.round(workers.filter(w => w.approved).length / workers.length * 100)}%` : '0%', desc: 'Workers approved and active vs total registered', color: '#8b5cf6' },
             { label: 'Worker Subscription Rate', val: workers.length ? `${Math.round(workers.filter(w => w.subscription?.active).length / workers.length * 100)}%` : '0%', desc: 'Workers with active subscriptions vs total workers', color: '#3b82f6' },
             { label: 'Avg Revenue Per Worker', val: workers.length ? `₹${Math.round(revenue / workers.length).toLocaleString()}` : '₹0', desc: 'Average booking revenue generated per active worker', color: '#f59e0b' },
             { label: 'Revenue Growth (Est.)', val: '+12.4% MoM', desc: 'Estimated month-over-month growth based on order trends', color: '#14b8a6' },
