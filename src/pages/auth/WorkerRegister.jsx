@@ -35,6 +35,10 @@ export default function WorkerRegister() {
     aadhar: '',
     pan: '',
     profilePhoto: '',
+    aadharCopy: '',
+    aadharCopyName: '',
+    panCopy: '',
+    panCopyName: '',
     bankAccount: '',
     bankIfsc: '',
     bankName: '',
@@ -56,6 +60,36 @@ export default function WorkerRegister() {
       const reader = new FileReader();
       reader.onload = () => {
         handleVerifChange('profilePhoto', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAadharCopyUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setVerificationForm(p => ({
+          ...p,
+          aadharCopy: reader.result,
+          aadharCopyName: file.name
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePanCopyUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setVerificationForm(p => ({
+          ...p,
+          panCopy: reader.result,
+          panCopyName: file.name
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -124,6 +158,8 @@ export default function WorkerRegister() {
       pan: verificationForm.pan.toUpperCase(),
       photo: verificationForm.profilePhoto || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80',
       bank: verificationForm.bankAccount ? `Acct: ${verificationForm.bankAccount}, IFSC: ${verificationForm.bankIfsc}, Name: ${verificationForm.bankName}` : 'Not provided',
+      aadharPhoto: verificationForm.aadharCopy,
+      panPhoto: verificationForm.panCopy,
     };
 
     const result = register(data);
@@ -311,15 +347,70 @@ export default function WorkerRegister() {
                 </div>
               </label>
 
-              <div className="document-uploader" style={{ background: '#fafafa', border: '1.5px dashed #ddd', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#444' }}>
-                  <HiFolderOpen style={{ color: 'var(--primary)' }} />
-                  <strong>Upload Aadhaar & PAN card copy (Simulated)</strong>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div style={{ flex: 1, padding: '8px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '11px', textAlign: 'center', color: '#888' }}>📄 aadhaar_front.jpg (Ready)</div>
-                  <div style={{ flex: 1, padding: '8px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '11px', textAlign: 'center', color: '#888' }}>📄 pan_card_copy.pdf (Ready)</div>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
+                <label>Aadhaar Card Copy (Upload Image/PDF)
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      id="aadhar-copy-upload"
+                      onChange={handleAadharCopyUpload}
+                      style={{ display: 'none' }}
+                      required={!verificationForm.aadharCopy}
+                    />
+                    <label
+                      htmlFor="aadhar-copy-upload"
+                      style={{
+                        background: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        border: '1.5px solid var(--primary)',
+                        margin: 0
+                      }}
+                    >
+                      {verificationForm.aadharCopy ? 'Change Aadhaar Copy' : 'Upload Aadhaar Copy'}
+                    </label>
+                    <span style={{ fontSize: '12px', color: '#555', wordBreak: 'break-all' }}>
+                      {verificationForm.aadharCopyName ? `📄 ${verificationForm.aadharCopyName}` : 'No file chosen'}
+                    </span>
+                  </div>
+                </label>
+
+                <label>PAN Card Copy (Upload Image/PDF)
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      id="pan-copy-upload"
+                      onChange={handlePanCopyUpload}
+                      style={{ display: 'none' }}
+                      required={!verificationForm.panCopy}
+                    />
+                    <label
+                      htmlFor="pan-copy-upload"
+                      style={{
+                        background: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        border: '1.5px solid var(--primary)',
+                        margin: 0
+                      }}
+                    >
+                      {verificationForm.panCopy ? 'Change PAN Copy' : 'Upload PAN Copy'}
+                    </label>
+                    <span style={{ fontSize: '12px', color: '#555', wordBreak: 'break-all' }}>
+                      {verificationForm.panCopyName ? `📄 ${verificationForm.panCopyName}` : 'No file chosen'}
+                    </span>
+                  </div>
+                </label>
               </div>
 
               <fieldset style={{ border: '1.5px solid #eee', borderRadius: '12px', padding: '16px', margin: '4px 0 10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>

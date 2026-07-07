@@ -50,7 +50,7 @@ router.post('/register-otp', async (req, res) => {
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { name, email, phone, password, role, categories, skills, vehicleDetails, otp } = req.body;
+  const { name, email, phone, password, role, categories, skills, vehicleDetails, otp, aadhar, pan, bank, photo, aadharPhoto, panPhoto } = req.body;
   if (!name || !email || !phone || !password || !role) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
@@ -83,9 +83,12 @@ router.post('/register', async (req, res) => {
     const skillsJson = skills ? JSON.stringify(skills) : '[]';
 
     await pool.query(
-      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00)`,
-      [id, email, passwordHash, role, name, phone, catJson, skillsJson, vehicleDetails || null]
+      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, email, passwordHash, role, name, phone, catJson, skillsJson, vehicleDetails || null,
+        aadhar || null, pan || null, bank || null, photo || null, aadharPhoto || null, panPhoto || null
+      ]
     );
 
     const [created] = await pool.query('SELECT id, email, role, name, phone FROM users WHERE id = ?', [id]);
