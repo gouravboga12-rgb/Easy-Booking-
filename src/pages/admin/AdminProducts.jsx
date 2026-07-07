@@ -68,7 +68,7 @@ export default function AdminProducts() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const catObj = categories.find(c => c.id === form.category);
     const categoryLabel = catObj ? catObj.label : 'Other';
@@ -84,19 +84,19 @@ export default function AdminProducts() {
     };
 
     if (editingId) {
-      updateService(editingId, serviceData);
+      await updateService(editingId, serviceData);
       showSuccess('Service updated successfully!');
     } else {
       const newId = `service-${Date.now()}`;
-      addService({ id: newId, ...serviceData });
+      await addService({ id: newId, ...serviceData });
       showSuccess('New service added successfully!');
     }
     setShowModal(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this service? This cannot be undone.')) {
-      deleteService(editingId);
+      await deleteService(editingId);
       setShowModal(false);
       showSuccess('Service deleted successfully!');
     }

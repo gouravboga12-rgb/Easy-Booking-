@@ -72,6 +72,12 @@ function Layout() {
   const fetchOrdersForCustomer = useStore(s => s.fetchOrdersForCustomer);
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
   const fetchOrdersForAdmin = useStore(s => s.fetchOrdersForAdmin);
+  const fetchServices = useStore(s => s.fetchServices);
+
+  useEffect(() => {
+    // Always fetch services from DB on app load (for all users, public too)
+    fetchServices();
+  }, [fetchServices]);
 
   useEffect(() => {
     if (!user) return;

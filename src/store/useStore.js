@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { allVehicles } from '../data/vehicles';
 import { API_BASE_URL } from '../config';
 
 const ORDER_STAGES = ['Confirmed', 'Operator Assigned', 'En Route', 'On Site', 'Completed'];
@@ -44,22 +43,80 @@ export const useStore = create((set, get) => ({
   orders: [],
   activeOrder: null,
   cart: [],
-  services: allVehicles,
+  services: [],
 
-  addService: (newService) => {
-    set(s => ({ services: [...s.services, newService] }));
+  fetchServices: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/services`);
+      const data = await response.json();
+      if (response.ok) {
+        // Normalize DB column names to frontend format
+        const normalized = data.map(s => ({
+          id: s.id,
+          name: s.name,
+          desc: s.desc,
+          category: s.category,
+          categoryLabel: s.category_label,
+          rate: parseFloat(s.rate),
+          unit: s.unit,
+          image: s.image,
+        }));
+        set({ services: normalized });
+      }
+    } catch (err) {
+      console.error('Fetch services error:', err);
+    }
   },
 
-  updateService: (id, updatedData) => {
-    set(s => ({
-      services: s.services.map(v => v.id === id ? { ...v, ...updatedData } : v)
-    }));
+  addService: async (newService) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newService)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const normalized = { id: data.id, name: data.name, desc: data.desc, category: data.category, categoryLabel: data.category_label, rate: parseFloat(data.rate), unit: data.unit, image: data.image };
+        set(s => ({ services: [...s.services, normalized] }));
+      }
+    } catch (err) {
+      console.error('Add service error:', err);
+    }
   },
 
-  deleteService: (id) => {
-    set(s => ({
-      services: s.services.filter(v => v.id !== id)
-    }));
+  updateService: async (id, updatedData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const normalized = { id: data.id, name: data.name, desc: data.desc, category: data.category, categoryLabel: data.category_label, rate: parseFloat(data.rate), unit: data.unit, image: data.image };
+        set(s => ({ services: s.services.map(v => v.id === id ? normalized : v) }));
+      }
+    } catch (err) {
+      console.error('Update service error:', err);
+    }
+  },
+
+  deleteService: async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        set(s => ({ services: s.services.filter(v => v.id !== id) }));
+      }
+    } catch (err) {
+      console.error('Delete service error:', err);
+    }
   },
 
   addToCart: (vehicle, booking) => {
