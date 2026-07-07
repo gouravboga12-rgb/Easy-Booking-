@@ -19,10 +19,18 @@ import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendR
         INDEX idx_email_type (email, type)
       )
     `);
-    // Ensure photo columns exist in users table (safe to run multiple times)
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS photo TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aadhar_photo TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pan_photo TEXT`).catch(() => {});
+    // Ensure photo columns exist in users table (safe to run multiple times, compatible with all MySQL versions)
+    const [columns] = await pool.query('SHOW COLUMNS FROM users');
+    const columnNames = columns.map(c => c.Field);
+    if (!columnNames.includes('photo')) {
+      await pool.query('ALTER TABLE users ADD COLUMN photo TEXT');
+    }
+    if (!columnNames.includes('aadhar_photo')) {
+      await pool.query('ALTER TABLE users ADD COLUMN aadhar_photo TEXT');
+    }
+    if (!columnNames.includes('pan_photo')) {
+      await pool.query('ALTER TABLE users ADD COLUMN pan_photo TEXT');
+    }
   } catch (e) {
     console.error('DB init error:', e.message);
   }
