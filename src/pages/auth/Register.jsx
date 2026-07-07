@@ -129,13 +129,13 @@ export default function Register() {
         {/* Step 3: OTP */}
         {step === 3 && (
           <>
-            <h1>Verify Mobile</h1>
-            <p className="auth-sub">OTP sent to {form.phone}</p>
+            <h1>Verify Email</h1>
+            <p className="auth-sub">OTP sent to {form.email}</p>
             <form onSubmit={handleVerifyOtp}>
               <div className="otp-info">
-                <HiPhone className="otp-info-icon" />
+                <HiMail className="otp-info-icon" />
                 <div>
-                  <strong>OTP sent to {form.phone}</strong>
+                  <strong>OTP sent to {form.email}</strong>
                   <p>Enter the 6-digit code to verify</p>
                 </div>
               </div>
