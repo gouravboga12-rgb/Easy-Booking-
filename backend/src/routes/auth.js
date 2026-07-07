@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail } from '../utils/mailer.js';
+import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
 
 // Cache to store temporary OTPs
 const otpCache = new Map(); // key: email, value: { otp, expiresAt }
@@ -19,9 +19,38 @@ const generateToken = (user) => {
   );
 };
 
+// POST /api/auth/register-otp
+router.post('/register-otp', async (req, res) => {
+  const { email, name } = req.body;
+  if (!email || !name) {
+    return res.status(400).json({ message: 'Email and name are required' });
+  }
+
+  try {
+    // Check if user already exists
+    const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Email already registered. Please login instead.' });
+    }
+
+    // Generate random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Cache the OTP (expires in 15 mins)
+    otpCache.set(email, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
+
+    await sendRegisterOtpEmail(email, name, otp);
+
+    res.json({ message: 'Verification OTP code has been sent to your email.' });
+  } catch (err) {
+    console.error('Send register OTP error:', err);
+    res.status(500).json({ message: 'Server error sending verification code' });
+  }
+});
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { name, email, phone, password, role, categories, skills, vehicleDetails } = req.body;
+  const { name, email, phone, password, role, categories, skills, vehicleDetails, otp } = req.body;
   if (!name || !email || !phone || !password || !role) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
@@ -31,6 +60,21 @@ router.post('/register', async (req, res) => {
     const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Verify OTP for customer registrations
+    if (role === 'customer') {
+      if (!otp) {
+        return res.status(400).json({ message: 'Verification OTP code is required' });
+      }
+      const record = otpCache.get(email);
+      if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
+        if (record && Date.now() > record.expiresAt) {
+          otpCache.delete(email);
+        }
+        return res.status(400).json({ message: 'Invalid or expired verification OTP code' });
+      }
+      otpCache.delete(email);
     }
 
     const id = `u-${Date.now()}`;

@@ -97,3 +97,27 @@ export const sendPasswordResetOtpEmail = async (to, name, otp) => {
     html,
   });
 };
+
+/**
+ * Send Email Verification OTP Email for Registration
+ */
+export const sendRegisterOtpEmail = async (to, name, otp) => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+      <h2 style="color: #ff8c00; text-align: center;">Welcome to Parrow Skills</h2>
+      <p>Hello <strong>${name}</strong>,</p>
+      <p>Thank you for choosing Parrow Skills. To complete your registration and verify your email address, please use the following 6-digit verification code:</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <span style="font-size: 32px; font-weight: bold; color: #ff8c00; letter-spacing: 5px; padding: 10px 20px; background-color: #fff8f0; border: 1px dashed #ff8c00; border-radius: 5px; display: inline-block;">${otp}</span>
+      </div>
+      <p>This code is valid for 15 minutes. If you did not request this code, you can safely ignore this email.</p>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+      <p style="font-size: 12px; color: #888; text-align: center;">This is an automated security email, please do not reply directly.</p>
+    </div>
+  `;
+  return sendMail({
+    to,
+    subject: `Parrow Skills - Email Verification Code: ${otp}`,
+    html,
+  });
+};

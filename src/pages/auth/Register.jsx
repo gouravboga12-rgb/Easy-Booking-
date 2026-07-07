@@ -21,7 +21,7 @@ export default function Register() {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuthStore();
+  const { register, sendRegisterOtp } = useAuthStore();
   const navigate = useNavigate();
 
   const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({ ...p, [key]: e.target.value })) });
@@ -32,25 +32,42 @@ export default function Register() {
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
+
+    const result = await sendRegisterOtp(form.email, form.name);
     setLoading(false);
-    setStep(3);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setStep(3);
+    }
   };
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError('');
-    if (otp !== '123456') { setError('Invalid OTP. Use 123456 for demo'); return; }
+
+    if (otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
     const data = {
-      name: form.name, email: form.email,
-      phone: form.phone, password: form.password,
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      password: form.password,
       role: 'customer',
+      otp: otp
     };
-    const result = register(data);
+    const result = await register(data);
     setLoading(false);
-    if (result.error) { setError(result.error); setStep(1); return; }
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
     navigate('/login');
   };
 
@@ -132,7 +149,7 @@ export default function Register() {
                   />
                 </div>
               </label>
-              <div className="otp-hint">💡 Demo OTP: <strong>123456</strong></div>
+
               {error && <div className="auth-error">⚠️ {error}</div>}
               <button type="submit" className="auth-submit" disabled={loading || otp.length !== 6}>
                 {loading ? 'Creating account...' : <><span>Verify & Create Account</span> <HiArrowRight style={{ width: 16, height: 16 }} /></>}
