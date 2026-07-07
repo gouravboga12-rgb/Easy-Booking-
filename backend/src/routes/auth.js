@@ -83,8 +83,8 @@ router.post('/register', async (req, res) => {
     const skillsJson = skills ? JSON.stringify(skills) : '[]';
 
     await pool.query(
-      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo, approved)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?, 1)`,
       [
         id, email, passwordHash, role, name, phone, catJson, skillsJson, vehicleDetails || null,
         aadhar || null, pan || null, bank || null, photo || null, aadharPhoto || null, panPhoto || null

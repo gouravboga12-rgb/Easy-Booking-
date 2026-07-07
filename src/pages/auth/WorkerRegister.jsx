@@ -437,24 +437,14 @@ export default function WorkerRegister() {
           </>
         )}
 
-        {/* Step 4: Success Message (Pending Approval status) */}
+        {/* Step 4: Success Message (Automatic Approval status) */}
         {step === 4 && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>🕒</div>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>Registration Submitted!</h1>
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
+            <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>Registration Complete!</h1>
             <p className="auth-sub" style={{ fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
-              Your worker registration has been successfully uploaded. To ensure service quality and customer safety, all operator accounts require <strong>manual review and activation</strong> by our administrator team.
+              Your worker account has been successfully created and <strong>automatically activated</strong>! You can now log into the worker portal immediately using your email address and password.
             </p>
-            <div className="otp-info" style={{ background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: '24px' }}>
-              <div style={{ textAlign: 'left' }}>
-                <strong style={{ color: '#1d4ed8' }}>Next Steps:</strong>
-                <ul style={{ paddingLeft: '16px', margin: '4px 0 0', fontSize: '12px', color: '#4b5563', lineHeight: '1.6' }}>
-                  <li>Admin will verify Aadhaar ({verificationForm.aadhar}) & PAN ({verificationForm.pan.toUpperCase()}) copy.</li>
-                  <li>Account activation notification will be sent via mobile.</li>
-                  <li>Once approved, log in via worker portal using your email.</li>
-                </ul>
-              </div>
-            </div>
             <button className="auth-submit" onClick={() => navigate('/login-worker')}>
               Go to Worker Login Portal
             </button>
