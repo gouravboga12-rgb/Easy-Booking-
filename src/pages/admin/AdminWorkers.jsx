@@ -210,6 +210,38 @@ export default function AdminWorkers() {
               {/* Work history & Reviews list drawer */}
               {isSelected && (
                 <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #eee', fontSize: '12px' }}>
+                  <h4 style={{ margin: '0 0 6px', fontSize: '12px', color: '#333', fontWeight: '700' }}>Verification Documents & Bank Payout Details</h4>
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                    <div><strong>Aadhaar Number:</strong> {w.aadhar || 'N/A'}</div>
+                    <div><strong>PAN Number:</strong> {w.pan || 'N/A'}</div>
+                    <div><strong>Bank Details:</strong> {w.bank || 'Not provided'}</div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      {w.aadhar_photo ? (
+                        <a 
+                          href={w.aadhar_photo} 
+                          download={`aadhar_${w.name.replace(/\s+/g, '_')}.png`}
+                          style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: '#3b82f6', color: '#fff', textDecoration: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '11px', textAlign: 'center' }}
+                        >
+                          <HiFolderOpen /> Download Aadhaar Copy
+                        </a>
+                      ) : (
+                        <span style={{ flex: 1, padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No Aadhaar Copy Uploaded</span>
+                      )}
+
+                      {w.pan_photo ? (
+                        <a 
+                          href={w.pan_photo} 
+                          download={`pan_${w.name.replace(/\s+/g, '_')}.png`}
+                          style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: '#3b82f6', color: '#fff', textDecoration: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '11px', textAlign: 'center' }}
+                        >
+                          <HiFolderOpen /> Download PAN Copy
+                        </a>
+                      ) : (
+                        <span style={{ flex: 1, padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No PAN Copy Uploaded</span>
+                      )}
+                    </div>
+                  </div>
+
                   <h4 style={{ margin: '0 0 6px', fontSize: '12px', color: '#333', fontWeight: '700' }}>Work History ({completedOrders.length})</h4>
                   {completedOrders.length === 0 ? (
                     <p style={{ color: '#aaa', fontStyle: 'italic', margin: '0 0 10px' }}>No completed bookings on this platform yet.</p>
