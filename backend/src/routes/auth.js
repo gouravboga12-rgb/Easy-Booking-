@@ -5,7 +5,7 @@ import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
 
-// Ensure otp_tokens table exists (runs once on server start)
+// Ensure otp_tokens table exists and photo columns exist (runs once on server start)
 (async () => {
   try {
     await pool.query(`
@@ -19,8 +19,12 @@ import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendR
         INDEX idx_email_type (email, type)
       )
     `);
+    // Ensure photo columns exist in users table (safe to run multiple times)
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS photo TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aadhar_photo TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pan_photo TEXT`).catch(() => {});
   } catch (e) {
-    console.error('otp_tokens table init error:', e.message);
+    console.error('DB init error:', e.message);
   }
 })();
 
