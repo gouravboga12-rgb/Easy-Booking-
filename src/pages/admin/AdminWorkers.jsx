@@ -25,8 +25,7 @@ export default function AdminWorkers() {
   const orders = useStore(s => s.orders);
   
   const workers = users.filter(u => u.role === 'worker');
-  const pendingWorkers = workers.filter(w => !w.approved);
-  const activeWorkers = workers.filter(w => w.approved);
+  const activeWorkers = workers;
 
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
   const [editingWorker, setEditingWorker] = useState(null);
@@ -66,54 +65,7 @@ export default function AdminWorkers() {
         </div>
       </div>
 
-      {/* ── PENDING VERIFICATIONS SECTION ── */}
-      <div className="admin-section" style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '800', borderBottom: '1.5px solid #f9f9f9', paddingBottom: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>📋 Pending Approval Requests</span>
-          <span style={{ fontSize: '12px', background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
-            {pendingWorkers.length} Action Required
-          </span>
-        </h2>
 
-        {pendingWorkers.length === 0 ? (
-          <p style={{ color: '#888', fontStyle: 'italic', margin: 0, padding: '10px 0' }}>No pending worker registrations to review.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {pendingWorkers.map(w => (
-              <div key={w.id} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', padding: '20px', background: '#fafafa', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ flex: 1, minWidth: '280px' }}>
-                  <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: '700', color: '#1a1a1a' }}>{w.name}</h3>
-                  <div style={{ fontSize: '13px', color: '#666', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div><strong>📧 Email:</strong> {w.email} | <strong>📞 Phone:</strong> {w.phone}</div>
-                    <div><strong>📍 Address:</strong> {w.address}</div>
-                    <div><strong>🛠️ Skills:</strong> {w.skills?.join(', ') || 'General'}</div>
-                    <div style={{ marginTop: '6px', background: '#fff', border: '1px solid #eee', padding: '10px', borderRadius: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#444' }}><HiIdentification style={{ color: 'var(--primary)' }} /> Aadhaar: {w.aadhar} (Verified)</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#444' }}><HiIdentification style={{ color: 'var(--primary)' }} /> PAN: {w.pan} (Verified)</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#444' }}><HiCreditCard style={{ color: 'var(--primary)' }} /> Bank Details: Submitted</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignSelf: 'center' }}>
-                  <button
-                    onClick={() => approveWorker(w.id, true)}
-                    style={{ background: '#10b981', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <HiCheck /> Approve & Activate
-                  </button>
-                  <button
-                    onClick={() => { if (window.confirm('Reject this worker registration application?')) approveWorker(w.id, false); }}
-                    style={{ background: 'none', border: '1.5px solid #fca5a5', color: '#dc2626', padding: '8px 20px', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <HiX /> Reject Registration
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* ── ACTIVE WORKERS LIST ── */}
       <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>Active Service Operators ({activeWorkers.length})</h2>
