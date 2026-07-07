@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
@@ -44,6 +45,13 @@ router.post('/register', async (req, res) => {
     const user = created[0];
     const token = generateToken(user);
 
+    // Send Welcome Email (non-blocking)
+    if (user.email) {
+      sendWelcomeEmail(user.email, user.name, user.role).catch(err => {
+        console.error('Welcome email error:', err);
+      });
+    }
+
     res.status(201).json({ user, token });
   } catch (err) {
     console.error('Registration error:', err);
@@ -53,21 +61,23 @@ router.post('/register', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const { email, password, expectedRole } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password required' });
+  const { email, identifier, password, expectedRole } = req.body;
+  const loginId = identifier || email;
+  if (!loginId || !password) {
+    return res.status(400).json({ message: 'Email/Phone and password required' });
   }
 
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    // Look up by email OR phone
+    const [users] = await pool.query('SELECT * FROM users WHERE email = ? OR phone = ?', [loginId, loginId]);
     if (users.length === 0) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const user = users[0];
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     if (expectedRole && user.role !== expectedRole) {
@@ -82,6 +92,13 @@ router.post('/login', async (req, res) => {
     // Parse JSON columns
     user.skills = user.skills || [];
     user.categories = user.categories || [];
+
+    // Send Login Alert (non-blocking)
+    if (user.email) {
+      sendLoginAlertEmail(user.email, user.name, user.role).catch(err => {
+        console.error('Login alert email error:', err);
+      });
+    }
 
     res.json({ user, token });
   } catch (err) {
@@ -225,6 +242,65 @@ router.put('/workers/:id/password', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Password reset error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (users.length === 0) {
+      // Return 200 for security reasons (avoid enumerating emails)
+      return res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+    }
+
+    const user = users[0];
+    const token = jwt.sign(
+      { email: user.email, purpose: 'reset-password' },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    const origin = req.headers.origin || 'http://localhost:5173';
+    const resetLink = `${origin}/reset-password?token=${token}`;
+
+    await sendPasswordResetEmail(user.email, user.name, resetLink);
+
+    res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Server error requesting password reset' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res.status(400).json({ message: 'Token and new password are required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.purpose !== 'reset-password') {
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = ? WHERE email = ?', [passwordHash, decoded.email]);
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    if (err.name === 'TokenExpiredError') {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+    res.status(400).json({ message: 'Invalid reset token' });
   }
 });
 

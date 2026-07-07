@@ -12,7 +12,7 @@ export const useAuthStore = create((set, get) => ({
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, expectedRole })
+        body: JSON.stringify({ identifier: email, password, expectedRole })
       });
       const data = await response.json();
       set({ loading: false });
@@ -186,5 +186,45 @@ export const useAuthStore = create((set, get) => ({
   getCustomers: () => {
     const users = get().users;
     return users.filter(u => u.role === 'customer');
+  },
+
+  forgotPassword: async (email) => {
+    set({ loading: true });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      set({ loading: false });
+      if (!response.ok) {
+        return { error: data.message || 'Request failed' };
+      }
+      return { success: true, message: data.message };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  },
+
+  resetPassword: async (token, newPassword) => {
+    set({ loading: true });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword })
+      });
+      const data = await response.json();
+      set({ loading: false });
+      if (!response.ok) {
+        return { error: data.message || 'Reset failed' };
+      }
+      return { success: true };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
   }
 }));

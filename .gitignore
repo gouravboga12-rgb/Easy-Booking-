@@ -29,4 +29,6 @@ image copy 2.png
 # Environment and backend dependencies
 .env
 backend/node_modules
+*.pem
+
 

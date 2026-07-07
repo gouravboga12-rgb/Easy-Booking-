@@ -31,10 +31,10 @@ export default function Login() {
         <p className="auth-sub">Login to your account</p>
 
         <form onSubmit={handleSubmit}>
-          <label>Email
+          <label>Email or Phone Number
             <div className="input-wrap">
               <HiMail className="input-icon" />
-              <input type="email" placeholder="you@example.com" value={form.email}
+              <input type="text" placeholder="Enter email or phone number" value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required
                 autoCapitalize="none" autoCorrect="off" />
             </div>
@@ -44,6 +44,11 @@ export default function Login() {
               <HiLockClosed className="input-icon" />
               <input type="password" placeholder="••••••••" value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <Link to="/forgot-password" style={{ color: '#ff8c00', fontSize: '13px', textDecoration: 'none', fontWeight: 500 }}>
+                Forgot Password?
+              </Link>
             </div>
           </label>
           {error && <div className="auth-error">⚠️ {error}</div>}
