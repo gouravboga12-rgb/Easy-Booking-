@@ -162,7 +162,7 @@ export default function WorkerRegister() {
       panPhoto: verificationForm.panCopy,
     };
 
-    const result = register(data);
+    const result = await register(data);
     setLoading(false);
     if (result.error) {
       setError(result.error);
