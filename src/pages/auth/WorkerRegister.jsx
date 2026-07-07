@@ -57,6 +57,11 @@ export default function WorkerRegister() {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setError('');
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Profile photograph must be under 2MB');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         handleVerifChange('profilePhoto', reader.result);
@@ -68,6 +73,11 @@ export default function WorkerRegister() {
   const handleAadharCopyUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setError('');
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Aadhaar copy file must be under 2MB');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         setVerificationForm(p => ({
@@ -83,6 +93,11 @@ export default function WorkerRegister() {
   const handlePanCopyUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setError('');
+      if (file.size > 2 * 1024 * 1024) {
+        setError('PAN copy file must be under 2MB');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         setVerificationForm(p => ({
