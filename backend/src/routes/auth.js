@@ -49,16 +49,6 @@ router.post('/register-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered. Please login instead.' });
     }
 
-    // Rate limit: check if OTP was sent in last 60 seconds
-    const [recent] = await pool.query(
-      `SELECT * FROM otp_tokens WHERE email = ? AND type = 'register' AND expires_at > ? ORDER BY created_at DESC LIMIT 1`,
-      [email, Date.now() - 60 * 1000]
-    );
-    if (recent.length > 0) {
-      const waitSecs = Math.ceil((recent[0].expires_at - (Date.now() + 14 * 60 * 1000)) / -1000);
-      return res.status(429).json({ message: `Please wait before requesting another OTP` });
-    }
-
     // Generate random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 15 * 60 * 1000;
