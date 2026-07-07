@@ -17,7 +17,7 @@ export default function WorkerLogin() {
     setError('');
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
-    const result = login(form.email, form.password, 'worker');
+    const result = await login(form.email, form.password, 'worker');
     setLoading(false);
     if (result.error) { setError(result.error); return; }
     navigate('/worker');

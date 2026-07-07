@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
     // Look up by email OR phone
     const [users] = await pool.query('SELECT * FROM users WHERE email = ? OR phone = ?', [loginId, loginId]);
     if (users.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(404).json({ message: 'Account not found. Please sign up first.' });
     }
 
     const user = users[0];

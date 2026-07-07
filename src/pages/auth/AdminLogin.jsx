@@ -19,7 +19,7 @@ export default function AdminLogin() {
     setShowForgotMsg(false);
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
-    const result = login(form.email, form.password, 'admin');
+    const result = await login(form.email, form.password, 'admin');
     setLoading(false);
     if (result.error) { setError(result.error); return; }
     navigate('/admin');
