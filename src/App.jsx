@@ -19,7 +19,6 @@ import WorkerLogin from './pages/auth/WorkerLogin';
 import WorkerRegister from './pages/auth/WorkerRegister';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
-import ResetPassword from './pages/auth/ResetPassword';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -98,7 +97,6 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Worker Login/Signup */}
           <Route path="/login-worker" element={<WorkerLogin />} />

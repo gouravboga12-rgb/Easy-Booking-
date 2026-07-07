@@ -3,7 +3,10 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetEmail } from '../utils/mailer.js';
+import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail } from '../utils/mailer.js';
+
+// Cache to store temporary OTPs
+const otpCache = new Map(); // key: email, value: { otp, expiresAt }
 
 const router = express.Router();
 
@@ -256,22 +259,19 @@ router.post('/forgot-password', async (req, res) => {
     const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
       // Return 200 for security reasons (avoid enumerating emails)
-      return res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+      return res.status(200).json({ message: 'If the email exists, a reset code has been sent' });
     }
 
     const user = users[0];
-    const token = jwt.sign(
-      { email: user.email, purpose: 'reset-password' },
-      process.env.JWT_SECRET,
-      { expiresIn: '15m' }
-    );
+    // Generate a random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const origin = req.headers.origin || 'http://localhost:5173';
-    const resetLink = `${origin}/reset-password?token=${token}`;
+    // Cache the OTP (expires in 15 mins)
+    otpCache.set(user.email, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
 
-    await sendPasswordResetEmail(user.email, user.name, resetLink);
+    await sendPasswordResetOtpEmail(user.email, user.name, otp);
 
-    res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+    res.status(200).json({ message: 'If the email exists, a reset code has been sent' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: 'Server error requesting password reset' });
@@ -280,27 +280,37 @@ router.post('/forgot-password', async (req, res) => {
 
 // POST /api/auth/reset-password
 router.post('/reset-password', async (req, res) => {
-  const { token, newPassword } = req.body;
-  if (!token || !newPassword) {
-    return res.status(400).json({ message: 'Token and new password are required' });
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Email, OTP, and new password are required' });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.purpose !== 'reset-password') {
-      return res.status(400).json({ message: 'Invalid reset token' });
+    const record = otpCache.get(email);
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
     }
 
+    if (record.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      otpCache.delete(email);
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
+    }
+
+    // Success! Update password
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password_hash = ? WHERE email = ?', [passwordHash, decoded.email]);
+    await pool.query('UPDATE users SET password_hash = ? WHERE email = ?', [passwordHash, email]);
+
+    // Clear OTP from cache
+    otpCache.delete(email);
 
     res.status(200).json({ message: 'Password reset successful' });
   } catch (err) {
     console.error('Reset password error:', err);
-    if (err.name === 'TokenExpiredError') {
-      return res.status(400).json({ message: 'Reset token has expired' });
-    }
-    res.status(400).json({ message: 'Invalid reset token' });
+    res.status(500).json({ message: 'Server error resetting password' });
   }
 });
 

@@ -208,13 +208,13 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  resetPassword: async (token, newPassword) => {
+  resetPassword: async (email, otp, newPassword) => {
     set({ loading: true });
     try {
       const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword })
+        body: JSON.stringify({ email, otp, newPassword })
       });
       const data = await response.json();
       set({ loading: false });

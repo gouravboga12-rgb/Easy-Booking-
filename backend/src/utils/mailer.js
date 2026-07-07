@@ -74,28 +74,26 @@ export const sendLoginAlertEmail = async (to, name, role) => {
 };
 
 /**
- * Send Password Reset Link Email
+ * Send Password Reset OTP Email
  */
-export const sendPasswordResetEmail = async (to, name, resetLink) => {
+export const sendPasswordResetOtpEmail = async (to, name, otp) => {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-      <h2 style="color: #ff8c00; text-align: center;">Password Reset Request</h2>
+      <h2 style="color: #ff8c00; text-align: center;">Parrow Skills - Verification Code</h2>
       <p>Hello <strong>${name}</strong>,</p>
       <p>We received a request to reset the password for your Parrow Skills account.</p>
-      <p>Please click the button below to choose a new password. This link is valid for 15 minutes.</p>
+      <p>Please use the following 6-digit One-Time Password (OTP) to complete your password reset. This code is valid for 15 minutes.</p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetLink}" style="background-color: #ff8c00; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+        <span style="font-size: 32px; font-weight: bold; color: #ff8c00; letter-spacing: 5px; padding: 10px 20px; background-color: #fff8f0; border: 1px dashed #ff8c00; border-radius: 5px; display: inline-block;">${otp}</span>
       </div>
-      <p>If the button doesn't work, you can copy and paste this link directly into your browser:</p>
-      <p style="word-break: break-all; color: #ff8c00;">${resetLink}</p>
       <p>If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
       <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="font-size: 12px; color: #888; text-align: center;">This is an automated email, please do not reply directly.</p>
+      <p style="font-size: 12px; color: #888; text-align: center;">This is an automated security email, please do not reply directly.</p>
     </div>
   `;
   return sendMail({
     to,
-    subject: 'Parrow Skills - Password Reset Request',
+    subject: `Parrow Skills - Password Reset Code: ${otp}`,
     html,
   });
 };
