@@ -71,6 +71,23 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  resendRegisterOtp: async (email, name) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.message || 'Failed to resend OTP' };
+      }
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { error: 'Connection error' };
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

@@ -5,8 +5,24 @@ import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
 
-// Cache to store temporary OTPs
-const otpCache = new Map(); // key: email, value: { otp, expiresAt }
+// Ensure otp_tokens table exists (runs once on server start)
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS otp_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        otp VARCHAR(10) NOT NULL,
+        type VARCHAR(50) NOT NULL DEFAULT 'register',
+        expires_at BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email_type (email, type)
+      )
+    `);
+  } catch (e) {
+    console.error('otp_tokens table init error:', e.message);
+  }
+})();
 
 const router = express.Router();
 
@@ -33,11 +49,26 @@ router.post('/register-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered. Please login instead.' });
     }
 
+    // Rate limit: check if OTP was sent in last 60 seconds
+    const [recent] = await pool.query(
+      `SELECT * FROM otp_tokens WHERE email = ? AND type = 'register' AND expires_at > ? ORDER BY created_at DESC LIMIT 1`,
+      [email, Date.now() - 60 * 1000]
+    );
+    if (recent.length > 0) {
+      const waitSecs = Math.ceil((recent[0].expires_at - (Date.now() + 14 * 60 * 1000)) / -1000);
+      return res.status(429).json({ message: `Please wait before requesting another OTP` });
+    }
+
     // Generate random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000;
 
-    // Cache the OTP (expires in 15 mins)
-    otpCache.set(email, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
+    // Delete old OTPs for this email and store new one in DB
+    await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'register'`, [email]);
+    await pool.query(
+      `INSERT INTO otp_tokens (email, otp, type, expires_at) VALUES (?, ?, 'register', ?)`,
+      [email, otp, expiresAt]
+    );
 
     await sendRegisterOtpEmail(email, name, otp);
 
@@ -45,6 +76,40 @@ router.post('/register-otp', async (req, res) => {
   } catch (err) {
     console.error('Send register OTP error:', err);
     res.status(500).json({ message: 'Server error sending verification code' });
+  }
+});
+
+// POST /api/auth/resend-otp
+router.post('/resend-otp', async (req, res) => {
+  const { email, name } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    // Check if user already exists (already registered)
+    const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Email already registered. Please login instead.' });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+
+    // Replace old OTP
+    await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'register'`, [email]);
+    await pool.query(
+      `INSERT INTO otp_tokens (email, otp, type, expires_at) VALUES (?, ?, 'register', ?)`,
+      [email, otp, expiresAt]
+    );
+
+    await sendRegisterOtpEmail(email, name || 'User', otp);
+
+    res.json({ message: 'A new OTP has been sent to your email.' });
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ message: 'Server error resending OTP' });
   }
 });
 
@@ -67,14 +132,20 @@ router.post('/register', async (req, res) => {
       if (!otp) {
         return res.status(400).json({ message: 'Verification OTP code is required' });
       }
-      const record = otpCache.get(email);
-      if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
-        if (record && Date.now() > record.expiresAt) {
-          otpCache.delete(email);
-        }
-        return res.status(400).json({ message: 'Invalid or expired verification OTP code' });
+      const [records] = await pool.query(
+        `SELECT * FROM otp_tokens WHERE email = ? AND type = 'register' ORDER BY created_at DESC LIMIT 1`,
+        [email]
+      );
+      const record = records[0];
+      if (!record || record.otp !== otp) {
+        return res.status(400).json({ message: 'Invalid OTP code. Please check your email or resend.' });
       }
-      otpCache.delete(email);
+      if (Date.now() > Number(record.expires_at)) {
+        await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'register'`, [email]);
+        return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+      }
+      // OTP valid — delete it
+      await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'register'`, [email]);
     }
 
     const id = `u-${Date.now()}`;
@@ -305,16 +376,19 @@ router.post('/forgot-password', async (req, res) => {
   try {
     const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
-      // Return 200 for security reasons (avoid enumerating emails)
       return res.status(200).json({ message: 'If the email exists, a reset code has been sent' });
     }
 
     const user = users[0];
-    // Generate a random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000;
 
-    // Cache the OTP (expires in 15 mins)
-    otpCache.set(user.email, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
+    // Store OTP in DB
+    await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'reset'`, [email]);
+    await pool.query(
+      `INSERT INTO otp_tokens (email, otp, type, expires_at) VALUES (?, ?, 'reset', ?)`,
+      [email, otp, expiresAt]
+    );
 
     await sendPasswordResetOtpEmail(user.email, user.name, otp);
 
@@ -333,26 +407,23 @@ router.post('/reset-password', async (req, res) => {
   }
 
   try {
-    const record = otpCache.get(email);
-    if (!record) {
+    const [records] = await pool.query(
+      `SELECT * FROM otp_tokens WHERE email = ? AND type = 'reset' ORDER BY created_at DESC LIMIT 1`,
+      [email]
+    );
+    const record = records[0];
+    if (!record || record.otp !== otp) {
       return res.status(400).json({ message: 'Invalid or expired OTP code' });
     }
-
-    if (record.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid or expired OTP code' });
-    }
-
-    if (Date.now() > record.expiresAt) {
-      otpCache.delete(email);
+    if (Date.now() > Number(record.expires_at)) {
+      await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'reset'`, [email]);
       return res.status(400).json({ message: 'Invalid or expired OTP code' });
     }
 
     // Success! Update password
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await pool.query('UPDATE users SET password_hash = ? WHERE email = ?', [passwordHash, email]);
-
-    // Clear OTP from cache
-    otpCache.delete(email);
+    await pool.query(`DELETE FROM otp_tokens WHERE email = ? AND type = 'reset'`, [email]);
 
     res.status(200).json({ message: 'Password reset successful' });
   } catch (err) {
