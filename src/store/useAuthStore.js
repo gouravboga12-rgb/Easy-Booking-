@@ -54,6 +54,36 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  googleLogin: async (token, tokenType = 'credential') => {
+    set({ loading: true });
+    try {
+      const body = tokenType === 'access_token'
+        ? { access_token: token }
+        : { credential: token };
+
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      set({ loading: false });
+
+      if (!response.ok) {
+        return { error: data.message || 'Google login failed' };
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      set({ user: data.user });
+
+      return { success: true, role: data.user.role };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  },
+
   sendRegisterOtp: async (email, name) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register-otp`, {

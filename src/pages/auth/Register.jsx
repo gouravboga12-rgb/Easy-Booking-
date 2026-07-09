@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useGoogleLogin } from '@react-oauth/google';
 import {
   HiMail, HiLockClosed, HiUser, HiPhone, HiArrowRight,
 } from 'react-icons/hi';
@@ -13,13 +14,29 @@ export default function Register() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [step, setStep] = useState(1);
   const cooldownRef = useRef(null);
 
-  const { register, sendRegisterOtp, resendRegisterOtp } = useAuthStore();
+  const { register, sendRegisterOtp, resendRegisterOtp, googleLogin } = useAuthStore();
   const navigate = useNavigate();
+
+  const handleGoogleSignUp = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      setError('');
+      const result = await googleLogin(tokenResponse.access_token, 'access_token');
+      setGoogleLoading(false);
+      if (result.error) { setError(result.error); return; }
+      navigate('/');
+    },
+    onError: () => {
+      setError('Google sign up was cancelled or failed.');
+    },
+  });
+
 
   const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({ ...p, [key]: e.target.value })) });
 
@@ -97,6 +114,29 @@ export default function Register() {
           <>
             <h1>Create Account</h1>
             <p className="auth-sub">Enter your basic details</p>
+
+            {/* Google Sign Up */}
+            <button
+              type="button"
+              className="google-btn"
+              onClick={() => handleGoogleSignUp()}
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? (
+                <span className="google-btn-spinner" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h13.1c-.6 3-2.4 5.6-5 7.3v6h8.1c4.7-4.3 7.3-10.7 7.3-17.6z" fill="#4285F4"/>
+                  <path d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-8.1-6c-2.1 1.4-4.8 2.2-7.8 2.2-6 0-11-4-12.8-9.5H2.8v6.2C6.8 42.8 14.9 48 24 48z" fill="#34A853"/>
+                  <path d="M11.2 28.9c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4V14H2.8C1 17.5 0 21.6 0 24.5s1 7 2.8 10.6l8.4-6.2z" fill="#FBBC05"/>
+                  <path d="M24 9.5c3.4 0 6.4 1.2 8.8 3.4l6.6-6.6C35.9 2.5 30.4 0 24 0 14.9 0 6.8 5.2 2.8 13.3l8.4 6.2C13 13.5 18 9.5 24 9.5z" fill="#EA4335"/>
+                </svg>
+              )}
+              <span>{googleLoading ? 'Signing up...' : 'Sign up with Google'}</span>
+            </button>
+
+            <div className="auth-divider"><span>or</span></div>
+
             <form onSubmit={handleFormSubmit}>
               <label>Full Name
                 <div className="input-wrap"><HiUser className="input-icon" /><input placeholder="Arjun Sharma" {...f('name')} required /></div>

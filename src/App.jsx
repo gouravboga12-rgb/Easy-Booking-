@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -158,9 +159,11 @@ function Layout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Layout />
-    </BrowserRouter>
+    <GoogleOAuthProvider clientId="372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com">
+      <BrowserRouter>
+        <ScrollToTop />
+        <Layout />
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }

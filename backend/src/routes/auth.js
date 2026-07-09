@@ -1,9 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Ensure otp_tokens table exists and photo columns exist (runs once on server start)
 (async () => {
@@ -31,12 +34,103 @@ import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendR
     if (!columnNames.includes('pan_photo')) {
       await pool.query('ALTER TABLE users ADD COLUMN pan_photo TEXT');
     }
+    if (!columnNames.includes('google_id')) {
+      await pool.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(255)');
+    }
   } catch (e) {
     console.error('DB init error:', e.message);
   }
 })();
 
 const router = express.Router();
+
+// POST /api/auth/google  — Sign in / Sign up with Google
+router.post('/google', async (req, res) => {
+  const { credential, access_token } = req.body;
+
+  if (!credential && !access_token) {
+    return res.status(400).json({ message: 'Google credential or access token is required' });
+  }
+
+  try {
+    let googleId, email, name, picture;
+
+    if (access_token) {
+      // Use access_token to get user info from Google UserInfo endpoint
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      if (!userInfoRes.ok) {
+        return res.status(401).json({ message: 'Invalid Google access token' });
+      }
+      const userInfo = await userInfoRes.json();
+      googleId = userInfo.sub;
+      email = userInfo.email;
+      name = userInfo.name;
+      picture = userInfo.picture;
+    } else {
+      // Verify the Google ID token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      googleId = payload.sub;
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: 'Could not get email from Google account' });
+    }
+
+    // Check if user already exists (by google_id or email)
+    const [existing] = await pool.query(
+      'SELECT * FROM users WHERE google_id = ? OR email = ?',
+      [googleId, email]
+    );
+
+    let user;
+
+    if (existing.length > 0) {
+      user = existing[0];
+      if (!user.google_id) {
+        await pool.query('UPDATE users SET google_id = ?, photo = COALESCE(photo, ?) WHERE id = ?', [googleId, picture || null, user.id]);
+        user.google_id = googleId;
+      }
+      // Block workers/admins from using Google login
+      if (user.role !== 'customer') {
+        return res.status(403).json({ message: 'Google login is only available for customers. Please use email & password.' });
+      }
+    } else {
+      // New user — create account automatically
+      const id = `u-${Date.now()}`;
+      await pool.query(
+        `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, photo, google_id, approved)
+         VALUES (?, ?, NULL, 'customer', ?, NULL, '[]', '[]', NULL, 5.00, ?, ?, 1)`,
+        [id, email, name || email.split('@')[0], picture || null, googleId]
+      );
+      const [created] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+      user = created[0];
+
+      // Send welcome email (non-blocking)
+      sendWelcomeEmail(email, user.name, 'customer').catch(err => {
+        console.error('Welcome email error (Google):', err);
+      });
+    }
+
+    delete user.password_hash;
+    user.skills = user.skills || [];
+    user.categories = user.categories || [];
+
+    const token = generateToken(user);
+    res.json({ user, token });
+  } catch (err) {
+    console.error('Google auth error:', err);
+    res.status(401).json({ message: 'Invalid Google credential. Please try again.' });
+  }
+});
 
 // JWT helper
 const generateToken = (user) => {
