@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import axios from 'axios';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
@@ -57,13 +58,13 @@ router.post('/google', async (req, res) => {
 
     if (access_token) {
       // Use access_token to get user info from Google UserInfo endpoint
-      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${access_token}` }
-      });
-      if (!userInfoRes.ok) {
+      const { data: userInfo, status } = await axios.get(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        { headers: { Authorization: `Bearer ${access_token}` }, validateStatus: () => true }
+      );
+      if (status !== 200) {
         return res.status(401).json({ message: 'Invalid Google access token' });
       }
-      const userInfo = await userInfoRes.json();
       googleId = userInfo.sub;
       email = userInfo.email;
       name = userInfo.name;
