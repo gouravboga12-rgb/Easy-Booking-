@@ -44,6 +44,12 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       await pool.query('ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL');
       console.log('DB migration: password_hash is now nullable (for Google OAuth users)');
     }
+    // Make phone nullable to support Google OAuth users (who don't provide phone)
+    const phoneCol = columns.find(c => c.Field === 'phone');
+    if (phoneCol && phoneCol.Null === 'NO') {
+      await pool.query('ALTER TABLE users MODIFY COLUMN phone VARCHAR(20) NULL');
+      console.log('DB migration: phone is now nullable (for Google OAuth users)');
+    }
   } catch (e) {
     console.error('DB init error:', e.message);
   }
