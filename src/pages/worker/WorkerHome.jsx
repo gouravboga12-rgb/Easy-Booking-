@@ -8,6 +8,8 @@ import {
   HiCheck, HiX
 } from 'react-icons/hi';
 import { MdDirectionsCar, MdOutlineCancelScheduleSend } from 'react-icons/md';
+import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import './Worker.css';
 
 export default function WorkerHome() {
@@ -99,22 +101,33 @@ export default function WorkerHome() {
     rejectOrder(orderId, user.id);
   };
 
-  useEffect(() => {
-    if (!activeJob || activeJob.stage !== 2) return;
+  const [customerCoords, setCustomerCoords] = useState(null);
+  const [routeGeojson, setRouteGeojson] = useState(null);
+  const [eta, setEta] = useState(null);
+  const [workerCoords, setWorkerCoords] = useState({ lat: 12.9716, lng: 77.5946 });
 
-    if (!navigator.geolocation) {
-      console.warn("Geolocation is not supported by this browser.");
-      return;
+  useEffect(() => {
+    if (!activeJob) return;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setWorkerCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        },
+        (err) => console.warn(err)
+      );
     }
 
-    console.log("Starting worker location watch en-route...");
+    if (activeJob.stage !== 2) return;
+
     const handleSuccess = (position) => {
       const { latitude, longitude } = position.coords;
+      setWorkerCoords({ lat: latitude, lng: longitude });
       updateWorkerLocation(latitude, longitude);
     };
 
     const handleError = (err) => {
-      console.error("Worker location watch error:", err);
+      console.error("Worker watch position error:", err);
     };
 
     const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
@@ -123,11 +136,59 @@ export default function WorkerHome() {
       timeout: 10000
     });
 
-    return () => {
-      console.log("Stopping worker location watch.");
-      navigator.geolocation.clearWatch(watchId);
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [activeJob?.id, activeJob?.stage]);
+
+  useEffect(() => {
+    if (!activeJob) return;
+    
+    if (activeJob.booking?.lat && activeJob.booking?.lng) {
+      setCustomerCoords({ lat: Number(activeJob.booking.lat), lng: Number(activeJob.booking.lng) });
+      return;
+    }
+
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
+
+    const resolveCustAddress = async () => {
+      try {
+        const query = activeJob.booking?.location;
+        if (!query) return;
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=1`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].center;
+          setCustomerCoords({ lat, lng });
+        }
+      } catch (err) {
+        console.error("Worker side customer address geocoding failed:", err);
+      }
     };
-  }, [activeJob?.id, activeJob?.stage, updateWorkerLocation]);
+    resolveCustAddress();
+  }, [activeJob?.id, activeJob?.booking?.location]);
+
+  useEffect(() => {
+    if (!customerCoords || !workerCoords) return;
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
+
+    const fetchWorkerRoute = async () => {
+      try {
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${workerCoords.lng},${workerCoords.lat};${customerCoords.lng},${customerCoords.lat}?geometries=geojson&access_token=${token}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.routes && json.routes.length > 0) {
+          setRouteGeojson(json.routes[0].geometry);
+          const durationMin = Math.round(json.routes[0].duration / 60);
+          const distanceKm = (json.routes[0].distance / 1000).toFixed(1);
+          setEta(`${durationMin} mins (${distanceKm} km away)`);
+        }
+      } catch (e) {
+        console.error("Failed to fetch route on worker side:", e);
+      }
+    };
+    fetchWorkerRoute();
+  }, [customerCoords, workerCoords]);
 
 
   const handleAdvanceStage = () => {
@@ -265,6 +326,52 @@ export default function WorkerHome() {
               </div>
             </div>
           </div>
+
+          {/* Embedded Mapbox Navigation Map */}
+          {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN && customerCoords && (
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#333' }}>🗺️ Live Navigation Map (Mapbox)</span>
+                {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
+              </div>
+              <div style={{ width: '100%', height: '280px', borderRadius: '12px', overflow: 'hidden', position: 'relative', border: '1.5px solid #eee' }}>
+                <Map
+                  initialViewState={{
+                    longitude: workerCoords.lng,
+                    latitude: workerCoords.lat,
+                    zoom: 13
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                  mapStyle="mapbox://styles/mapbox/streets-v12"
+                  mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                >
+                  {/* Customer Destination Pin */}
+                  <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
+                    <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
+                  </Marker>
+
+                  {/* Worker Live Location (Bike) */}
+                  <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
+                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🚴</div>
+                  </Marker>
+
+                  {routeGeojson && (
+                    <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
+                      <Layer
+                        id="route-line"
+                        type="line"
+                        paint={{
+                          'line-color': '#4f46e5',
+                          'line-width': 5,
+                          'line-opacity': 0.8
+                        }}
+                      />
+                    </Source>
+                  )}
+                </Map>
+              </div>
+            </div>
+          )}
 
           {/* Navigation link via Google Maps */}
           <div style={{ marginBottom: '16px' }}>

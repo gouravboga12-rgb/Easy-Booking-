@@ -24,6 +24,7 @@ export default function OrderTracking() {
   const [trackingData, setTrackingData] = useState(null);
   const [routeGeojson, setRouteGeojson] = useState(null);
   const [eta, setEta] = useState(null);
+  const [customerCoords, setCustomerCoords] = useState(null);
 
   const isComplete = order ? (order.status === 'completed' || order.stage === order.stages.length - 1) : true;
 
@@ -43,12 +44,48 @@ export default function OrderTracking() {
   }, [order?.id, isComplete, fetchLiveTracking]);
 
   useEffect(() => {
-    if (!trackingData || !trackingData.workerLocation || !trackingData.customerLat || !trackingData.customerLng) return;
+    if (trackingData && trackingData.customerLat && trackingData.customerLng) {
+      setCustomerCoords({ lat: trackingData.customerLat, lng: trackingData.customerLng });
+      return;
+    }
+
+    if (!order) return;
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
+
+    const resolveAddress = async () => {
+      try {
+        const query = order.location || order.booking?.location;
+        if (!query) return;
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=1`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].center;
+          setCustomerCoords({ lat, lng });
+        } else {
+          setCustomerCoords({ lat: 12.9716, lng: 77.5946 }); // Default Bangalore
+        }
+      } catch (e) {
+        console.error("Geocoding address failed", e);
+        setCustomerCoords({ lat: 12.9716, lng: 77.5946 });
+      }
+    };
+    resolveAddress();
+  }, [trackingData, order?.location]);
+
+  useEffect(() => {
+    if (!customerCoords) return;
+    if (!trackingData || !trackingData.workerLocation) {
+      setRouteGeojson(null);
+      setEta(null);
+      return;
+    }
+
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     if (!token) return;
 
     const { lat: wLat, lng: wLng } = trackingData.workerLocation;
-    const { customerLat: cLat, customerLng: cLng } = trackingData;
+    const { lat: cLat, lng: cLng } = customerCoords;
 
     const fetchRoute = async () => {
       try {
@@ -67,7 +104,7 @@ export default function OrderTracking() {
     };
 
     fetchRoute();
-  }, [trackingData]);
+  }, [trackingData?.workerLocation, customerCoords]);
 
   if (!order) return (
     <div className="not-found">
@@ -129,23 +166,23 @@ export default function OrderTracking() {
             <div className="booking-summary" style={{ marginBottom: '20px', padding: '16px' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>Live Route Tracker</h3>
               {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ? (
-                trackingData && trackingData.customerLat && trackingData.customerLng ? (
+                customerCoords ? (
                   <div style={{ width: '100%', height: '350px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                     <Map
                       initialViewState={{
-                        longitude: trackingData.customerLng,
-                        latitude: trackingData.customerLat,
+                        longitude: customerCoords.lng,
+                        latitude: customerCoords.lat,
                         zoom: 13
                       }}
                       style={{ width: '100%', height: '100%' }}
                       mapStyle="mapbox://styles/mapbox/streets-v12"
                       mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
                     >
-                      <Marker longitude={trackingData.customerLng} latitude={trackingData.customerLat} anchor="bottom">
+                      <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
                         <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
                       </Marker>
 
-                      {trackingData.workerLocation && (
+                      {trackingData && trackingData.workerLocation && (
                         <Marker longitude={trackingData.workerLocation.lng} latitude={trackingData.workerLocation.lat} anchor="center">
                           <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🚴</div>
                         </Marker>
