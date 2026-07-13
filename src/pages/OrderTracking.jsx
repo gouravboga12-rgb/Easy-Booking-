@@ -255,7 +255,36 @@ export default function OrderTracking() {
             <div className="bs-row"><span>⏱ Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
             <div className="bs-row total"><span>💰 Total</span><strong>₹{order.booking.total?.toLocaleString()}</strong></div>
           </div>
-
+          {/* Invoice / Bill Receipt Section */}
+          {isComplete && (
+            <div className="booking-summary" style={{ marginTop: '20px', border: '1.5px solid #ff8c00', background: '#fffbeb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px dashed #ff8c00', paddingBottom: '10px', marginBottom: '14px' }}>
+                <h3 style={{ margin: 0, color: '#ff8c00', fontWeight: '800' }}>🧾 Service Invoice & Receipt</h3>
+                <span style={{ fontSize: '11px', background: '#ff8c00', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>PAID</span>
+              </div>
+              <div className="bs-row"><span>Booking ID</span><strong>#{order.id}</strong></div>
+              <div className="bs-row"><span>Service category</span><strong>{order.vehicle.name}</strong></div>
+              <div className="bs-row"><span>Provider Name</span><strong>{order.operator?.name || 'Verified Professional'}</strong></div>
+              <div className="bs-row"><span>Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
+              <div className="bs-row" style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px' }}><span>Base Rate</span><strong>₹{(order.vehicle.rate || 0).toLocaleString()} / {order.vehicle.unit}</strong></div>
+              <div className="bs-row total" style={{ fontSize: '18px', color: '#10b981', marginTop: '8px' }}>
+                <span>Total Amount</span>
+                <strong>₹{order.booking.total?.toLocaleString()}</strong>
+              </div>
+              {order.completionImages && order.completionImages.length > 0 && (
+                <div style={{ marginTop: '14px', borderTop: '1px dashed #ddd', paddingTop: '12px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'block', marginBottom: '8px' }}>📸 Completion Photos Uploaded:</span>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {order.completionImages.map((img, i) => (
+                      <div key={i} style={{ width: '80px', height: '80px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                        <img src={img} alt={`Completion ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {/* Feedback/Review Submission */}
           {isComplete && order.operator && (
             <div className="booking-summary" style={{ marginTop: '20px', background: '#ecfdf5', borderColor: '#a7f3d0' }}>

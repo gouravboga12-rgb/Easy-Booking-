@@ -43,7 +43,7 @@ export default function WorkerWallet() {
     <div className="worker-page" style={{ paddingBottom: '32px' }}>
       <div className="wp-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <HiCurrencyRupee className="wp-title-icon" style={{ width: '28px', height: '28px', color: 'var(--primary)' }} />
-        <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Wallet & Subscription</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '800' }}>Payments & Subscription</h1>
       </div>
 
       {purchaseSuccess && (
@@ -55,27 +55,9 @@ export default function WorkerWallet() {
 
       {/* Balance Cards */}
       <div className="wallet-cards">
-        <div className="wallet-card primary" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: '#fff', padding: '16px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="wallet-card primary" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: '#fff', padding: '24px 16px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <span style={{ fontSize: '12px', opacity: 0.85 }}>Available Balance</span>
-          <strong style={{ fontSize: '22px', fontWeight: '800', margin: '4px 0 8px' }}>₹{available.toLocaleString()}</strong>
-          <button
-            className="withdraw-btn"
-            onClick={handleWithdraw}
-            disabled={available <= 0}
-            style={{
-              background: '#fff',
-              color: 'var(--primary)',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '12px',
-              cursor: available > 0 ? 'pointer' : 'not-allowed',
-              opacity: available > 0 ? 1 : 0.6
-            }}
-          >
-            Withdraw to Bank
-          </button>
+          <strong style={{ fontSize: '24px', fontWeight: '800', marginTop: '6px' }}>₹{available.toLocaleString()}</strong>
         </div>
         <div className="wallet-card" style={{ background: '#fff', padding: '16px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="wc-row" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#888', marginBottom: '4px' }}>
@@ -173,7 +155,7 @@ export default function WorkerWallet() {
 
       {/* Transactions */}
       <div className="worker-section">
-        <h2>Wallet Transactions</h2>
+        <h2>Payments History</h2>
         {wallet.transactions?.length === 0 ? (
           <div className="empty-msg">No transactions yet.</div>
         ) : (

@@ -8,7 +8,7 @@ const NAV = [
   { to: '/worker',          icon: HiHome,           label: 'Home'    },
   { to: '/worker/orders',   icon: HiClipboardList,  label: 'Orders'  },
   { to: '/worker/history',  icon: HiClock,          label: 'History' },
-  { to: '/worker/wallet',   icon: HiCurrencyRupee,  label: 'Wallet'  },
+  { to: '/worker/wallet',   icon: HiCurrencyRupee,  label: 'Payments'  },
   { to: '/worker/profile',  icon: HiUser,           label: 'Profile' },
 ];
 

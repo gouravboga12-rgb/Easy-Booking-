@@ -121,3 +121,48 @@ export const sendRegisterOtpEmail = async (to, name, otp) => {
     html,
   });
 };
+
+/**
+ * Send Invoice Email to Customer upon project completion
+ */
+export const sendInvoiceEmail = async (to, name, order) => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+      <div style="text-align: center; border-bottom: 2px solid #ff8c00; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #ff8c00; margin: 0; font-size: 24px; font-weight: 800;">Parrow Skills</h1>
+        <p style="margin: 5px 0 0; color: #666; font-size: 13px;">Service Invoice & Receipt</p>
+      </div>
+
+      <p>Hello <strong>${name}</strong>,</p>
+      <p>Thank you for choosing Parrow Skills! Your service project is complete. Below is your official receipt and invoice details:</p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Booking Reference:</strong> #${order.id}</div>
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Service Category:</strong> ${order.vehicle_name || 'Professional Service'}</div>
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Duration:</strong> ${order.duration} ${order.unit || 'trips'}</div>
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Date:</strong> ${order.booking_date}</div>
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Partner Assigned:</strong> ${order.worker_name || 'Verified Professional'}</div>
+      </div>
+
+      <div style="border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; padding: 15px 0; margin: 20px 0; font-size: 16px;">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1e293b;">
+          <span>Total Amount Paid:</span>
+          <span style="color: #10b981; font-size: 18px;">₹${parseFloat(order.total_amount || 0).toLocaleString()}</span>
+        </div>
+      </div>
+
+      <p style="text-align: center; color: #475569; font-size: 13px; margin-top: 25px;">
+        We hope you enjoyed our service! If you have any queries, feel free to reach out to us at <strong>support@parrowskills.in</strong>.
+      </p>
+
+      <hr style="border: 0; border-top: 1px dashed #eee; margin: 20px 0;">
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">This is an automated invoice, please do not reply directly.</p>
+    </div>
+  `;
+
+  return sendMail({
+    to,
+    subject: `Invoice for Booking #${order.id} - Parrow Skills`,
+    html,
+  });
+};

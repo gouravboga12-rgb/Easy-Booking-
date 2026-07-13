@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { sendInvoiceEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
@@ -141,6 +142,34 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
     } else {
       // General status transition (active, arrived, completed, cancelled)
       await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
+    }
+
+    // Trigger Invoice Email if status is completed
+    if (status === 'completed') {
+      try {
+        const [orderRows] = await pool.query(`
+          SELECT b.*, 
+                 c.name AS customer_name, c.email AS customer_email,
+                 w.name AS worker_name,
+                 s.name AS vehicle_name
+          FROM bookings b
+          LEFT JOIN users c ON b.customer_id = c.id
+          LEFT JOIN users w ON b.worker_id = w.id
+          LEFT JOIN services s ON b.vehicle_id = s.id
+          WHERE b.id = ?
+        `, [id]);
+
+        if (orderRows.length > 0) {
+          const orderData = orderRows[0];
+          if (orderData.customer_email) {
+            sendInvoiceEmail(orderData.customer_email, orderData.customer_name || 'Customer', orderData).catch(err => {
+              console.error('Invoice email dispatch failed:', err);
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.error('Fetch order for invoice email failed:', emailErr);
+      }
     }
 
     const [updated] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
