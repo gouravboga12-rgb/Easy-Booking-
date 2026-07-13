@@ -162,7 +162,16 @@ export default function AdminWorkers() {
               {/* Work history & Reviews list drawer */}
               {isSelected && (
                 <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #eee', fontSize: '12px' }}>
-                  <h4 style={{ margin: '0 0 6px', fontSize: '12px', color: '#333', fontWeight: '700' }}>Verification Documents & Bank Payout Details</h4>
+                  <h4 style={{ margin: '0 0 6px', fontSize: '12px', color: '#333', fontWeight: '700' }}>Profile &amp; Registration Details</h4>
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                    <div><strong>Email Address:</strong> {w.email || 'N/A'}</div>
+                    <div><strong>Operational Address:</strong> {w.address || 'N/A'}</div>
+                    <div><strong>Work Radius:</strong> {w.radius ? `${w.radius} km` : '10 km'}</div>
+                    <div><strong>Skills / Specialties:</strong> {w.skills && w.skills.length > 0 ? w.skills.join(', ') : 'None specified'}</div>
+                    <div><strong>Registered Categories:</strong> {w.categories && w.categories.length > 0 ? w.categories.map(cId => CATEGORIES.find(c => c.id === cId)?.label || cId).join(', ') : 'None'}</div>
+                  </div>
+
+                  <h4 style={{ margin: '0 0 6px', fontSize: '12px', color: '#333', fontWeight: '700' }}>Verification Documents &amp; Bank Payout Details</h4>
                   <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                     <div><strong>Aadhaar Number:</strong> {w.aadhar || 'N/A'}</div>
                     <div><strong>PAN Number:</strong> {w.pan || 'N/A'}</div>
