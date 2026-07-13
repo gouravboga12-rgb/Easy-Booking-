@@ -42,58 +42,38 @@ export default function BookingFlow() {
     zoom: 14
   });
 
+  // Dynamic answers state for custom options fields
+  const [customAnswers, setCustomAnswers] = useState({});
+
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
   const total = vehicle.rate * form.duration;
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      alert("Geolocation is not supported by your browser");
       return;
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lng: longitude });
         setViewState(v => ({ ...v, latitude, longitude }));
-        
-        const token = MAPBOX_TOKEN;
-        if (token) {
-          try {
-            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`);
-            const data = await res.json();
-            if (data.features && data.features.length > 0) {
-              setForm(f => ({ ...f, location: data.features[0].place_name }));
-            } else {
-              setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
-            }
-          } catch (e) {
-            setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
-          }
-        } else {
-          setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
-        }
         setLocLoading(false);
+        // Reverse geocoding to write place name
+        reverseGeocode(latitude, longitude);
       },
       (err) => {
         console.error(err);
-        alert("Unable to retrieve location. Please type manually.");
         setLocLoading(false);
-      }
+        alert("Unable to fetch location. Please enter address manually.");
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
-  useEffect(() => {
-    handleLocateMe();
-  }, []);
-
-  const handleMapMoveEnd = async (e) => {
-    const lat = e.viewState.latitude;
-    const lng = e.viewState.longitude;
-    setCoords({ lat, lng });
-    setViewState(e.viewState);
-
+  const reverseGeocode = async (lat, lng) => {
     const token = MAPBOX_TOKEN;
     if (token) {
       try {
@@ -108,8 +88,30 @@ export default function BookingFlow() {
     }
   };
 
+  const handleMapMoveEnd = (e) => {
+    const { latitude, longitude } = e.viewState;
+    setCoords({ lat: latitude, lng: longitude });
+    reverseGeocode(latitude, longitude);
+  };
+
+  const compileNotesAndAnswers = () => {
+    let compiled = form.notes || '';
+    if (vehicle.custom_fields && vehicle.custom_fields.length > 0) {
+      const answersText = vehicle.custom_fields
+        .map(f => {
+          const val = customAnswers[f.id];
+          return `- ${f.name}: ${val && val.startsWith('data:') ? '[File/Image Uploaded]' : (val || 'Not specified')}`;
+        })
+        .join('\n');
+      compiled = compiled 
+        ? `${compiled}\n\nAdditional Specifications:\n${answersText}`
+        : `Additional Specifications:\n${answersText}`;
+    }
+    return compiled;
+  };
+
   const handleContinue = async () => {
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (token && form.location && !form.location.startsWith('📍 Coords:')) {
       try {
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(form.location)}.json?access_token=${token}&limit=1`);
@@ -130,6 +132,9 @@ export default function BookingFlow() {
     const customer = user
       ? { id: user.id, name: user.name, phone: user.phone }
       : { name: 'Guest', phone: '' };
+    
+    const finalNotes = compileNotesAndAnswers();
+
     placeOrder(
       vehicle,
       {
@@ -139,7 +144,8 @@ export default function BookingFlow() {
         date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
         timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
         bookingType,
-        total
+        total,
+        notes: finalNotes
       },
       customer
     ).then(order => {
@@ -148,6 +154,8 @@ export default function BookingFlow() {
   };
 
   const handleAddToCart = () => {
+    const finalNotes = compileNotesAndAnswers();
+
     addToCart(vehicle, {
       ...form,
       lat: coords.lat,
@@ -155,7 +163,8 @@ export default function BookingFlow() {
       date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
       timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
       bookingType,
-      total
+      total,
+      notes: finalNotes
     });
     navigate('/cart');
   };
@@ -178,21 +187,21 @@ export default function BookingFlow() {
         <div className="booking-form-wrap">
           <div className="booking-steps">
             <span className={step >= 1 ? 'done' : ''}>
-              <span className="step-circle">1</span> Service Details
+              <span className="step-num">1</span> Details
             </span>
-            <span className="sep-line" />
+            <span className="step-line" />
             <span className={step >= 2 ? 'done' : ''}>
-              <span className="step-circle">2</span> Confirm & Pay
+              <span className="step-num">2</span> Confirm
             </span>
           </div>
 
           {step === 1 && (
             <div className="form-section">
-              <h2>Where & When?</h2>
+              <h2>Select Booking Options</h2>
 
               <label>
-                <span className="lbl-text">Booking Mode</span>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px', marginBottom: '14px' }}>
+                <span className="lbl-text">Booking Type</span>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -277,7 +286,6 @@ export default function BookingFlow() {
                       mapStyle="mapbox://styles/mapbox/streets-v12"
                       mapboxAccessToken={MAPBOX_TOKEN}
                     />
-                    {/* Fixed center pin icon overlay */}
                     <div style={{
                       position: 'absolute',
                       top: '50%',
@@ -337,6 +345,67 @@ export default function BookingFlow() {
                 </div>
               </label>
 
+              {/* Dynamic Service Specifications / Custom Fields */}
+              {vehicle.custom_fields && vehicle.custom_fields.length > 0 && (
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b', margin: 0 }}>Service Specifications</h4>
+                  {vehicle.custom_fields.map(f => {
+                    const value = customAnswers[f.id] || '';
+                    const setVal = (val) => setCustomAnswers(prev => ({ ...prev, [f.id]: val }));
+
+                    return (
+                      <label key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12px', fontWeight: '700', color: '#475569', marginTop: '2px' }}>
+                        {f.name}
+                        {f.type === 'select' ? (
+                          <select
+                            value={value}
+                            onChange={e => setVal(e.target.value)}
+                            style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', background: '#fff', width: '100%', marginTop: '4px' }}
+                            required
+                          >
+                            <option value="">-- Choose Option --</option>
+                            {f.choices.map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        ) : f.type === 'file' ? (
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
+                            <label style={{ flex: 1, padding: '8px', border: '1px dashed #bbb', borderRadius: '8px', cursor: 'pointer', textAlign: 'center', background: '#fff', fontSize: '12px', fontWeight: '600' }}>
+                              {value ? '✔️ File Attached' : '📁 Upload Photo/Document'}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={e => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => setVal(reader.result);
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
+                            {value && value.startsWith('data:image/') && (
+                              <img src={value} alt="Preview" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd' }} />
+                            )}
+                          </div>
+                        ) : (
+                          <input
+                            type={f.type === 'number' ? 'number' : 'text'}
+                            value={value}
+                            onChange={e => setVal(e.target.value)}
+                            placeholder={`Enter ${f.name}`}
+                            style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', marginTop: '4px', width: '100%' }}
+                            required
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
               <label style={{ marginTop: '10px' }}>
                 <span className="lbl-text">
                   <HiDocumentText className="lbl-icon" /> Special Instructions
@@ -382,8 +451,24 @@ export default function BookingFlow() {
                 </div>
                 {form.notes && (
                   <div className="cd-row">
-                    <span><HiDocumentText className="cd-icon" /> Notes</span>
+                    <span><HiDocumentText className="cd-icon" /> Special Notes</span>
                     <strong>{form.notes}</strong>
+                  </div>
+                )}
+                {Object.keys(customAnswers).length > 0 && (
+                  <div className="cd-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Custom Field Answers</span>
+                    <div style={{ width: '100%', background: '#fafafa', padding: '10px', borderRadius: '8px', border: '1px solid #eee', fontSize: '12px' }}>
+                      {vehicle.custom_fields.map(f => {
+                        const val = customAnswers[f.id];
+                        return (
+                          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <span>{f.name}:</span>
+                            <strong>{val && val.startsWith('data:') ? '[Document Uploaded]' : (val || '—')}</strong>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

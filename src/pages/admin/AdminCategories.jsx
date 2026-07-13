@@ -13,6 +13,10 @@ const INITIAL_CATEGORIES = [
   { id: 'cooking-events', label: 'Cooking & Events', icon: '🍳', labourTypes: ['Cook', 'Caterer', 'Event Helper', 'Waiter', 'Bartender'] },
 ];
 
+const PRESET_ICONS = [
+  '🏗️', '⛏️', '🪵', '🔧', '⚙️', '🧹', '🚛', '🍳', '🏠', '🛋️', '⚡', '💧', '🩹', '🎨', '🚨', '🧰', '📐', '🔩', '🪴', '🧺', '🧼', '🚚', '📦', '🦺'
+];
+
 export default function AdminCategories() {
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [editingCat, setEditingCat] = useState(null);
@@ -85,18 +89,51 @@ export default function AdminCategories() {
 
       {/* Add Category Form */}
       {showAddForm && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px' }}>New Service Category</h2>
-          <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-            <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '4px', width: '80px' }}>
-              Icon
-              <input value={newCat.icon} onChange={e => setNewCat(p => ({ ...p, icon: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center' }} maxLength={2} />
-            </label>
-            <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-              Category Name
-              <input value={newCat.label} onChange={e => setNewCat(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Landscaping & Gardening" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
-            </label>
-            <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+        <div style={{ background: '#fff', padding: '24px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>New Service Category</h2>
+          <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px', width: '80px' }}>
+                Icon
+                <input value={newCat.icon} onChange={e => setNewCat(p => ({ ...p, icon: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center' }} maxLength={2} />
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: '200px' }}>
+                Category Name
+                <input value={newCat.label} onChange={e => setNewCat(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Landscaping & Gardening" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+              </label>
+            </div>
+
+            {/* Quick Icon Presets Grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#666' }}>Quick Icon Picker Presets:</span>
+              <div style={{ display: 'flex', gap: '8px', background: '#fafafa', padding: '12px', borderRadius: '10px', border: '1px solid #eee', flexWrap: 'wrap' }}>
+                {PRESET_ICONS.map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setNewCat(p => ({ ...p, icon: emoji }))}
+                    style={{
+                      background: newCat.icon === emoji ? 'var(--primary-light)' : '#fff',
+                      border: '1.5px solid',
+                      borderColor: newCat.icon === emoji ? 'var(--primary)' : '#e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', alignSelf: 'flex-start' }}>
               Create Category
             </button>
           </form>
@@ -163,10 +200,10 @@ export default function AdminCategories() {
       {/* Edit Modal */}
       {editingCat && (
         <div className="modal-overlay" onClick={() => setEditingCat(null)}>
-          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px', width: '100%' }}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', width: '100%', borderRadius: '16px' }}>
             <h3>Edit Category</h3>
-            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', gap: '10px' }}>
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <label style={{ fontSize: '12px', fontWeight: '700', width: '80px' }}>Icon
                   <input value={editingCat.icon} onChange={e => setEditingCat(p => ({ ...p, icon: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center', marginTop: '4px', boxSizing: 'border-box' }} maxLength={2} />
                 </label>
@@ -174,9 +211,40 @@ export default function AdminCategories() {
                   <input value={editingCat.label} onChange={e => setEditingCat(p => ({ ...p, label: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
                 </label>
               </div>
-              <div className="cm-actions">
-                <button type="button" className="cm-cancel" onClick={() => setEditingCat(null)}>Cancel</button>
-                <button type="submit" className="cm-confirm">Save</button>
+
+              {/* Quick Icon Presets Grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#666' }}>Quick Icon Picker Presets:</span>
+                <div style={{ display: 'flex', gap: '6px', background: '#fafafa', padding: '10px', borderRadius: '10px', border: '1px solid #eee', flexWrap: 'wrap' }}>
+                  {PRESET_ICONS.map(emoji => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setEditingCat(p => ({ ...p, icon: emoji }))}
+                      style={{
+                        background: editingCat.icon === emoji ? 'var(--primary-light)' : '#fff',
+                        border: '1.5px solid',
+                        borderColor: editingCat.icon === emoji ? 'var(--primary)' : '#e5e7eb',
+                        borderRadius: '6px',
+                        fontSize: '18px',
+                        cursor: 'pointer',
+                        width: '36px',
+                        height: '36px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="cm-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" className="cm-cancel" onClick={() => setEditingCat(null)} style={{ background: '#f3f4f6', color: '#4b5563', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+                <button type="submit" className="cm-confirm" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>Save</button>
               </div>
             </form>
           </div>

@@ -78,6 +78,29 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       }
       console.log('DB migration: Seeded default subscription plans');
     }
+
+    // Ensure bookings columns exist
+    const [bookingCols] = await pool.query('SHOW COLUMNS FROM bookings');
+    const bookingColNames = bookingCols.map(c => c.Field);
+    if (!bookingColNames.includes('worker_message')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN worker_message VARCHAR(255) NULL');
+    }
+    if (!bookingColNames.includes('rejected_workers')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN rejected_workers TEXT NULL');
+    }
+    if (!bookingColNames.includes('completion_photos')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN completion_photos LONGTEXT NULL');
+    }
+    if (!bookingColNames.includes('notes')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN notes TEXT NULL');
+    }
+
+    // Ensure services columns exist
+    const [serviceCols] = await pool.query('SHOW COLUMNS FROM services');
+    const serviceColNames = serviceCols.map(c => c.Field);
+    if (!serviceColNames.includes('custom_fields')) {
+      await pool.query('ALTER TABLE services ADD COLUMN custom_fields JSON NULL');
+    }
     // Make password_hash nullable to support Google OAuth users (who have no password)
     const passwordCol = columns.find(c => c.Field === 'password_hash');
     if (passwordCol && passwordCol.Null === 'NO') {
@@ -406,6 +429,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    user.vehicle = user.vehicle_details;
 
     res.json(user);
   } catch (err) {
@@ -416,7 +440,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, wallet } = req.body;
+  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet } = req.body;
+  const finalVehicle = vehicle !== undefined ? vehicle : vehicle_details;
   try {
     const catJson = categories ? JSON.stringify(categories) : undefined;
     const skillsJson = skills ? JSON.stringify(skills) : undefined;
@@ -436,7 +461,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         vehicle_details = COALESCE(?, vehicle_details),
         wallet = COALESCE(?, wallet)
        WHERE id = ?`,
-      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, vehicle_details, walletJson, req.user.id]
+      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, req.user.id]
     );
 
     const [updated] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
@@ -448,6 +473,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    user.vehicle = user.vehicle_details;
 
     res.json(user);
   } catch (err) {
@@ -484,7 +510,7 @@ router.put('/profile/availability', authenticateToken, async (req, res) => {
 // GET /api/auth/workers (List of all workers)
 router.get('/workers', authenticateToken, async (req, res) => {
   try {
-    const [workers] = await pool.query('SELECT * FROM users WHERE role = "worker"');
+    const [workers] = await pool.query('SELECT * FROM users WHERE role != "admin"');
     workers.forEach(w => {
       delete w.password_hash;
       w.skills = w.skills || [];
@@ -493,6 +519,7 @@ router.get('/workers', authenticateToken, async (req, res) => {
         try { w.reviews = JSON.parse(w.reviews); } catch (e) { w.reviews = []; }
       }
       w.reviews = w.reviews || [];
+      w.vehicle = w.vehicle_details;
     });
     res.json(workers);
   } catch (err) {

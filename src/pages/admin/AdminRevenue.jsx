@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { HiCurrencyRupee, HiCalendar, HiChartBar, HiTrendingUp, HiDownload } from 'react-icons/hi';
@@ -8,7 +8,14 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function AdminRevenue() {
   const orders = useStore(s => s.orders);
+  const subscriptionPlans = useStore(s => s.subscriptionPlans) || [];
+  const fetchSubscriptionPlans = useStore(s => s.fetchSubscriptionPlans);
   const users = useAuthStore(s => s.users);
+
+  useEffect(() => {
+    if (fetchSubscriptionPlans) fetchSubscriptionPlans();
+  }, [fetchSubscriptionPlans]);
+
   const workers = users.filter(u => u.role === 'worker');
 
   const [period, setPeriod] = useState('monthly');
@@ -20,9 +27,14 @@ export default function AdminRevenue() {
   const gstRevenue = Math.round(totalRevenue * 0.18);
   const netRevenue = totalRevenue - gstRevenue;
 
-  // Subscription Revenue estimate
-  const PLAN_PRICES = { '₹99 Monthly': 99, 'Premium Plan': 299, 'Featured Worker Plan': 499 };
-  const subscriptionRevenue = workers.reduce((s, w) => s + (PLAN_PRICES[w.subscription?.plan] || 0), 0);
+  // Subscription Revenue calculated dynamically
+  const subscriptionRevenue = workers.reduce((sum, w) => {
+    if (!w.subscription?.active) return sum;
+    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
+    if (plan) return sum + (parseFloat(plan.price) || 0);
+    const fallbackPrice = w.subscription.plan?.match(/₹\s*(\d+)/)?.[1];
+    return sum + (parseFloat(fallbackPrice || 0));
+  }, 0);
 
   // Monthly breakdown (simulated from order dates or created date)
   const monthlyData = MONTHS.map((m, idx) => {

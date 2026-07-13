@@ -20,16 +20,36 @@ export default function WorkerWallet() {
 
   const [timeFilter, setTimeFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('completed');
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
 
-  const now = new Date();
+  // Timezone-safe local date parser
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const nowLocalDate = new Date();
+  nowLocalDate.setHours(0, 0, 0, 0);
+
   const filteredOrders = completedOrders.filter(o => {
-    if (!o.createdAt) return timeFilter === 'all';
-    const orderDate = new Date(o.createdAt);
-    const diffTime = Math.abs(now - orderDate);
+    if (!o.booking?.date) return false;
+    const bDate = parseLocalDate(o.booking.date);
+    if (!bDate) return false;
+    bDate.setHours(0, 0, 0, 0);
+
+    const diffTime = Math.abs(nowLocalDate - bDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (timeFilter === 'today') {
-      return orderDate.toDateString() === now.toDateString();
+      return bDate.getTime() === nowLocalDate.getTime();
     } else if (timeFilter === 'week') {
       return diffDays <= 7;
     } else if (timeFilter === 'month') {
@@ -43,8 +63,6 @@ export default function WorkerWallet() {
   });
 
   const filteredEarnings = filteredOrders.reduce((sum, o) => sum + (o.booking?.total || 0), 0);
-
-
 
   // Lists filtered by status tabs
   const completedList = completedOrders;
@@ -159,9 +177,11 @@ export default function WorkerWallet() {
             {currentTabList.map(o => (
               <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px' }}>
                 <div style={{ flex: 1, paddingRight: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>Order #{o.id.slice(-6)}</span>
-                    <span className={`status-chip ${o.status}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#1e293b' }}>
+                      Order #{o.id.slice(-6)} • {o.vehicle?.name || 'Professional Service'}
+                    </span>
+                    <span className={`status-chip ${o.status}`} style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
                       {o.status === 'pending' && !o.operator ? 'Awaiting Worker' : o.status}
                     </span>
                   </div>
@@ -180,17 +200,60 @@ export default function WorkerWallet() {
                     )}
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                   <strong style={{ display: 'block', fontSize: '16px', color: '#0f172a' }}>₹{o.booking?.total?.toLocaleString()}</strong>
                   <span style={{ fontSize: '11px', color: activeTab === 'completed' ? '#15803d' : activeTab === 'pending' ? '#d97706' : '#b91c1c', fontWeight: '600', marginTop: '2px', display: 'block' }}>
                     {activeTab === 'completed' ? 'Collected' : activeTab === 'pending' ? 'Pending Completion' : 'Rejected'}
                   </span>
+                  {activeTab === 'completed' && (
+                    <button 
+                      onClick={() => setSelectedInvoiceOrder(o)}
+                      style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', marginTop: '6px', cursor: 'pointer' }}
+                    >
+                      🧾 View Invoice
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Invoice Receipt Modal */}
+      {selectedInvoiceOrder && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setSelectedInvoiceOrder(null)}>
+          <div style={{ background: '#fff', width: '100%', maxWidth: '440px', borderRadius: '16px', padding: '24px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            <button style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }} onClick={() => setSelectedInvoiceOrder(null)}>×</button>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '6px' }}>🧾</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 4px', color: '#1e293b' }}>Payment Invoice</h3>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Reference ID: #{selectedInvoiceOrder.id}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px dashed #e2e8f0', borderBottom: '1px dashed #e2e8f0', padding: '16px 0', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Service Requested</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.vehicle?.name}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Service Date</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.date}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Duration / Scope</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.duration} {selectedInvoiceOrder.vehicle?.unit === 'hr' ? 'Hours' : 'Trips'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Customer Name</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.customer?.name || 'Customer'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Assigned Operator</span><strong style={{ color: '#0f172a' }}>{user.name}</strong></div>
+              {selectedInvoiceOrder.booking?.notes && (
+                <div style={{ fontSize: '12px', background: '#f8fafc', padding: '8px', borderRadius: '6px', marginTop: '4px', border: '1px solid #f1f5f9' }}>
+                  <strong style={{ display: 'block', color: '#475569', marginBottom: '2px' }}>Order Notes/Instructions:</strong>
+                  <span style={{ color: '#64748b', display: 'block', whiteSpace: 'pre-wrap' }}>{selectedInvoiceOrder.booking.notes}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>
+              <span>Total Payout Received</span>
+              <span style={{ color: 'var(--primary)', fontSize: '20px' }}>₹{selectedInvoiceOrder.booking?.total?.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+              <button onClick={() => window.print()} style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', flex: 1 }}>Print Receipt</button>
+              <button onClick={() => setSelectedInvoiceOrder(null)} style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', flex: 1 }}>Close Window</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,11 +21,13 @@ export default function UserProfile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
 
   if (!user) return null;
 
-  const customerOrders = orders.filter(o => o.customer?.email === user.email);
-  const activeOrders = customerOrders.filter(o => ['pending', 'assigned', 'active'].includes(o.status));
+  // Correct live stats using customer ID instead of email
+  const customerOrders = orders.filter(o => o.customer?.id === user.id || o.customerId === user.id);
+  const activeOrders = customerOrders.filter(o => ['pending', 'assigned', 'active', 'arrived'].includes(o.status));
   const completedOrders = customerOrders.filter(o => o.status === 'completed');
 
   const handleSave = (e) => {
@@ -112,6 +114,61 @@ export default function UserProfile() {
           <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a' }}>{completedOrders.length}</div>
           <div style={{ fontSize: '11px', color: '#666', fontWeight: '600' }}>Completed Jobs</div>
         </div>
+      </div>
+
+      {/* Live Recent Services list card layout */}
+      <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1.5px solid #f9f9f9', paddingBottom: '12px', marginBottom: '16px', color: '#1a1a1a' }}>
+          📋 Recent Service Orders
+        </h3>
+        {customerOrders.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px 0', color: '#888', fontSize: '13px' }}>
+            No orders found. Book a service and track it in real time here!
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {customerOrders.map(o => (
+              <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#fafafa', borderRadius: '12px', border: '1px solid #f0f0f0', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '13.5px', color: '#1e293b' }}>{o.vehicle?.name || 'Professional Service'}</strong>
+                    <span className={`status-chip ${o.status}`} style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'uppercase' }}>
+                      {o.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span>📍 {o.booking?.location}</span>
+                    <span>📅 {o.booking?.date} • {o.booking?.duration} {o.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}</span>
+                    {o.operator && (
+                      <span style={{ color: 'var(--primary)', fontWeight: '700', marginTop: '2px' }}>
+                        👷 Worker: {o.operator.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                  <strong style={{ fontSize: '15px', color: '#1e293b' }}>₹{o.booking?.total?.toLocaleString()}</strong>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => navigate(`/track/${o.id}`)}
+                      style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Track Job
+                    </button>
+                    {o.status === 'completed' && (
+                      <button
+                        onClick={() => setSelectedInvoiceOrder(o)}
+                        style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Receipt
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Form Block */}
@@ -255,6 +312,40 @@ export default function UserProfile() {
       >
         <HiLogout /> Logout Account
       </button>
+
+      {/* Customer visual invoice summary modal */}
+      {selectedInvoiceOrder && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setSelectedInvoiceOrder(null)}>
+          <div style={{ background: '#fff', width: '100%', maxWidth: '440px', borderRadius: '16px', padding: '24px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            <button style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }} onClick={() => setSelectedInvoiceOrder(null)}>×</button>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '6px' }}>🧾</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 4px', color: '#1e293b' }}>Service Invoice</h3>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Reference ID: #{selectedInvoiceOrder.id}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px dashed #e2e8f0', borderBottom: '1px dashed #e2e8f0', padding: '16px 0', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Service Requested</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.vehicle?.name}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Service Date</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.date}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Duration / Scope</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.duration} {selectedInvoiceOrder.vehicle?.unit === 'hr' ? 'Hours' : 'Trips'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Assigned Partner</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.operator?.name || 'Verified Professional'}</strong></div>
+              {selectedInvoiceOrder.booking?.notes && (
+                <div style={{ fontSize: '12px', background: '#f8fafc', padding: '8px', borderRadius: '6px', marginTop: '4px', border: '1px solid #f1f5f9' }}>
+                  <strong style={{ display: 'block', color: '#475569', marginBottom: '2px' }}>Order Notes/Instructions:</strong>
+                  <span style={{ color: '#64748b', display: 'block', whiteSpace: 'pre-wrap' }}>{selectedInvoiceOrder.booking.notes}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>
+              <span>Total Bill Paid</span>
+              <span style={{ color: 'var(--primary)', fontSize: '20px' }}>₹{selectedInvoiceOrder.booking?.total?.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+              <button onClick={() => window.print()} style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', flex: 1 }}>Print Receipt</button>
+              <button onClick={() => setSelectedInvoiceOrder(null)} style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', flex: 1 }}>Close Window</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -34,6 +34,7 @@ export default function WorkerProfile() {
   const [address, setAddress] = useState(user.address || '');
   const [radius, setRadius] = useState(user.radius || 10);
   const [skillsInput, setSkillsInput] = useState((user.skills || []).join(', '));
+  const [workClass, setWorkClass] = useState(user.vehicle || user.vehicle_details || '');
   const [selectedCategories, setSelectedCategories] = useState(user.categories || []);
   const [photo, setPhoto] = useState(user.photo || '');
 
@@ -87,7 +88,7 @@ export default function WorkerProfile() {
       categories: selectedCategories,
       photo,
       bank,
-      vehicle: `${primaryCategory} • ${user.experience || '3-5 years'} Exp`
+      vehicle: workClass || `${primaryCategory} • ${user.experience || '3-5 years'} Exp`
     };
 
     updateWorkerProfile(user.id, profileData);
@@ -199,6 +200,10 @@ export default function WorkerProfile() {
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '13px', fontWeight: '600' }}>Contact Phone
             <input className="auth-input" value={phone} onChange={e => setPhone(e.target.value)} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '14px' }} />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '13px', fontWeight: '600' }}>Work Class & Title (e.g. Senior Mason, Electrician)
+            <input className="auth-input" value={workClass} onChange={e => setWorkClass(e.target.value)} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '14px' }} placeholder="Specify your primary designation" />
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '13px', fontWeight: '600' }}>Work Area Radius (Km)

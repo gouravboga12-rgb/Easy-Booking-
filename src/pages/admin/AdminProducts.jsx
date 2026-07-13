@@ -21,10 +21,16 @@ export default function AdminProducts() {
     name: '',
     desc: '',
     category: 'professionals',
-    rate: 500,
+    rate: '500',
     unit: 'day',
     image: '',
   });
+
+  // Custom Fields States
+  const [customFields, setCustomFields] = useState([]);
+  const [newFieldName, setNewFieldName] = useState('');
+  const [newFieldType, setNewFieldType] = useState('text');
+  const [newFieldChoices, setNewFieldChoices] = useState('');
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
@@ -37,10 +43,14 @@ export default function AdminProducts() {
       name: '',
       desc: '',
       category: categories[0]?.id || 'professionals',
-      rate: 500,
+      rate: '500',
       unit: 'day',
       image: '',
     });
+    setCustomFields([]);
+    setNewFieldName('');
+    setNewFieldChoices('');
+    setNewFieldType('text');
     setShowModal(true);
   };
 
@@ -50,10 +60,14 @@ export default function AdminProducts() {
       name: v.name,
       desc: v.desc,
       category: v.category || 'professionals',
-      rate: v.rate,
+      rate: String(v.rate),
       unit: v.unit,
       image: v.image || '',
     });
+    setCustomFields(v.custom_fields || []);
+    setNewFieldName('');
+    setNewFieldChoices('');
+    setNewFieldType('text');
     setShowModal(true);
   };
 
@@ -66,6 +80,28 @@ export default function AdminProducts() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleAddField = () => {
+    if (!newFieldName.trim()) return;
+    const choices = newFieldType === 'select'
+      ? newFieldChoices.split(',').map(c => c.trim()).filter(Boolean)
+      : [];
+    
+    const newField = {
+      id: `field_${Date.now()}`,
+      name: newFieldName.trim(),
+      type: newFieldType,
+      choices,
+      required: true
+    };
+    setCustomFields([...customFields, newField]);
+    setNewFieldName('');
+    setNewFieldChoices('');
+  };
+
+  const handleDeleteField = (fieldId) => {
+    setCustomFields(customFields.filter(f => f.id !== fieldId));
   };
 
   const handleSubmit = async (e) => {
@@ -81,6 +117,7 @@ export default function AdminProducts() {
       rate: Number(form.rate),
       unit: form.unit,
       image: form.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80',
+      custom_fields: customFields
     };
 
     if (editingId) {
@@ -171,7 +208,7 @@ export default function AdminProducts() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '100%', padding: '28px' }}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '540px', width: '100%', padding: '28px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>{editingId ? 'Edit Service' : 'Add New Service'}</h3>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
@@ -196,7 +233,8 @@ export default function AdminProducts() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
                     Rate (₹)
-                    <input type="number" value={form.rate} onChange={e => setForm(p => ({ ...p, rate: e.target.value }))} min="1" style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }} required />
+                    {/* Hides up/down spin buttons by using type="text" with numeric filters */}
+                    <input type="text" value={form.rate} onChange={e => setForm(p => ({ ...p, rate: e.target.value.replace(/\D/g, '') }))} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }} required />
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
                     Unit
@@ -223,7 +261,64 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="cm-actions" style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              {/* Dynamic Option Fields Builder */}
+              <div style={{ borderTop: '1.5px solid #eee', paddingTop: '14px', marginTop: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1a1a1a', display: 'block', marginBottom: '8px' }}>Dynamic Booking Options (Add custom fields for this service)</span>
+                
+                {/* Existing fields list */}
+                {customFields.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                    {customFields.map(f => (
+                      <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12.5px' }}>
+                        <div>
+                          <strong style={{ color: '#0f172a' }}>{f.name}</strong> <span style={{ color: '#64748b', fontSize: '11px' }}>({f.type})</span>
+                          {f.choices.length > 0 && <span style={{ display: 'block', fontSize: '11px', color: '#888', marginTop: '2px' }}>Dropdown Options: {f.choices.join(', ')}</span>}
+                        </div>
+                        <button type="button" onClick={() => handleDeleteField(f.id)} style={{ border: 'none', background: 'none', color: '#ef4444', fontWeight: '700', cursor: 'pointer', fontSize: '12px' }}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new field builder row */}
+                <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '10px', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <input
+                      placeholder="Field Label (e.g. Number of Masons)"
+                      value={newFieldName}
+                      onChange={e => setNewFieldName(e.target.value)}
+                      style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', minWidth: '180px' }}
+                    />
+                    <select
+                      value={newFieldType}
+                      onChange={e => setNewFieldType(e.target.value)}
+                      style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', width: '130px' }}
+                    >
+                      <option value="text">Text Box</option>
+                      <option value="number">Numbers Only</option>
+                      <option value="file">Image / File Upload</option>
+                      <option value="select">Dropdown Select</option>
+                    </select>
+                  </div>
+                  {newFieldType === 'select' && (
+                    <input
+                      placeholder="Dropdown choices separated by commas (e.g. 1, 2, 3, 4, 5+)"
+                      value={newFieldChoices}
+                      onChange={e => setNewFieldChoices(e.target.value)}
+                      style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '11.5px' }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddField}
+                    style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '6px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-end' }}
+                  >
+                    + Add Field Option
+                  </button>
+                </div>
+              </div>
+
+              <div className="cm-actions" style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 {editingId && (
                   <button type="button" onClick={handleDelete} style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <HiTrash /> Delete

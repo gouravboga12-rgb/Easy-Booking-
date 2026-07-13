@@ -7,7 +7,7 @@ const router = express.Router();
 
 // POST /api/orders (Place an order / create booking)
 router.post('/', authenticateToken, async (req, res) => {
-  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType } = req.body;
+  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType, notes } = req.body;
   
   if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
     return res.status(400).json({ message: 'Missing required order fields' });
@@ -18,9 +18,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const status = workerId ? 'assigned' : 'pending';
 
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant']
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null]
     );
 
 
@@ -150,8 +150,8 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         const [orderRows] = await pool.query(`
           SELECT b.*, 
                  c.name AS customer_name, c.email AS customer_email,
-                 w.name AS worker_name,
-                 s.name AS vehicle_name
+                 w.name AS worker_name, w.email AS worker_email,
+                 s.name AS vehicle_name, s.unit AS unit
           FROM bookings b
           LEFT JOIN users c ON b.customer_id = c.id
           LEFT JOIN users w ON b.worker_id = w.id
@@ -164,6 +164,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
           if (orderData.customer_email) {
             sendInvoiceEmail(orderData.customer_email, orderData.customer_name || 'Customer', orderData).catch(err => {
               console.error('Invoice email dispatch failed:', err);
+            });
+          }
+          if (orderData.worker_email) {
+            sendInvoiceEmail(orderData.worker_email, orderData.worker_name || 'Worker', orderData).catch(err => {
+              console.error('Invoice email copy to worker failed:', err);
             });
           }
         }
@@ -232,6 +237,25 @@ router.put('/:id/review', authenticateToken, async (req, res) => {
     res.json({ message: 'Review submitted successfully' });
   } catch (err) {
     console.error('Review submit error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// DELETE /api/orders/:id (Admin only)
+router.delete('/:id', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Forbidden. Admin access required' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    const [existing] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]); // Wait, SELECT * FROM bookings!
+    // Ah, let's write SELECT * FROM bookings WHERE id = ?
+    await pool.query('DELETE FROM bookings WHERE id = ?', [id]);
+    res.json({ message: 'Booking deleted successfully' });
+  } catch (err) {
+    console.error('Delete booking error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

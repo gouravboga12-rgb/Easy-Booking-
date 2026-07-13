@@ -11,6 +11,7 @@ export default function AdminOrders() {
   const orders = useStore(s => s.orders);
   const assignWorker = useStore(s => s.assignWorker);
   const cancelOrder = useStore(s => s.cancelOrder);
+  const deleteOrder = useStore(s => s.deleteOrder);
   const advanceStage = useStore(s => s.advanceStage);
   const users = useAuthStore(s => s.users);
   const workers = users.filter(u => u.role === 'worker');
@@ -26,6 +27,14 @@ export default function AdminOrders() {
       setDisputedOrders(disputedOrders.filter(id => id !== orderId));
     } else {
       setDisputedOrders([...disputedOrders, orderId]);
+    }
+  };
+
+  const handleDeleteClick = async (orderId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this booking record from the database? This action is irreversible.')) return;
+    const res = await deleteOrder(orderId);
+    if (!res?.success) {
+      alert(res?.error || 'Failed to delete booking');
     }
   };
 
@@ -181,6 +190,10 @@ export default function AdminOrders() {
                             <HiX /> Cancel
                           </button>
                         )}
+
+                        <button className="act-btn delete" onClick={() => handleDeleteClick(o.id)} style={{ background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                          🗑️ Delete
+                        </button>
                       </div>
                     </td>
                   </tr>

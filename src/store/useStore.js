@@ -219,7 +219,8 @@ export const useStore = create((set, get) => ({
       duration: booking.duration,
       totalAmount: booking.total,
       vehicleId: vehicle.id,
-      bookingType: booking.bookingType || 'instant'
+      bookingType: booking.bookingType || 'instant',
+      notes: booking.notes || booking.instructions || null
     };
     try {
       const response = await fetch(`${API_BASE_URL}/orders`, {
@@ -238,6 +239,29 @@ export const useStore = create((set, get) => ({
       }
     } catch (err) {
       console.error('Error placing order:', err);
+    }
+  },
+
+  deleteOrder: async (orderId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({
+          orders: s.orders.filter(o => o.id !== orderId)
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to delete order' };
+      }
+    } catch (err) {
+      console.error('Delete order error:', err);
+      return { error: 'Connection error' };
     }
   },
 
