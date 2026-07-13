@@ -298,6 +298,27 @@ export default function WorkerHome() {
     }
   };
 
+  const handleFetchGpsLocation = () => {
+    if (!navigator.geolocation) {
+      alert("GPS is not supported by your browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setWorkerCoords({ lat: latitude, lng: longitude });
+        updateWorkerLocation(latitude, longitude);
+        setLocMessage("🟢 GPS location fetched and updated successfully!");
+        setTimeout(() => setLocMessage(''), 5000);
+      },
+      (err) => {
+        console.warn(err);
+        alert("Unable to fetch GPS. Make sure location permission is allowed and HTTPS is active.");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
   const handleUploadSimulatedImages = () => {
     // Simulate uploading completion photos
     const mockFiles = ['completed_job_after1.jpg', 'completed_job_after2.jpg'];
@@ -500,7 +521,33 @@ export default function WorkerHome() {
 
               {/* Manual Location Input override */}
               <div style={{ marginTop: '14px', background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>📍 Enter Current Location Manually:</div>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>📍 Set Current Live Location:</div>
+                
+                {/* Direct GPS Fetch Button */}
+                <button
+                  type="button"
+                  onClick={handleFetchGpsLocation}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    marginBottom: '10px'
+                  }}
+                >
+                  🧭 Fetch My Current GPS Location
+                </button>
+
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', margin: '6px 0' }}>Or search & update manually:</div>
                 <form onSubmit={handleUpdateLocationByName} style={{ display: 'flex', gap: '6px' }}>
                   <input
                     type="text"
@@ -510,7 +557,7 @@ export default function WorkerHome() {
                     style={{ flex: 1, padding: '6px 10px', fontSize: '12px', borderRadius: '6px', border: '1px solid #d1d5db' }}
                   />
                   <button type="submit" style={{ padding: '6px 12px', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                    Set Location
+                    Search
                   </button>
                 </form>
                 {locMessage && <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>{locMessage}</div>}

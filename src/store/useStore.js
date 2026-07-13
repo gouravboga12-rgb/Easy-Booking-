@@ -16,6 +16,7 @@ const formatDbOrder = (dbOrder, services) => {
   let stage = 0;
   if (dbOrder.status === 'assigned') stage = 1;
   else if (dbOrder.status === 'active') stage = 2;
+  else if (dbOrder.status === 'arrived') stage = 3;
   else if (dbOrder.status === 'completed') stage = 4;
 
   return {
@@ -269,6 +270,7 @@ export const useStore = create((set, get) => ({
     let nextStatus = 'active';
     if (order.stage === 0) nextStatus = 'assigned';
     else if (order.stage === 1) nextStatus = 'active';
+    else if (order.stage === 2) nextStatus = 'arrived';
     else if (order.stage === 3) nextStatus = 'completed';
 
     try {

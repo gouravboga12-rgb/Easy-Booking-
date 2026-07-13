@@ -83,6 +83,10 @@ export default function BookingFlow() {
     );
   };
 
+  useEffect(() => {
+    handleLocateMe();
+  }, []);
+
   const handleMapMoveEnd = async (e) => {
     const lat = e.viewState.latitude;
     const lng = e.viewState.longitude;
