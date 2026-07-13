@@ -19,6 +19,18 @@ const formatDbOrder = (dbOrder, services) => {
   else if (dbOrder.status === 'arrived') stage = 3;
   else if (dbOrder.status === 'completed') stage = 4;
 
+  let rejectedList = [];
+  if (dbOrder.rejected_workers) {
+    try {
+      rejectedList = JSON.parse(dbOrder.rejected_workers);
+      if (!Array.isArray(rejectedList)) {
+        rejectedList = [];
+      }
+    } catch (e) {
+      rejectedList = [];
+    }
+  }
+
   return {
     id: dbOrder.id,
     vehicle,
@@ -38,7 +50,7 @@ const formatDbOrder = (dbOrder, services) => {
     status: dbOrder.status,
     placedAt: new Date(dbOrder.created_at).toLocaleTimeString(),
     createdAt: dbOrder.created_at,
-    rejectedWorkers: dbOrder.rejected_workers ? JSON.parse(dbOrder.rejected_workers) : []
+    rejectedWorkers: rejectedList
   };
 };
 
