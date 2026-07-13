@@ -18,6 +18,10 @@ async function migrate() {
       await pool.query("ALTER TABLE users ADD COLUMN pan_photo LONGTEXT NULL");
       console.log("Column 'pan_photo' added to users.");
     }
+    if (!colNamesUsers.includes('wallet')) {
+      await pool.query("ALTER TABLE users ADD COLUMN wallet JSON NULL");
+      console.log("Column 'wallet' added to users.");
+    }
 
     // Bookings table coordinates
     const [columnsBookings] = await pool.query("SHOW COLUMNS FROM bookings");

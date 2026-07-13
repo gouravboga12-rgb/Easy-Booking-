@@ -226,6 +226,44 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  addWorkerEarning: async (workerId, amount, description) => {
+    const user = get().user;
+    if (!user) return;
+
+    const currentWallet = user.wallet || { balance: 0, transactions: [] };
+    const nextBalance = Number(currentWallet.balance || 0) + Number(amount);
+    const newTransaction = {
+      id: `txn-${Date.now()}`,
+      amount: Number(amount),
+      description,
+      type: amount >= 0 ? 'credit' : 'debit',
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    const nextWallet = {
+      balance: nextBalance,
+      transactions: [newTransaction, ...(currentWallet.transactions || [])]
+    };
+
+    const updatedUser = { ...user, wallet: nextWallet };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ wallet: nextWallet })
+      });
+    } catch (err) {
+      console.error('Failed to sync wallet to database:', err);
+    }
+  },
+
   resetUserPassword: async (userId, newPassword) => {
     try {
       const token = localStorage.getItem('token');

@@ -364,10 +364,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details } = req.body;
+  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, wallet } = req.body;
   try {
     const catJson = categories ? JSON.stringify(categories) : undefined;
     const skillsJson = skills ? JSON.stringify(skills) : undefined;
+    const walletJson = wallet ? JSON.stringify(wallet) : undefined;
 
     await pool.query(
       `UPDATE users SET 
@@ -380,9 +381,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
         bank = COALESCE(?, bank),
         aadhar = COALESCE(?, aadhar),
         pan = COALESCE(?, pan),
-        vehicle_details = COALESCE(?, vehicle_details)
+        vehicle_details = COALESCE(?, vehicle_details),
+        wallet = COALESCE(?, wallet)
        WHERE id = ?`,
-      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, vehicle_details, req.user.id]
+      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, vehicle_details, walletJson, req.user.id]
     );
 
     const [updated] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
