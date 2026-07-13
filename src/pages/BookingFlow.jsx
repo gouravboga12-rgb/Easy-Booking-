@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -13,6 +13,7 @@ import Map from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './BookingFlow.css';
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
 
 export default function BookingFlow() {
@@ -57,7 +58,7 @@ export default function BookingFlow() {
         setCoords({ lat: latitude, lng: longitude });
         setViewState(v => ({ ...v, latitude, longitude }));
         
-        const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+        const token = MAPBOX_TOKEN;
         if (token) {
           try {
             const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`);
@@ -93,7 +94,7 @@ export default function BookingFlow() {
     setCoords({ lat, lng });
     setViewState(e.viewState);
 
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (token) {
       try {
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&limit=1`);
@@ -266,7 +267,7 @@ export default function BookingFlow() {
                     {locLoading ? '⌛ Locating...' : '🎯 Use Current Location'}
                   </button>
                 </div>
-                {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN && (
+                {MAPBOX_TOKEN && (
                   <div style={{ position: 'relative', width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginTop: '10px', border: '1.5px solid #eee' }}>
                     <Map
                       {...viewState}
@@ -274,7 +275,7 @@ export default function BookingFlow() {
                       onMoveEnd={handleMapMoveEnd}
                       style={{ width: '100%', height: '100%' }}
                       mapStyle="mapbox://styles/mapbox/streets-v12"
-                      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                      mapboxAccessToken={MAPBOX_TOKEN}
                     />
                     {/* Fixed center pin icon overlay */}
                     <div style={{
