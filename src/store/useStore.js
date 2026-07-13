@@ -461,5 +461,91 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       console.error('Error rejecting active job:', err);
     }
+  },
+
+  subscriptionPlans: [],
+
+  fetchSubscriptionPlans: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscriptions`);
+      const data = await response.json();
+      if (response.ok) {
+        set({ subscriptionPlans: data });
+      }
+    } catch (err) {
+      console.error('Fetch subscription plans error:', err);
+    }
+  },
+
+  addSubscriptionPlan: async (planData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/subscriptions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(planData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({ subscriptionPlans: [...s.subscriptionPlans, data] }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to create plan' };
+      }
+    } catch (err) {
+      console.error('Add subscription plan error:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
+  updateSubscriptionPlan: async (id, updatedData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/subscriptions/${id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({ 
+          subscriptionPlans: s.subscriptionPlans.map(p => p.id === id ? data : p) 
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to update plan' };
+      }
+    } catch (err) {
+      console.error('Update subscription plan error:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
+  deleteSubscriptionPlan: async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/subscriptions/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({ 
+          subscriptionPlans: s.subscriptionPlans.filter(p => p.id !== id) 
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to delete plan' };
+      }
+    } catch (err) {
+      console.error('Delete subscription plan error:', err);
+      return { error: 'Connection error' };
+    }
   }
 }));

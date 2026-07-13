@@ -651,3 +651,40 @@
 .ath-drop-item:hover { background: #f8f8f8; }
 .ath-drop-item.logout { color: #ef4444; }
 .ath-drop-icon { width: 16px; height: 16px; opacity: 0.8; }
+
+/* Admin Header Refresh Icon styles */
+.ath-refresh-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.18s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.ath-refresh-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.ath-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.ath-refresh-icon {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s;
+}
+.spin-icon {
+  animation: spin-anim 1s linear infinite;
+}
+@keyframes spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

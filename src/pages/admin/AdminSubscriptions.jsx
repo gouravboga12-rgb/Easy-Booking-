@@ -1,66 +1,143 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { HiCurrencyRupee, HiPlus, HiPencil, HiTrash, HiTag, HiCheckCircle } from 'react-icons/hi';
 import './Admin.css';
 
-const DEFAULT_PLANS = {
-  worker: [
-    { id: 'w1', name: '₹99 Monthly', price: 99, duration: 1, features: ['Dispatch Requests', 'Public Profile', 'Accept Bookings'], active: true },
-    { id: 'w2', name: 'Premium 6-Month', price: 299, duration: 6, features: ['2x Visibility Boost', '6 Months Access', 'Priority Dispatch'], active: true },
-    { id: 'w3', name: 'Featured 1-Year', price: 499, duration: 12, features: ['Top Listing Badge', '1 Year Access', 'Verified Seal'], active: true },
-  ],
-  customer: [
-    { id: 'c1', name: 'Basic Membership', price: 0, duration: 0, features: ['Standard Bookings', 'Order Tracking', 'Customer Support'], active: true },
-    { id: 'c2', name: 'Premium Customer', price: 149, duration: 3, features: ['Priority Dispatch', 'Discounted Rates', 'Dedicated Support'], active: true },
-  ],
-};
-
-const COUPONS_INIT = [
-  { id: 'cp1', code: 'FIRST50', discount: 50, type: '%', minOrder: 200, uses: 12, active: true },
-  { id: 'cp2', code: 'SAVE100', discount: 100, type: '₹', minOrder: 500, uses: 4, active: true },
-];
-
 export default function AdminSubscriptions() {
-  const orders = useStore(s => s.orders);
   const users = useAuthStore(s => s.users);
   const workers = users.filter(u => u.role === 'worker');
 
+  const subscriptionPlans = useStore(s => s.subscriptionPlans);
+  const fetchSubscriptionPlans = useStore(s => s.fetchSubscriptionPlans);
+  const addSubscriptionPlan = useStore(s => s.addSubscriptionPlan);
+  const updateSubscriptionPlan = useStore(s => s.updateSubscriptionPlan);
+  const deleteSubscriptionPlan = useStore(s => s.deleteSubscriptionPlan);
+
   const [tab, setTab] = useState('plans');
-  const [plans, setPlans] = useState(DEFAULT_PLANS);
-  const [coupons, setCoupons] = useState(COUPONS_INIT);
   const [editingPlan, setEditingPlan] = useState(null);
-  const [newCoupon, setNewCoupon] = useState({ code: '', discount: '', type: '%', minOrder: '' });
   const [successMsg, setSuccessMsg] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
+  // New Plan form state
+  const [newPlan, setNewPlan] = useState({
+    name: '',
+    price: '',
+    duration: '',
+    description: '',
+    featuresString: '',
+    type: 'worker',
+    active: true
+  });
 
-  const activeWorkerPlans = workers.filter(w => w.subscription?.active).length;
+  // Coupons state (Simulated)
+  const [coupons, setCoupons] = useState([
+    { id: 'cp1', code: 'FIRST50', discount: 50, type: '%', minOrder: 200, uses: 12, active: true },
+    { id: 'cp2', code: 'SAVE100', discount: 100, type: '₹', minOrder: 500, uses: 4, active: true },
+  ]);
+  const [newCoupon, setNewCoupon] = useState({ code: '', discount: '', type: '%', minOrder: '' });
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      await fetchSubscriptionPlans();
+      setLoading(false);
+    };
+    loadPlans();
+  }, [fetchSubscriptionPlans]);
+
+  const showSuccess = (msg) => { 
+    setSuccessMsg(msg); 
+    setTimeout(() => setSuccessMsg(''), 3000); 
+  };
+
+  const activeWorkerPlansCount = workers.filter(w => w.subscription?.active).length;
   const totalSubRevenue = workers.reduce((sum, w) => {
-    const plan = [...DEFAULT_PLANS.worker].find(p => p.name === w.subscription?.plan);
-    return sum + (plan?.price || 0);
+    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
+    return sum + (parseFloat(plan?.price) || 0);
   }, 0);
 
-  const handleSavePlan = (e) => {
+  const handleCreatePlan = async (e) => {
+    e.preventDefault();
+    if (!newPlan.name || newPlan.price === undefined || newPlan.duration === undefined) return;
+
+    const featuresList = newPlan.featuresString 
+      ? newPlan.featuresString.split(',').map(f => f.trim()).filter(Boolean) 
+      : [];
+
+    const res = await addSubscriptionPlan({
+      name: newPlan.name,
+      price: Number(newPlan.price),
+      duration: Number(newPlan.duration),
+      description: newPlan.description,
+      features: featuresList,
+      active: newPlan.active ? 1 : 0,
+      type: newPlan.type
+    });
+
+    if (res && res.success) {
+      setNewPlan({
+        name: '',
+        price: '',
+        duration: '',
+        description: '',
+        featuresString: '',
+        type: 'worker',
+        active: true
+      });
+      showSuccess('Subscription plan created successfully!');
+    } else {
+      alert(res?.error || 'Failed to create plan');
+    }
+  };
+
+  const handleSavePlan = async (e) => {
     e.preventDefault();
     if (!editingPlan) return;
-    setPlans(prev => ({
-      ...prev,
-      [editingPlan.type]: prev[editingPlan.type].map(p =>
-        p.id === editingPlan.id ? { ...editingPlan } : p
-      )
-    }));
-    setEditingPlan(null);
-    showSuccess('Subscription plan updated successfully!');
+
+    const featuresList = typeof editingPlan.featuresString === 'string'
+      ? editingPlan.featuresString.split(',').map(f => f.trim()).filter(Boolean)
+      : editingPlan.features;
+
+    const res = await updateSubscriptionPlan(editingPlan.id, {
+      name: editingPlan.name,
+      price: Number(editingPlan.price),
+      duration: Number(editingPlan.duration),
+      description: editingPlan.description,
+      features: featuresList,
+      type: editingPlan.type,
+      active: editingPlan.active ? 1 : 0
+    });
+
+    if (res && res.success) {
+      setEditingPlan(null);
+      showSuccess('Subscription plan updated successfully!');
+    } else {
+      alert(res?.error || 'Failed to update plan');
+    }
   };
 
-  const handleTogglePlan = (type, planId) => {
-    setPlans(prev => ({
-      ...prev,
-      [type]: prev[type].map(p => p.id === planId ? { ...p, active: !p.active } : p)
-    }));
+  const handleTogglePlan = async (plan) => {
+    const res = await updateSubscriptionPlan(plan.id, {
+      active: plan.active ? 0 : 1
+    });
+    if (res && res.success) {
+      showSuccess(`Subscription plan ${plan.active ? 'disabled' : 'enabled'} successfully!`);
+    } else {
+      alert(res?.error || 'Failed to toggle status');
+    }
   };
 
+  const handleDeletePlan = async (planId) => {
+    if (!confirm('Are you sure you want to delete this subscription plan?')) return;
+    const res = await deleteSubscriptionPlan(planId);
+    if (res && res.success) {
+      showSuccess('Subscription plan deleted successfully!');
+    } else {
+      alert(res?.error || 'Failed to delete plan');
+    }
+  };
+
+  // Coupons handlers (Simulated)
   const handleAddCoupon = (e) => {
     e.preventDefault();
     if (!newCoupon.code || !newCoupon.discount) return;
@@ -85,6 +162,10 @@ export default function AdminSubscriptions() {
     setCoupons(prev => prev.filter(cp => cp.id !== cpId));
   };
 
+  // Group plans from database
+  const workerPlans = subscriptionPlans.filter(p => p.type === 'worker');
+  const customerPlans = subscriptionPlans.filter(p => p.type === 'customer');
+
   return (
     <div className="admin-page" style={{ paddingBottom: '32px' }}>
       <div className="admin-header">
@@ -103,7 +184,7 @@ export default function AdminSubscriptions() {
       {/* Subscription Revenue Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
         {[
-          { label: 'Active Worker Plans', val: activeWorkerPlans, color: '#8b5cf6', sub: `of ${workers.length} workers` },
+          { label: 'Active Worker Plans', val: activeWorkerPlansCount, color: '#8b5cf6', sub: `of ${workers.length} workers` },
           { label: 'Subscription Revenue', val: `₹${totalSubRevenue.toLocaleString()}`, color: '#10b981', sub: 'all-time estimate' },
           { label: 'Active Coupons', val: coupons.filter(c => c.active).length, color: '#f59e0b', sub: 'promotional codes' },
         ].map(({ label, val, color, sub }) => (
@@ -125,55 +206,179 @@ export default function AdminSubscriptions() {
       </div>
 
       {tab === 'plans' && (
-        <>
-          {['worker', 'customer'].map(planType => (
-            <div key={planType} style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '16px', textTransform: 'capitalize' }}>
-                {planType === 'worker' ? '👷 Worker Subscription Plans' : '👤 Customer Membership Plans'}
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {plans[planType].map(plan => (
-                  <div key={plan.id} style={{ border: '1.5px solid', borderColor: plan.active ? '#e0e7ff' : '#eee', background: plan.active ? '#f8faff' : '#fafafa', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <strong style={{ fontSize: '15px', color: '#1a1a1a' }}>{plan.name}</strong>
-                      <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--primary)', margin: '4px 0 6px' }}>
-                        ₹{plan.price} <span style={{ fontSize: '13px', fontWeight: '400', color: '#888' }}>/ {plan.duration === 0 ? 'free' : plan.duration === 1 ? 'month' : `${plan.duration} months`}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+          {/* Left Column: Manage Plans */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Worker Plans List */}
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px' }}>👷 Worker Subscription Plans</h2>
+              {loading ? (
+                <div>🔄 Loading...</div>
+              ) : workerPlans.length === 0 ? (
+                <div style={{ color: '#aaa', fontStyle: 'italic' }}>No worker plans created yet.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {workerPlans.map(plan => (
+                    <div key={plan.id} style={{ border: '1.5px solid', borderColor: plan.active ? '#e0e7ff' : '#eee', background: plan.active ? '#f8faff' : '#fafafa', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <strong style={{ fontSize: '15px', color: '#1a1a1a' }}>{plan.name}</strong>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', margin: '4px 0' }}>
+                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {plan.duration === 0 ? 'free' : plan.duration === 1 ? 'month' : `${plan.duration} months`}</span>
+                        </div>
+                        {plan.description && <p style={{ fontSize: '12px', color: '#666', margin: '4px 0' }}>{plan.description}</p>}
+                        {plan.features && plan.features.length > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            {plan.features.map(f => (
+                              <span key={f} style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>✔ {f}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {plan.features.map(f => (
-                          <span key={f} style={{ fontSize: '11px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>✔ {f}</span>
-                        ))}
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', background: plan.active ? '#dcfce7' : '#f3f4f6', color: plan.active ? '#15803d' : '#9ca3af', padding: '2px 10px', borderRadius: '10px', fontWeight: '700' }}>
+                          {plan.active ? 'Active' : 'Disabled'}
+                        </span>
+                        <button
+                          onClick={() => setEditingPlan({ ...plan, featuresString: plan.features.join(', ') })}
+                          style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          <HiPencil />
+                        </button>
+                        <button
+                          onClick={() => handleTogglePlan(plan)}
+                          style={{ background: plan.active ? '#fee2e2' : '#dcfce7', color: plan.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: plan.active ? '#fca5a5' : '#bbf7d0', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          {plan.active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button
+                          onClick={() => handleDeletePlan(plan.id)}
+                          style={{ background: 'none', border: '1px solid #fca5a5', color: '#ef4444', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          <HiTrash />
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', background: plan.active ? '#dcfce7' : '#f3f4f6', color: plan.active ? '#15803d' : '#9ca3af', padding: '2px 10px', borderRadius: '10px', fontWeight: '700' }}>
-                        {plan.active ? 'Active' : 'Disabled'}
-                      </span>
-                      <button
-                        onClick={() => setEditingPlan({ ...plan, type: planType })}
-                        style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
-                      >
-                        <HiPencil style={{ verticalAlign: 'middle' }} /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleTogglePlan(planType, plan.id)}
-                        style={{ background: plan.active ? '#fee2e2' : '#dcfce7', color: plan.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: plan.active ? '#fca5a5' : '#bbf7d0', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
-                      >
-                        {plan.active ? 'Disable' : 'Enable'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-        </>
+
+            {/* Customer Plans List */}
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px' }}>👤 Customer Membership Plans</h2>
+              {loading ? (
+                <div>🔄 Loading...</div>
+              ) : customerPlans.length === 0 ? (
+                <div style={{ color: '#aaa', fontStyle: 'italic' }}>No customer plans created yet.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {customerPlans.map(plan => (
+                    <div key={plan.id} style={{ border: '1.5px solid', borderColor: plan.active ? '#e0e7ff' : '#eee', background: plan.active ? '#f8faff' : '#fafafa', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <strong style={{ fontSize: '15px', color: '#1a1a1a' }}>{plan.name}</strong>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', margin: '4px 0' }}>
+                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {plan.duration === 0 ? 'free' : plan.duration === 1 ? 'month' : `${plan.duration} months`}</span>
+                        </div>
+                        {plan.description && <p style={{ fontSize: '12px', color: '#666', margin: '4px 0' }}>{plan.description}</p>}
+                        {plan.features && plan.features.length > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            {plan.features.map(f => (
+                              <span key={f} style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>✔ {f}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', background: plan.active ? '#dcfce7' : '#f3f4f6', color: plan.active ? '#15803d' : '#9ca3af', padding: '2px 10px', borderRadius: '10px', fontWeight: '700' }}>
+                          {plan.active ? 'Active' : 'Disabled'}
+                        </span>
+                        <button
+                          onClick={() => setEditingPlan({ ...plan, featuresString: plan.features.join(', ') })}
+                          style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          <HiPencil />
+                        </button>
+                        <button
+                          onClick={() => handleTogglePlan(plan)}
+                          style={{ background: plan.active ? '#fee2e2' : '#dcfce7', color: plan.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: plan.active ? '#fca5a5' : '#bbf7d0', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          {plan.active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button
+                          onClick={() => handleDeletePlan(plan.id)}
+                          style={{ background: 'none', border: '1px solid #fca5a5', color: '#ef4444', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          <HiTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Create Subscription Plan Form */}
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee', position: 'sticky', top: '20px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <HiPlus style={{ color: 'var(--primary)' }} /> Add Subscription Plan
+            </h2>
+            <form onSubmit={handleCreatePlan} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                Plan Name
+                <input value={newPlan.name} onChange={e => setNewPlan(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Pro Monthly Plan" required style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                  Price (₹)
+                  <input type="number" value={newPlan.price} onChange={e => setNewPlan(p => ({ ...p, price: e.target.value }))} placeholder="199" required min="0" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                  Duration (Months)
+                  <input type="number" value={newPlan.duration} onChange={e => setNewPlan(p => ({ ...p, duration: e.target.value }))} placeholder="3" required min="0" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                  Plan Audience
+                  <select value={newPlan.type} onChange={e => setNewPlan(p => ({ ...p, type: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}>
+                    <option value="worker">Worker Package</option>
+                    <option value="customer">Customer Membership</option>
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                  Status
+                  <select value={newPlan.active ? '1' : '0'} onChange={e => setNewPlan(p => ({ ...p, active: e.target.value === '1' }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}>
+                    <option value="1">Active / Live</option>
+                    <option value="0">Disabled</option>
+                  </select>
+                </label>
+              </div>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                Brief Description
+                <input value={newPlan.description} onChange={e => setNewPlan(p => ({ ...p, description: e.target.value }))} placeholder="Brief summary of the package" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                Key Features (comma-separated list)
+                <textarea value={newPlan.featuresString} onChange={e => setNewPlan(p => ({ ...p, featuresString: e.target.value }))} placeholder="Visibility Boost, Priority Support, verified badge" rows="3" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', fontFamily: 'inherit' }} />
+              </label>
+
+              <button type="submit" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', marginTop: '4px' }}>
+                Save Subscription Plan
+              </button>
+            </form>
+          </div>
+        </div>
       )}
 
       {tab === 'coupons' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Add new coupon form */}
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '14px' }}>
               <HiPlus style={{ verticalAlign: 'middle', marginRight: '6px', color: 'var(--primary)' }} /> Create New Coupon
             </h2>
@@ -204,7 +409,7 @@ export default function AdminSubscriptions() {
           </div>
 
           {/* Coupons list */}
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '14px' }}>
               <HiTag style={{ verticalAlign: 'middle', marginRight: '6px', color: '#f59e0b' }} /> All Coupons ({coupons.length})
             </h2>
@@ -250,6 +455,18 @@ export default function AdminSubscriptions() {
               </label>
               <label style={{ fontSize: '12px', fontWeight: '700' }}>Duration (months, 0 = free)
                 <input type="number" value={editingPlan.duration} onChange={e => setEditingPlan(p => ({ ...p, duration: Number(e.target.value) }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700' }}>Audience Type
+                <select value={editingPlan.type} onChange={e => setEditingPlan(p => ({ ...p, type: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }}>
+                  <option value="worker">Worker</option>
+                  <option value="customer">Customer</option>
+                </select>
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700' }}>Brief Description
+                <input value={editingPlan.description || ''} onChange={e => setEditingPlan(p => ({ ...p, description: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} />
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700' }}>Key Features (comma-separated list)
+                <textarea value={editingPlan.featuresString || ''} onChange={e => setEditingPlan(p => ({ ...p, featuresString: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box', fontFamily: 'inherit' }} rows="3" />
               </label>
               <div className="cm-actions" style={{ marginTop: '10px' }}>
                 <button type="button" className="cm-cancel" onClick={() => setEditingPlan(null)}>Cancel</button>

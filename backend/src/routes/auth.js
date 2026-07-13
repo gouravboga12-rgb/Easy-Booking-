@@ -44,6 +44,40 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('reviews')) {
       await pool.query('ALTER TABLE users ADD COLUMN reviews JSON NULL');
     }
+
+    // Ensure subscription_plans table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subscription_plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        duration INT NOT NULL,
+        description TEXT NULL,
+        features JSON NULL,
+        active TINYINT(1) DEFAULT 1,
+        type ENUM('worker', 'customer') DEFAULT 'worker',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed default subscription plans if table is empty
+    const [existingPlans] = await pool.query('SELECT COUNT(*) AS count FROM subscription_plans');
+    if (existingPlans[0].count === 0) {
+      const defaultPlans = [
+        ['₹99 Monthly', 99, 1, 'Receive client matches, active dispatch alerts', JSON.stringify(['Dispatch Requests', 'Public Profile', 'Accept Bookings']), 1, 'worker'],
+        ['Premium 6-Month', 299, 6, '6 Months access, 2x booking visibility boost', JSON.stringify(['2x Visibility Boost', '6 Months Access', 'Priority Dispatch']), 1, 'worker'],
+        ['Featured 1-Year', 499, 12, '1 Year access, top search listing, badge verification', JSON.stringify(['Top Listing Badge', '1 Year Access', 'Verified Seal']), 1, 'worker'],
+        ['Basic Membership', 0, 0, 'Standard bookings and customer support', JSON.stringify(['Standard Bookings', 'Order Tracking', 'Customer Support']), 1, 'customer'],
+        ['Premium Customer', 149, 3, 'Priority dispatch, discounted rates, dedicated support', JSON.stringify(['Priority Dispatch', 'Discounted Rates', 'Dedicated Support']), 1, 'customer']
+      ];
+      for (const p of defaultPlans) {
+        await pool.query(
+          'INSERT INTO subscription_plans (name, price, duration, description, features, active, type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          p
+        );
+      }
+      console.log('DB migration: Seeded default subscription plans');
+    }
     // Make password_hash nullable to support Google OAuth users (who have no password)
     const passwordCol = columns.find(c => c.Field === 'password_hash');
     if (passwordCol && passwordCol.Null === 'NO') {

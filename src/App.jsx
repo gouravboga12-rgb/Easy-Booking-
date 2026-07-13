@@ -44,6 +44,7 @@ import WorkerOrders from './pages/worker/WorkerOrders';
 import WorkerHistory from './pages/worker/WorkerHistory';
 import WorkerWallet from './pages/worker/WorkerWallet';
 import WorkerProfile from './pages/worker/WorkerProfile';
+import WorkerSubscription from './pages/worker/WorkerSubscription';
 import UserProfile from './pages/UserProfile';
 
 import './App.css';
@@ -83,14 +84,25 @@ function Layout() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === 'admin') {
-      fetchWorkers();
-      fetchOrdersForAdmin();
-    } else if (user.role === 'customer') {
-      fetchOrdersForCustomer(user.id);
-    } else if (user.role === 'worker') {
-      fetchOrdersForWorker(user.id);
-    }
+
+    const refreshData = () => {
+      if (user.role === 'admin') {
+        fetchWorkers();
+        fetchOrdersForAdmin();
+      } else if (user.role === 'customer') {
+        fetchOrdersForCustomer(user.id);
+      } else if (user.role === 'worker') {
+        fetchOrdersForWorker(user.id);
+      }
+    };
+
+    // Initial fetch
+    refreshData();
+
+    // Background polling interval (every 6 seconds) to refresh the lists
+    const interval = setInterval(refreshData, 6000);
+
+    return () => clearInterval(interval);
   }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin]);
 
   return (
@@ -150,6 +162,7 @@ function Layout() {
             <Route path="orders"  element={<WorkerOrders />} />
             <Route path="history" element={<WorkerHistory />} />
             <Route path="wallet"  element={<WorkerWallet />} />
+            <Route path="subscription" element={<WorkerSubscription />} />
             <Route path="profile" element={<WorkerProfile />} />
           </Route>
         </Routes>

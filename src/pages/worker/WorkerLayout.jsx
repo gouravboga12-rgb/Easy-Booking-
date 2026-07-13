@@ -1,15 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser } from 'react-icons/hi';
+import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser, HiLightningBolt } from 'react-icons/hi';
 import { MdConstruction } from 'react-icons/md';
 import './Worker.css';
 
 const NAV = [
-  { to: '/worker',          icon: HiHome,           label: 'Home'    },
-  { to: '/worker/orders',   icon: HiClipboardList,  label: 'Orders'  },
-  { to: '/worker/history',  icon: HiClock,          label: 'History' },
-  { to: '/worker/wallet',   icon: HiCurrencyRupee,  label: 'Payments & Subscription'  },
-  { to: '/worker/profile',  icon: HiUser,           label: 'Profile' },
+  { to: '/worker',              icon: HiHome,           label: 'Home'    },
+  { to: '/worker/orders',       icon: HiClipboardList,  label: 'Orders'  },
+  { to: '/worker/history',      icon: HiClock,          label: 'History' },
+  { to: '/worker/wallet',       icon: HiCurrencyRupee,  label: 'Payments & Earnings'  },
+  { to: '/worker/subscription', icon: HiLightningBolt,  label: 'Subscription Plan'  },
+  { to: '/worker/profile',      icon: HiUser,           label: 'Profile' },
 ];
 
 export default function WorkerLayout() {
