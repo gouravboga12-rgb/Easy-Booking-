@@ -33,6 +33,7 @@ export default function WorkerHome() {
   const updateWorkerLocation = useStore(s => s.updateWorkerLocation);
   const sendWorkerMessage = useStore(s => s.sendWorkerMessage);
   const rejectActiveJob = useStore(s => s.rejectActiveJob);
+  const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
 
   const [simulatedFiles, setSimulatedFiles] = useState([]);
   const [completeSuccess, setCompleteSuccess] = useState(false);
@@ -349,6 +350,43 @@ export default function WorkerHome() {
     setTimeout(() => setCompleteSuccess(false), 5000);
   };
 
+  const handleCancelJob = async (e) => {
+    e.preventDefault();
+    const finalReason = cancelReason === 'Other' ? customCancelReason : cancelReason;
+    if (!finalReason.trim()) {
+      alert('Please specify a reason for cancellation.');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${activeJob.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          status: 'pending',
+          rejectWorkerId: user.id,
+          cancelReason: cancelReason,
+          cancelDetails: finalReason
+        })
+      });
+      if (response.ok) {
+        alert('Assignment cancelled successfully. The order has been returned to the pool for other workers.');
+        fetchOrdersForWorker(user.id);
+        setShowCancelModal(false);
+        setCustomCancelReason('');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to cancel job');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error releasing assignment.');
+    }
+  };
+
   return (
     <div className="worker-page" style={{ paddingBottom: '32px' }}>
       
@@ -419,9 +457,27 @@ export default function WorkerHome() {
             <span className="aj-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '700', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}>
               🟢 ACTIVE ASSIGNMENT
             </span>
-            <span style={{ fontSize: '12px', color: '#888' }}>
-              {activeJob.bookingType === 'instant' ? '⚡ Instant Dispatch' : '📅 Scheduled'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#888' }}>
+                {activeJob.bookingType === 'instant' ? '⚡ Instant Dispatch' : '📅 Scheduled'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                style={{
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  border: '1px solid #fca5a5',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Cancel Request
+              </button>
+            </div>
           </div>
 
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a', marginBottom: '16px' }}>
@@ -702,72 +758,9 @@ export default function WorkerHome() {
                 </div>
               ) : (
                 <div style={{ marginBottom: '16px', background: '#ecfdf5', border: '1.5px solid #a7f3d0', padding: '14px', borderRadius: '10px' }}>
-                  <div style={{ color: '#065f46', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
+                  <div style={{ color: '#065f46', fontSize: '13px', fontWeight: '700' }}>
                     ✅ OTP Verified Successfully!
                   </div>
-                  
-                    {/* Photo Uploader Card */}
-                    <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#444', marginBottom: '8px' }}>
-                        <HiFolderOpen style={{ color: 'var(--primary)' }} />
-                        <strong>Before/After Completion Photos</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          id="completion-photos-input"
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            const files = Array.from(e.target.files);
-                            if (files.length === 0) return;
-                            
-                            const base64Promises = files.map(file => {
-                              return new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve({ name: file.name, base64: reader.result });
-                                reader.readAsDataURL(file);
-                              });
-                            });
-                            
-                            const results = await Promise.all(base64Promises);
-                            const filenames = results.map(r => r.name);
-                            const base64s = results.map(r => r.base64);
-                            
-                            setSimulatedFiles(filenames);
-                            uploadCompletionImages(activeJob.id, base64s);
-                          }}
-                        />
-                        <label
-                          htmlFor="completion-photos-input"
-                          style={{
-                            display: 'block',
-                            background: '#fff',
-                            border: '1px solid #ddd',
-                            color: '#666',
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            width: '100%'
-                          }}
-                        >
-                          📸 Choose Completion Photos ({simulatedFiles.length} selected)
-                        </label>
-                        {simulatedFiles.length > 0 && (
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-                            {simulatedFiles.map(f => (
-                              <span key={f} style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}>
-                                ✔️ {f.length > 20 ? f.slice(0, 17) + '...' : f}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
@@ -887,10 +880,10 @@ export default function WorkerHome() {
             <button
               className="aj-advance"
               onClick={handleCompleteJob}
-              disabled={!otpVerified || simulatedFiles.length === 0}
+              disabled={!otpVerified}
               style={{
                 width: '100%',
-                background: (otpVerified && simulatedFiles.length > 0) ? '#10b981' : '#ccc',
+                background: otpVerified ? '#10b981' : '#ccc',
                 color: '#fff',
                 padding: '14px',
                 borderRadius: '10px',
@@ -901,7 +894,7 @@ export default function WorkerHome() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                cursor: (otpVerified && simulatedFiles.length > 0) ? 'pointer' : 'not-allowed'
+                cursor: otpVerified ? 'pointer' : 'not-allowed'
               }}
             >
               <span>Complete Service Job</span>
@@ -1195,7 +1188,7 @@ export default function WorkerHome() {
                 type="button"
                 onClick={async () => {
                   const finalReason = cancelReason === 'Other' ? customCancelReason : cancelReason;
-                  await rejectActiveJob(activeJob.id, user.id);
+                  await rejectActiveJob(activeJob.id, user.id, cancelReason, finalReason);
                   setShowCancelModal(false);
                   alert("Order has been cancelled and returned to pool. Your cancel reason: " + finalReason);
                 }}

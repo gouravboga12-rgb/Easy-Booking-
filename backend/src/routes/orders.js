@@ -130,14 +130,23 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       if (rejectWorkerId && !list.includes(rejectWorkerId)) {
         list.push(rejectWorkerId);
       }
+      
+      // Append worker cancellation audit to notes
+      let updatedNotes = order.notes || '';
+      if (req.body.cancelReason) {
+        const cancelLog = `\n\n[Worker Cancelled] Reason: ${req.body.cancelReason}${req.body.cancelDetails ? ` (Details: ${req.body.cancelDetails})` : ''}`;
+        updatedNotes += cancelLog;
+      }
+
       await pool.query(
-        'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ? WHERE id = ?',
-        ['pending', JSON.stringify(list), id]
+        'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ?, notes = ? WHERE id = ?',
+        ['pending', JSON.stringify(list), updatedNotes, id]
       );
-    } else if (status === 'completed' && req.body.completionPhotos) {
+    } else if (status === 'completed') {
+      const photos = req.body.completionPhotos ? JSON.stringify(req.body.completionPhotos) : null;
       await pool.query(
         'UPDATE bookings SET status = ?, completion_photos = ? WHERE id = ?',
-        ['completed', JSON.stringify(req.body.completionPhotos), id]
+        ['completed', photos, id]
       );
     } else {
       // General status transition (active, arrived, completed, cancelled)

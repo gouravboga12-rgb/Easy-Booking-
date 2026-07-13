@@ -247,13 +247,16 @@ export default function OrderTracking() {
           )}
 
           {/* Booking Details */}
-          <div className="booking-summary">
-            <h3>Booking Details</h3>
-            <div className="bs-row"><span>📍 Location</span><strong>{order.booking.location}</strong></div>
-            <div className="bs-row"><span>📅 Date</span><strong>{order.booking.date}</strong></div>
-            <div className="bs-row"><span>⏱ Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
-            <div className="bs-row total"><span>💰 Total</span><strong>₹{order.booking.total?.toLocaleString()}</strong></div>
-          </div>
+          {/* Hide the basic booking summary once completed to keep invoice receipt independent and remove duplicate info cards */}
+          {!isComplete && (
+            <div className="booking-summary">
+              <h3>Booking Details</h3>
+              <div className="bs-row"><span>📍 Location</span><strong>{order.booking.location}</strong></div>
+              <div className="bs-row"><span>📅 Date</span><strong>{order.booking.date}</strong></div>
+              <div className="bs-row"><span>⏱ Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
+              <div className="bs-row total"><span>💰 Total</span><strong>₹{order.booking.total?.toLocaleString()}</strong></div>
+            </div>
+          )}
           {/* Invoice / Bill Receipt Section */}
           {isComplete && (
             <div className="booking-summary" style={{ marginTop: '20px', border: '1.5px solid #ff8c00', background: '#fffbeb' }}>
@@ -270,18 +273,6 @@ export default function OrderTracking() {
                 <span>Total Amount</span>
                 <strong>₹{order.booking.total?.toLocaleString()}</strong>
               </div>
-              {order.completionImages && order.completionImages.length > 0 && (
-                <div style={{ marginTop: '14px', borderTop: '1px dashed #ddd', paddingTop: '12px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'block', marginBottom: '8px' }}>📸 Completion Photos Uploaded:</span>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {order.completionImages.map((img, i) => (
-                      <div key={i} style={{ width: '80px', height: '80px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                        <img src={img} alt={`Completion ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
           {/* Feedback/Review Submission */}

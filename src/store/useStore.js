@@ -90,6 +90,7 @@ export const useStore = create((set, get) => ({
           rate: parseFloat(s.rate),
           unit: s.unit,
           image: s.image,
+          custom_fields: s.custom_fields ? (typeof s.custom_fields === 'string' ? JSON.parse(s.custom_fields) : s.custom_fields) : []
         }));
         set({ services: normalized });
       }
@@ -108,7 +109,17 @@ export const useStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        const normalized = { id: data.id, name: data.name, desc: data.desc, category: data.category, categoryLabel: data.category_label, rate: parseFloat(data.rate), unit: data.unit, image: data.image };
+        const normalized = { 
+          id: data.id, 
+          name: data.name, 
+          desc: data.desc, 
+          category: data.category, 
+          categoryLabel: data.category_label, 
+          rate: parseFloat(data.rate), 
+          unit: data.unit, 
+          image: data.image,
+          custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : []
+        };
         set(s => ({ services: [...s.services, normalized] }));
       }
     } catch (err) {
@@ -126,7 +137,17 @@ export const useStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        const normalized = { id: data.id, name: data.name, desc: data.desc, category: data.category, categoryLabel: data.category_label, rate: parseFloat(data.rate), unit: data.unit, image: data.image };
+        const normalized = { 
+          id: data.id, 
+          name: data.name, 
+          desc: data.desc, 
+          category: data.category, 
+          categoryLabel: data.category_label, 
+          rate: parseFloat(data.rate), 
+          unit: data.unit, 
+          image: data.image,
+          custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : []
+        };
         set(s => ({ services: s.services.map(v => v.id === id ? normalized : v) }));
       }
     } catch (err) {
@@ -285,6 +306,38 @@ export const useStore = create((set, get) => ({
       }
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  rejectActiveJob: async (orderId, workerId, cancelReason, cancelDetails) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          status: 'pending',
+          rejectWorkerId: workerId,
+          cancelReason,
+          cancelDetails
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const formatted = formatDbOrder(data, get().services);
+        set(s => ({
+          orders: s.orders.map(o => o.id === orderId ? formatted : o),
+          activeOrder: s.activeOrder?.id === orderId ? null : s.activeOrder
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to cancel job' };
+      }
+    } catch (err) {
+      console.error('rejectActiveJob error:', err);
+      return { error: 'Connection error' };
     }
   },
 

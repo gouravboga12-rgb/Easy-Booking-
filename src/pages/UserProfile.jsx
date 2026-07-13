@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
-import { HiUser, HiPhone, HiMail, HiLocationMarker, HiLockClosed, HiClipboardList, HiLogout } from 'react-icons/hi';
+import { HiUser, HiPhone, HiMail, HiLocationMarker, HiClipboardList, HiLogout } from 'react-icons/hi';
 import './worker/Worker.css'; // Reuse worker layout visual systems or simple styles
 
 export default function UserProfile() {
@@ -19,9 +19,8 @@ export default function UserProfile() {
     address: user?.address || 'Enable location to add address'
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [passSuccess, setPassSuccess] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
+  const [viewAllOrders, setViewAllOrders] = useState(false);
 
   if (!user) return null;
 
@@ -29,6 +28,8 @@ export default function UserProfile() {
   const customerOrders = orders.filter(o => o.customer?.id === user.id || o.customerId === user.id);
   const activeOrders = customerOrders.filter(o => ['pending', 'assigned', 'active', 'arrived'].includes(o.status));
   const completedOrders = customerOrders.filter(o => o.status === 'completed');
+
+  const visibleOrders = viewAllOrders ? customerOrders : customerOrders.slice(0, 3);
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -42,15 +43,6 @@ export default function UserProfile() {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handlePasswordChange = (e) => {
-    e.preventDefault();
-    if (!newPassword.trim()) return;
-    updateUserProfile(user.id, { password: newPassword });
-    setNewPassword('');
-    setPassSuccess(true);
-    setTimeout(() => setPassSuccess(false), 3000);
-  };
-
   const handleLogoutClick = () => {
     logout();
     navigate('/');
@@ -61,7 +53,7 @@ export default function UserProfile() {
       <div className="wp-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1a1a1a', margin: 0 }}>My Account</h1>
-          <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Manage your personal details, bookings, and password</p>
+          <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Manage your personal details and bookings</p>
         </div>
         <button
           onClick={() => setIsEditing(!isEditing)}
@@ -127,7 +119,7 @@ export default function UserProfile() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {customerOrders.map(o => (
+            {visibleOrders.map(o => (
               <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#fafafa', borderRadius: '12px', border: '1px solid #f0f0f0', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
@@ -167,6 +159,28 @@ export default function UserProfile() {
                 </div>
               </div>
             ))}
+
+            {/* View All Toggle Button */}
+            {customerOrders.length > 3 && (
+              <button
+                onClick={() => setViewAllOrders(!viewAllOrders)}
+                style={{
+                  width: '100%',
+                  background: '#f8fafc',
+                  color: 'var(--primary)',
+                  border: '1px solid #e2e8f0',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  marginTop: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {viewAllOrders ? 'Show Less ⬆️' : `View All Orders ⬇️ (${customerOrders.length})`}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -256,39 +270,6 @@ export default function UserProfile() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Security Block */}
-      <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '32px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1.5px solid #f9f9f9', paddingBottom: '12px', marginBottom: '16px', color: '#1a1a1a' }}>
-          🔒 Security Credentials
-        </h3>
-
-        {passSuccess && (
-          <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600', fontSize: '13px' }}>
-            ✓ Password updated successfully!
-          </div>
-        )}
-
-        <form onSubmit={handlePasswordChange} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <label style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', fontWeight: '700', color: '#444' }}>
-            Change Password
-            <div style={{ position: 'relative' }}>
-              <HiLockClosed style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
-              <input
-                type="password"
-                placeholder="Enter new account password"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                style={{ padding: '10px 10px 10px 38px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', outline: 'none', width: '100%' }}
-                required
-              />
-            </div>
-          </label>
-          <button type="submit" style={{ background: '#1a1a2e', color: '#fff', border: 'none', padding: '11px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-            Update Password
-          </button>
-        </form>
       </div>
 
       {/* Logout Action */}

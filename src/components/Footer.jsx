@@ -49,7 +49,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <p>* As on December 31, 2024</p>
-        <p>© Copyright 2026 Parrow Skills Technologies India Limited. All rights reserved.</p>
+        <p>© Copyright 2026 Parrow Skills Technologies India Limited. All rights reserved. | Developed by <a href="https://www.codtechitsolutions.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>CODTECH IT SOLUTIONS</a></p>
       </div>
     </footer>
   );

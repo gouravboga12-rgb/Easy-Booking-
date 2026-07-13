@@ -17,6 +17,7 @@ export default function AdminOrders() {
   const workers = users.filter(u => u.role === 'worker');
 
   const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [assignModal, setAssignModal] = useState(null);
   
   // Custom dispute state simulation in local memory or store
@@ -57,12 +58,23 @@ export default function AdminOrders() {
     return o.status;
   };
 
-  const filtered = filter === 'all'
-    ? orders
-    : orders.filter(o => {
-        const status = getOrderStatus(o);
-        return status === filter;
-      });
+  const filtered = orders.filter(o => {
+    const status = getOrderStatus(o);
+    const matchesFilter = filter === 'all' || status === filter;
+    
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return matchesFilter;
+
+    const matchesSearch = 
+      o.id?.toLowerCase().includes(query) ||
+      o.customer?.name?.toLowerCase().includes(query) ||
+      o.customer?.phone?.toLowerCase().includes(query) ||
+      o.operator?.name?.toLowerCase().includes(query) ||
+      o.vehicle?.name?.toLowerCase().includes(query) ||
+      o.booking?.location?.toLowerCase().includes(query);
+
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="admin-page" style={{ paddingBottom: '32px' }}>
@@ -71,6 +83,26 @@ export default function AdminOrders() {
           <h1>Booking & Dispatch Management</h1>
           <p>Track live statuses, assign operators, perform reassignments, resolve disputes, and cancel bookings</p>
         </div>
+      </div>
+
+      <div style={{ background: '#fff', padding: '12px 18px', borderRadius: '12px', border: '1.5px solid #eee', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <span style={{ fontSize: '16px' }}>🔍</span>
+        <input
+          type="text"
+          placeholder="Search by Booking ID, Customer Name, Mobile, Worker, Service Category, or Address Location..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{ flex: 1, padding: '6px', border: 'none', outline: 'none', fontSize: '13.5px', background: 'none' }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: '700' }}
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="filter-tabs">
