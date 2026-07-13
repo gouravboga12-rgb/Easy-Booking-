@@ -31,6 +31,18 @@ const formatDbOrder = (dbOrder, services) => {
     }
   }
 
+  let completionPhotos = [];
+  if (dbOrder.completion_photos) {
+    try {
+      completionPhotos = JSON.parse(dbOrder.completion_photos);
+      if (!Array.isArray(completionPhotos)) {
+        completionPhotos = [];
+      }
+    } catch (e) {
+      completionPhotos = [];
+    }
+  }
+
   return {
     id: dbOrder.id,
     vehicle,
@@ -50,7 +62,8 @@ const formatDbOrder = (dbOrder, services) => {
     status: dbOrder.status,
     placedAt: new Date(dbOrder.created_at).toLocaleTimeString(),
     createdAt: dbOrder.created_at,
-    rejectedWorkers: rejectedList
+    rejectedWorkers: rejectedList,
+    completionImages: completionPhotos
   };
 };
 
@@ -286,13 +299,18 @@ export const useStore = create((set, get) => ({
     else if (order.stage === 3) nextStatus = 'completed';
 
     try {
+      const body = { status: nextStatus };
+      if (nextStatus === 'completed' && order.completionImages) {
+        body.completionPhotos = order.completionImages;
+      }
+
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ status: nextStatus })
+        body: JSON.stringify(body)
       });
       const data = await response.json();
       if (response.ok) {

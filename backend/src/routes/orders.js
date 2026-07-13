@@ -133,6 +133,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ? WHERE id = ?',
         ['pending', JSON.stringify(list), id]
       );
+    } else if (status === 'completed' && req.body.completionPhotos) {
+      await pool.query(
+        'UPDATE bookings SET status = ?, completion_photos = ? WHERE id = ?',
+        ['completed', JSON.stringify(req.body.completionPhotos), id]
+      );
     } else {
       // General status transition (active, arrived, completed, cancelled)
       await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);

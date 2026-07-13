@@ -706,40 +706,68 @@ export default function WorkerHome() {
                     ✅ OTP Verified Successfully!
                   </div>
                   
-                  {/* Photo Uploader Card */}
-                  <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#444', marginBottom: '8px' }}>
-                      <HiFolderOpen style={{ color: 'var(--primary)' }} />
-                      <strong>Before/After Completion Photos</strong>
-                    </div>
-                    {simulatedFiles.length === 0 ? (
-                      <button
-                        type="button"
-                        onClick={handleUploadSimulatedImages}
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #ddd',
-                          color: '#666',
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          width: '100%'
-                        }}
-                      >
-                        📸 Upload Simulated Completion Images
-                      </button>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {simulatedFiles.map(f => (
-                          <span key={f} style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}>
-                            ✔️ {f}
-                          </span>
-                        ))}
+                    {/* Photo Uploader Card */}
+                    <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#444', marginBottom: '8px' }}>
+                        <HiFolderOpen style={{ color: 'var(--primary)' }} />
+                        <strong>Before/After Completion Photos</strong>
                       </div>
-                    )}
-                  </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          id="completion-photos-input"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files);
+                            if (files.length === 0) return;
+                            
+                            const base64Promises = files.map(file => {
+                              return new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve({ name: file.name, base64: reader.result });
+                                reader.readAsDataURL(file);
+                              });
+                            });
+                            
+                            const results = await Promise.all(base64Promises);
+                            const filenames = results.map(r => r.name);
+                            const base64s = results.map(r => r.base64);
+                            
+                            setSimulatedFiles(filenames);
+                            uploadCompletionImages(activeJob.id, base64s);
+                          }}
+                        />
+                        <label
+                          htmlFor="completion-photos-input"
+                          style={{
+                            display: 'block',
+                            background: '#fff',
+                            border: '1px solid #ddd',
+                            color: '#666',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            width: '100%'
+                          }}
+                        >
+                          📸 Choose Completion Photos ({simulatedFiles.length} selected)
+                        </label>
+                        {simulatedFiles.length > 0 && (
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            {simulatedFiles.map(f => (
+                              <span key={f} style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}>
+                                ✔️ {f.length > 20 ? f.slice(0, 17) + '...' : f}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
