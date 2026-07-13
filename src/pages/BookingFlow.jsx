@@ -9,6 +9,8 @@ import {
 } from 'react-icons/hi';
 import { MdOutlineVerified, MdGpsFixed } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
+import Map from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import './BookingFlow.css';
 
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
@@ -33,6 +35,11 @@ export default function BookingFlow() {
   const [step, setStep] = useState(1);
   const [coords, setCoords] = useState({ lat: 12.9716, lng: 77.5946 }); // Default: Bangalore
   const [locLoading, setLocLoading] = useState(false);
+  const [viewState, setViewState] = useState({
+    latitude: 12.9716,
+    longitude: 77.5946,
+    zoom: 14
+  });
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
@@ -48,6 +55,7 @@ export default function BookingFlow() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lng: longitude });
+        setViewState(v => ({ ...v, latitude, longitude }));
         
         const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
         if (token) {
@@ -75,6 +83,26 @@ export default function BookingFlow() {
     );
   };
 
+  const handleMapMoveEnd = async (e) => {
+    const lat = e.viewState.latitude;
+    const lng = e.viewState.longitude;
+    setCoords({ lat, lng });
+    setViewState(e.viewState);
+
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (token) {
+      try {
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&limit=1`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          setForm(f => ({ ...f, location: data.features[0].place_name }));
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+      }
+    }
+  };
+
   const handleContinue = async () => {
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     if (token && form.location && !form.location.startsWith('📍 Coords:')) {
@@ -84,6 +112,7 @@ export default function BookingFlow() {
         if (data.features && data.features.length > 0) {
           const [lng, lat] = data.features[0].center;
           setCoords({ lat, lng });
+          setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
         }
       } catch (e) {
         console.error("Geocoding failed, using defaults", e);
@@ -233,6 +262,31 @@ export default function BookingFlow() {
                     {locLoading ? '⌛ Locating...' : '🎯 Use Current Location'}
                   </button>
                 </div>
+                {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN && (
+                  <div style={{ position: 'relative', width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginTop: '10px', border: '1.5px solid #eee' }}>
+                    <Map
+                      {...viewState}
+                      onMove={e => setViewState(e.viewState)}
+                      onMoveEnd={handleMapMoveEnd}
+                      style={{ width: '100%', height: '100%' }}
+                      mapStyle="mapbox://styles/mapbox/streets-v12"
+                      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                    />
+                    {/* Fixed center pin icon overlay */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -100%)',
+                      pointerEvents: 'none',
+                      fontSize: '32px',
+                      zIndex: 2,
+                      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))'
+                    }}>
+                      📍
+                    </div>
+                  </div>
+                )}
               </label>
 
               {bookingType === 'scheduled' && (
