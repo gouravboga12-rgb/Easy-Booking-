@@ -20,6 +20,7 @@ import WorkerLogin from './pages/auth/WorkerLogin';
 import WorkerRegister from './pages/auth/WorkerRegister';
 import AdminLogin from './pages/auth/AdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import WorkerForgotPassword from './pages/auth/WorkerForgotPassword';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -110,6 +111,7 @@ function Layout() {
           <Route path="/login-workers" element={<WorkerLogin />} />
           <Route path="/register-worker" element={<WorkerRegister />} />
           <Route path="/register-workers" element={<WorkerRegister />} />
+          <Route path="/forgot-password-worker" element={<WorkerForgotPassword />} />
 
           {/* Customer */}
           <Route path="/book/:id" element={<BookingFlow />} />

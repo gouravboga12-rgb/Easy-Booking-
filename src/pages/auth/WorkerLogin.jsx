@@ -46,7 +46,7 @@ export default function WorkerLogin() {
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-              <Link to="/forgot-password" style={{ color: '#ff8c00', fontSize: '13px', textDecoration: 'none', fontWeight: 500 }}>
+              <Link to="/forgot-password-worker" style={{ color: '#ff8c00', fontSize: '13px', textDecoration: 'none', fontWeight: 500 }}>
                 Forgot Password?
               </Link>
             </div>
