@@ -240,25 +240,34 @@ export default function AdminWorkers() {
                   </div>
 
                   {/* Header containing separate page reviews options */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '14px 0 10px', borderBottom: '1px solid #eee', paddingBottom: '6px' }}>
-                    <h4 style={{ margin: 0, fontSize: '12px', color: '#333', fontWeight: '800' }}>Work History & Reviews</h4>
+                  <div style={{ margin: '14px 0 10px', borderBottom: '1px solid #eee', paddingBottom: '8px' }}>
                     <button
                       type="button"
                       onClick={() => setViewReviewsWorker(w)}
                       style={{
-                        background: 'var(--primary-light)',
-                        color: 'var(--primary)',
-                        border: '1.5px solid var(--primary)',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: '700',
+                        width: '100%',
+                        background: '#6d28d9',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '12.5px',
+                        fontWeight: '800',
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease'
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 4px rgba(109, 40, 217, 0.2)',
+                        transition: 'all 0.15s ease',
+                        marginBottom: '10px'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#5b21b6'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#6d28d9'}
                     >
-                      🔍 Open in Separate Page
+                      📊 View All Reviews & Full Work History
                     </button>
+                    <h4 style={{ margin: 0, fontSize: '12px', color: '#475569', fontWeight: '800' }}>Work History Preview</h4>
                   </div>
 
                   {/* Work History preview list */}

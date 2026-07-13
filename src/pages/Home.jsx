@@ -91,18 +91,7 @@ export default function Home() {
   const services = useStore(s => s.services);
 
   const handleCopyCode = (code) => {
-    const triggerFeedback = () => {
-      setCopiedCode(code);
-      setTimeout(() => setCopiedCode(''), 2000);
-    };
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(code)
-        .then(triggerFeedback)
-        .catch(() => fallbackCopy(code, triggerFeedback));
-    } else {
-      fallbackCopy(code, triggerFeedback);
-    }
+    alert("Thank you for your interest! The promo code system is planned for a future release. We will update you soon!");
   };
 
   const fallbackCopy = (code, cb) => {

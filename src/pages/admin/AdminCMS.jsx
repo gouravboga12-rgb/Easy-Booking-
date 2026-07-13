@@ -14,8 +14,10 @@ const INIT_FAQS = [
 ];
 
 const BANNERS = [
-  { id: 'b1', title: 'Book Home Services Easily', image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80', cta: 'Browse Services', active: true },
-  { id: 'b2', title: '50% Off on First Booking', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80', cta: 'Claim Offer', active: true },
+  { id: 'b1', title: 'Electricians & Plumbers', subtitle: 'Verified professionals at your doorstep in 60 mins', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80', cta: 'Book Electrician', page: 'Home Slide 1', active: true },
+  { id: 'b2', title: 'Deep Cleaning Staff', subtitle: 'Expert housekeepers & deep cleaning for your home', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80', cta: 'Book Cleaner', page: 'Home Slide 2', active: true },
+  { id: 'b3', title: 'Construction & Site Labour', subtitle: 'Experienced masons, welders & fabricators on demand', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80', cta: 'Book Labour', page: 'Home Slide 3', active: true },
+  { id: 'b4', title: 'Cooking Chefs & Home Cooks', subtitle: 'Hire private chefs & daily home cooks instantly', image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80', cta: 'Book Cook', page: 'Home Slide 4', active: true },
 ];
 
 export default function AdminCMS() {
@@ -102,7 +104,9 @@ export default function AdminCMS() {
                 </div>
                 <div style={{ flex: 1, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
+                    <div style={{ fontSize: '10px', color: '#888', fontWeight: '700', textTransform: 'uppercase', marginBottom: '3px' }}>{b.page}</div>
                     <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '700' }}>{b.title}</h3>
+                    {b.subtitle && <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#666' }}>{b.subtitle}</p>}
                     <span style={{ fontSize: '12px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>{b.cta}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
