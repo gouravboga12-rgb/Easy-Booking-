@@ -28,13 +28,30 @@ router.put('/worker/location', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /api/tracking/order/:id/message (Worker updates status message to customer)
+router.put('/order/:id/message', authenticateToken, async (req, res) => {
+  const { message } = req.body;
+  const { id } = req.params;
+
+  try {
+    await pool.query(
+      "UPDATE bookings SET worker_message = ? WHERE id = ?",
+      [message, id]
+    );
+    res.json({ message: 'Message updated successfully', workerMessage: message });
+  } catch (err) {
+    console.error('Update worker message error:', err);
+    res.status(500).json({ message: 'Server error updating message' });
+  }
+});
+
 // GET /api/tracking/order/:id (Fetch live location details for an active order)
 router.get('/order/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
     const [orders] = await pool.query(
-      `SELECT b.id, b.status, b.customer_lat, b.customer_lng, b.worker_id,
+      `SELECT b.id, b.status, b.customer_lat, b.customer_lng, b.worker_id, b.worker_message,
               c.name AS customer_name, c.phone AS customer_phone,
               w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle, w.photo AS worker_photo, w.rating AS worker_rating
        FROM bookings b
@@ -87,6 +104,7 @@ router.get('/order/:id', authenticateToken, async (req, res) => {
       workerVehicle: order.worker_vehicle,
       workerPhoto: order.worker_photo,
       workerRating: order.worker_rating ? parseFloat(order.worker_rating) : 5.0,
+      workerMessage: order.worker_message,
       workerLocation
     });
   } catch (err) {

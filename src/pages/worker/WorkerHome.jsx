@@ -29,9 +29,14 @@ export default function WorkerHome() {
   const advanceStage = useStore(s => s.advanceStage);
   const uploadCompletionImages = useStore(s => s.uploadCompletionImages);
   const updateWorkerLocation = useStore(s => s.updateWorkerLocation);
+  const sendWorkerMessage = useStore(s => s.sendWorkerMessage);
 
   const [simulatedFiles, setSimulatedFiles] = useState([]);
   const [completeSuccess, setCompleteSuccess] = useState(false);
+  const [customMsg, setCustomMsg] = useState('I am on my way. Kindly wait');
+  const [messageSentStatus, setMessageSentStatus] = useState('');
+  const [currentLocInput, setCurrentLocInput] = useState('');
+  const [locMessage, setLocMessage] = useState('');
 
   // Availability Settings States
   const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
@@ -255,6 +260,42 @@ export default function WorkerHome() {
     }
   };
 
+  const handleSendMsg = async (e) => {
+    if (e) e.preventDefault();
+    if (!activeJob) return;
+    try {
+      await sendWorkerMessage(activeJob.id, customMsg);
+      setMessageSentStatus(`Sent: "${customMsg}"`);
+      setTimeout(() => setMessageSentStatus(''), 4000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateLocationByName = async (e) => {
+    if (e) e.preventDefault();
+    if (!currentLocInput.trim()) return;
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
+
+    try {
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(currentLocInput)}.json?access_token=${token}&limit=1`);
+      const data = await res.json();
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        setWorkerCoords({ lat, lng });
+        updateWorkerLocation(lat, lng);
+        setLocMessage(`🟢 Location manually updated to: ${data.features[0].place_name}`);
+        setTimeout(() => setLocMessage(''), 5000);
+      } else {
+        setLocMessage('❌ Location not found. Try another search.');
+      }
+    } catch (err) {
+      console.error(err);
+      setLocMessage('❌ Error resolving address.');
+    }
+  };
+
   const handleUploadSimulatedImages = () => {
     // Simulate uploading completion photos
     const mockFiles = ['completed_job_after1.jpg', 'completed_job_after2.jpg'];
@@ -453,6 +494,91 @@ export default function WorkerHome() {
                 >
                   {isSimulating ? '⏹️ Stop Simulation' : '🛵 Simulate Drive to Customer'}
                 </button>
+              </div>
+
+              {/* Manual Location Input override */}
+              <div style={{ marginTop: '14px', background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>📍 Enter Current Location Manually:</div>
+                <form onSubmit={handleUpdateLocationByName} style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. Hyderabad City Center"
+                    value={currentLocInput}
+                    onChange={e => setCurrentLocInput(e.target.value)}
+                    style={{ flex: 1, padding: '6px 10px', fontSize: '12px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                  />
+                  <button type="submit" style={{ padding: '6px 12px', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    Set Location
+                  </button>
+                </form>
+                {locMessage && <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>{locMessage}</div>}
+              </div>
+
+              {/* Send Message to Customer (Image copy 3 mockup style) */}
+              <div style={{ marginTop: '16px', background: '#eff6ff', border: '1px dashed #bfdbfe', padding: '16px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ background: '#3b82f6', color: '#fff', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                    💬
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1e3a8a' }}>Send message to customer</h4>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#60a5fa' }}>Predefined templates for quick update:</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {['I am on my way. Kindly wait', 'I have reached your location. Please check', 'I will arrive in 10 minutes'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setCustomMsg(opt)}
+                      style={{
+                        background: customMsg === opt ? '#2563eb' : '#fff',
+                        color: customMsg === opt ? '#fff' : '#4b5563',
+                        border: '1px solid #d1d5db',
+                        padding: '4px 8px',
+                        borderRadius: '16px',
+                        fontSize: '11px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {opt.split('.')[0]}
+                    </button>
+                  ))}
+                </div>
+
+                <form onSubmit={handleSendMsg} style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    value={customMsg}
+                    onChange={e => setCustomMsg(e.target.value)}
+                    placeholder="Type message to customer..."
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px' }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      background: '#fbbf24',
+                      color: '#000',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    Send ➡️
+                  </button>
+                </form>
+                {messageSentStatus && (
+                  <div style={{ color: '#16a34a', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>
+                    ✔️ {messageSentStatus}
+                  </div>
+                )}
               </div>
             </div>
           )}

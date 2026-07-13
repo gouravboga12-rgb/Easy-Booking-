@@ -149,6 +149,17 @@ export default function OrderTracking() {
             </div>
           </div>
 
+          {/* Message from Operator notification */}
+          {trackingData && trackingData.workerMessage && (
+            <div style={{ background: '#fef3c7', border: '1.5px solid #fde68a', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ fontSize: '20px' }}>💬</div>
+              <div>
+                <strong style={{ display: 'block', fontSize: '13px', color: '#92400e' }}>Message from Operator:</strong>
+                <span style={{ fontSize: '13px', color: '#78350f', fontWeight: '600' }}>"{trackingData.workerMessage}"</span>
+              </div>
+            </div>
+          )}
+
           {/* Progress Tracker */}
           <div className="progress-tracker">
             {order.stages.map((stage, i) => (

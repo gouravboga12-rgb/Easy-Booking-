@@ -367,5 +367,21 @@ export const useStore = create((set, get) => ({
       console.error('Error fetching live tracking:', err);
     }
     return null;
+  },
+
+  sendWorkerMessage: async (orderId, message) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/tracking/order/${orderId}/message`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message })
+      });
+    } catch (err) {
+      console.error('Error sending worker message:', err);
+    }
   }
 }));

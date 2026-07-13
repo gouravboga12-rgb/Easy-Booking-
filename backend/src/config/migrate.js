@@ -31,6 +31,10 @@ async function migrate() {
       await pool.query("ALTER TABLE bookings ADD COLUMN customer_lng DECIMAL(11, 8) NULL");
       console.log("Column 'customer_lng' added to bookings.");
     }
+    if (!colNamesBookings.includes('worker_message')) {
+      await pool.query("ALTER TABLE bookings ADD COLUMN worker_message VARCHAR(255) NULL");
+      console.log("Column 'worker_message' added to bookings.");
+    }
 
     // Create worker_locations table
     await pool.query(`
