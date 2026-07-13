@@ -12,6 +12,8 @@ import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Worker.css';
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
+
 const getCustomerOtp = (customer) => {
   if (!customer) return '4821';
   const digits = customer.phone ? customer.phone.replace(/\D/g, '') : '';
@@ -193,7 +195,7 @@ export default function WorkerHome() {
       return;
     }
 
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (!token) return;
 
     const resolveCustAddress = async () => {
@@ -215,7 +217,7 @@ export default function WorkerHome() {
 
   useEffect(() => {
     if (!customerCoords || !workerCoords) return;
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (!token) return;
 
     const fetchWorkerRoute = async () => {
@@ -275,7 +277,7 @@ export default function WorkerHome() {
   const handleUpdateLocationByName = async (e) => {
     if (e) e.preventDefault();
     if (!currentLocInput.trim()) return;
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (!token) return;
 
     try {
@@ -428,7 +430,7 @@ export default function WorkerHome() {
           </div>
 
           {/* Embedded Mapbox Navigation Map */}
-          {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN && customerCoords && (
+          {MAPBOX_TOKEN && customerCoords && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#333' }}>🗺️ Live Navigation Map (Mapbox)</span>
@@ -444,7 +446,7 @@ export default function WorkerHome() {
                   onClick={handleMapClick}
                   style={{ width: '100%', height: '100%', cursor: 'pointer' }}
                   mapStyle="mapbox://styles/mapbox/streets-v12"
-                  mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                  mapboxAccessToken={MAPBOX_TOKEN}
                 >
                   {/* Customer Destination Pin */}
                   <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">

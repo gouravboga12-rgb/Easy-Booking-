@@ -7,6 +7,8 @@ import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './OrderTracking.css';
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
+
 const getCustomerOtp = (customer) => {
   if (!customer) return '4821';
   const digits = customer.phone ? customer.phone.replace(/\D/g, '') : '';
@@ -57,7 +59,7 @@ export default function OrderTracking() {
     }
 
     if (!order) return;
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (!token) return;
 
     const resolveAddress = async () => {
@@ -88,7 +90,7 @@ export default function OrderTracking() {
       return;
     }
 
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const token = MAPBOX_TOKEN;
     if (!token) return;
 
     const { lat: wLat, lng: wLng } = trackingData.workerLocation;
@@ -194,7 +196,7 @@ export default function OrderTracking() {
           {!isComplete && order.operator && (
             <div className="booking-summary" style={{ marginBottom: '20px', padding: '16px' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>Live Route Tracker</h3>
-              {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ? (
+              {MAPBOX_TOKEN ? (
                 customerCoords ? (
                   <div style={{ width: '100%', height: '350px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                     <Map
@@ -205,7 +207,7 @@ export default function OrderTracking() {
                       }}
                       style={{ width: '100%', height: '100%' }}
                       mapStyle="mapbox://styles/mapbox/streets-v12"
-                      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                      mapboxAccessToken={MAPBOX_TOKEN}
                     >
                       <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
                         <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
