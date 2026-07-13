@@ -264,6 +264,26 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  buySubscription: (userId, planName, durationMonths) => {
+    const user = get().user;
+    if (!user) return;
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+
+    const updated = {
+      ...user,
+      subscription: {
+        active: true,
+        plan: planName,
+        expiresAt: expiresAt.toISOString().split('T')[0]
+      }
+    };
+
+    localStorage.setItem('user', JSON.stringify(updated));
+    set({ user: updated });
+  },
+
   resetUserPassword: async (userId, newPassword) => {
     try {
       const token = localStorage.getItem('token');

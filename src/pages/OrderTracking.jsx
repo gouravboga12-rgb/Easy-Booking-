@@ -21,7 +21,7 @@ export default function OrderTracking() {
   const navigate = useNavigate();
   const orders = useStore(s => s.orders);
   const user = useAuthStore(s => s.user);
-  const addWorkerReview = useAuthStore(s => s.addWorkerReview);
+  const submitOrderReview = useStore(s => s.submitOrderReview);
 
   const order = orders.find(o => o.id === id);
   const fetchLiveTracking = useStore(s => s.fetchLiveTracking);
@@ -122,16 +122,15 @@ export default function OrderTracking() {
     </div>
   );
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!order.operator) return;
-    addWorkerReview(order.operator.id, {
-      author: user?.name || 'Customer Feedback',
-      rating: Number(rating),
-      comment,
-      date: new Date().toLocaleDateString()
-    });
-    setReviewSubmitted(true);
+    const res = await submitOrderReview(order.id, rating, comment);
+    if (res && res.success) {
+      setReviewSubmitted(true);
+    } else {
+      alert(res?.error || 'Failed to submit review. Please try again.');
+    }
   };
 
   return (

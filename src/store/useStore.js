@@ -401,6 +401,29 @@ export const useStore = create((set, get) => ({
     return null;
   },
 
+  submitOrderReview: async (orderId, rating, comment) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/review`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ rating, comment })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to submit review' };
+      }
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
   sendWorkerMessage: async (orderId, message) => {
     try {
       const token = localStorage.getItem('token');

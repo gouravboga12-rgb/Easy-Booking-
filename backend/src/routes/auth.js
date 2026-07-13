@@ -38,6 +38,12 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('google_id')) {
       await pool.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(255)');
     }
+    if (!columnNames.includes('wallet')) {
+      await pool.query('ALTER TABLE users ADD COLUMN wallet JSON NULL');
+    }
+    if (!columnNames.includes('reviews')) {
+      await pool.query('ALTER TABLE users ADD COLUMN reviews JSON NULL');
+    }
     // Make password_hash nullable to support Google OAuth users (who have no password)
     const passwordCol = columns.find(c => c.Field === 'password_hash');
     if (passwordCol && passwordCol.Null === 'NO') {
@@ -136,6 +142,10 @@ router.post('/google', async (req, res) => {
     delete user.password_hash;
     user.skills = user.skills || [];
     user.categories = user.categories || [];
+    if (typeof user.reviews === 'string') {
+      try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
+    }
+    user.reviews = user.reviews || [];
 
     const token = generateToken(user);
     res.json({ user, token });
@@ -325,6 +335,10 @@ router.post('/login', async (req, res) => {
     // Parse JSON columns
     user.skills = user.skills || [];
     user.categories = user.categories || [];
+    if (typeof user.reviews === 'string') {
+      try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
+    }
+    user.reviews = user.reviews || [];
 
     // Send Login Alert (non-blocking)
     if (user.email) {
@@ -354,6 +368,10 @@ router.get('/profile', authenticateToken, async (req, res) => {
     // Parse JSON columns
     user.skills = user.skills || [];
     user.categories = user.categories || [];
+    if (typeof user.reviews === 'string') {
+      try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
+    }
+    user.reviews = user.reviews || [];
 
     res.json(user);
   } catch (err) {
@@ -392,6 +410,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
     delete user.password_hash;
     user.skills = user.skills || [];
     user.categories = user.categories || [];
+    if (typeof user.reviews === 'string') {
+      try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
+    }
+    user.reviews = user.reviews || [];
 
     res.json(user);
   } catch (err) {
@@ -433,6 +455,10 @@ router.get('/workers', authenticateToken, async (req, res) => {
       delete w.password_hash;
       w.skills = w.skills || [];
       w.categories = w.categories || [];
+      if (typeof w.reviews === 'string') {
+        try { w.reviews = JSON.parse(w.reviews); } catch (e) { w.reviews = []; }
+      }
+      w.reviews = w.reviews || [];
     });
     res.json(workers);
   } catch (err) {

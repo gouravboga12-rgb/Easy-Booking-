@@ -200,14 +200,33 @@ router.put('/:id/review', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Cannot review a booking without an assigned worker' });
     }
 
-    // Record review (in an actual production app, we would have a reviews table, but for simplicity
-    // we can update the worker's average rating or insert the reviews JSON array.
-    // Let's update the worker's rating field in the users table.)
-    const [workers] = await pool.query('SELECT rating FROM users WHERE id = ?', [order.worker_id]);
+    // Record review (retrieve customer name, compute rolling rating, and save review object in reviews JSON array)
+    const [customers] = await pool.query('SELECT name FROM users WHERE id = ?', [req.user.id]);
+    const authorName = customers.length > 0 ? customers[0].name : 'Customer';
+
+    const [workers] = await pool.query('SELECT rating, reviews FROM users WHERE id = ?', [order.worker_id]);
     if (workers.length > 0) {
       const currentRating = parseFloat(workers[0].rating) || 5.0;
       const newRating = ((currentRating * 4) + parseFloat(rating)) / 5; // simplified rolling average of last 5 reviews
-      await pool.query('UPDATE users SET rating = ? WHERE id = ?', [newRating, order.worker_id]);
+      
+      let reviewsList = [];
+      if (workers[0].reviews) {
+        try {
+          reviewsList = typeof workers[0].reviews === 'string' ? JSON.parse(workers[0].reviews) : workers[0].reviews;
+        } catch (e) {
+          reviewsList = [];
+        }
+      }
+      if (!Array.isArray(reviewsList)) reviewsList = [];
+
+      reviewsList.push({
+        author: authorName,
+        rating: Number(rating),
+        comment,
+        date: new Date().toLocaleDateString()
+      });
+
+      await pool.query('UPDATE users SET rating = ?, reviews = ? WHERE id = ?', [newRating, JSON.stringify(reviewsList), order.worker_id]);
     }
 
     res.json({ message: 'Review submitted successfully' });

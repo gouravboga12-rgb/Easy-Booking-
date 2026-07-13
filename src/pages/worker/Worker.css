@@ -591,3 +591,42 @@
 .wth-status.offline { color: #aaa; }
 
 .worker-content { padding-bottom: 70px; }
+
+/* ── Payments & Subscription Tabbed Dashboard Styles ── */
+.wallet-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+.wallet-tabs::-webkit-scrollbar {
+  display: none;
+}
+.wallet-tab-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 10px 16px;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+.wallet-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.wallet-tab-btn:hover {
+  color: var(--primary-dark);
+}
+.status-chip.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.status-chip.arrived {
+  background: #fef3c7;
+  color: #d97706;
+}
