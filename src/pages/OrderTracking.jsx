@@ -7,6 +7,13 @@ import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './OrderTracking.css';
 
+const getCustomerOtp = (customer) => {
+  if (!customer) return '4821';
+  const digits = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+  if (digits.length >= 4) return digits.slice(-4);
+  return '4821';
+};
+
 export default function OrderTracking() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -160,6 +167,17 @@ export default function OrderTracking() {
               </div>
             ))}
           </div>
+
+          {/* Universal Service Code (OTP) */}
+          {order.stage === 3 && (
+            <div style={{ background: '#f5f3ff', border: '1.5px solid #ddd6fe', padding: '16px', borderRadius: '12px', marginBottom: '20px', textAlign: 'center' }}>
+              <h4 style={{ margin: '0 0 6px', color: '#6d28d9', fontSize: '14px', fontWeight: '800' }}>🔑 Share Start Code with Operator</h4>
+              <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#4c1d95' }}>Provide this 4-digit OTP code to the worker to verify arrival and start the service:</p>
+              <strong style={{ fontSize: '28px', color: '#6d28d9', letterSpacing: '4px', background: '#fff', padding: '4px 16px', borderRadius: '8px', border: '1px solid #c084fc', display: 'inline-block' }}>
+                {getCustomerOtp(user)}
+              </strong>
+            </div>
+          )}
 
           {/* Map Tracking */}
           {!isComplete && order.operator && (

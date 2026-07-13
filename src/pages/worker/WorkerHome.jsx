@@ -12,6 +12,13 @@ import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Worker.css';
 
+const getCustomerOtp = (customer) => {
+  if (!customer) return '4821';
+  const digits = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+  if (digits.length >= 4) return digits.slice(-4);
+  return '4821';
+};
+
 export default function WorkerHome() {
   const user = useAuthStore(s => s.user);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
@@ -107,6 +114,10 @@ export default function WorkerHome() {
   const [workerCoords, setWorkerCoords] = useState({ lat: 12.9716, lng: 77.5946 });
 
   const [isSimulating, setIsSimulating] = useState(false);
+  const [slideVal, setSlideVal] = useState(0);
+  const [otpInput, setOtpInput] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState('');
 
   useEffect(() => {
     // Watch location if worker is available/online OR has an active job
@@ -224,6 +235,24 @@ export default function WorkerHome() {
   const handleAdvanceStage = () => {
     if (!activeJob) return;
     advanceStage(activeJob.id);
+  };
+
+  const handleMapClick = (e) => {
+    const { lng, lat } = e.lngLat;
+    setWorkerCoords({ lat, lng });
+    updateWorkerLocation(lat, lng);
+  };
+
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    if (!activeJob) return;
+    const expected = getCustomerOtp(activeJob.customer);
+    if (otpInput.trim() === expected) {
+      setOtpVerified(true);
+      setOtpError('');
+    } else {
+      setOtpError('Invalid customer code. Please check with customer.');
+    }
   };
 
   const handleUploadSimulatedImages = () => {
@@ -371,7 +400,8 @@ export default function WorkerHome() {
                     latitude: workerCoords.lat,
                     zoom: 13
                   }}
-                  style={{ width: '100%', height: '100%' }}
+                  onClick={handleMapClick}
+                  style={{ width: '100%', height: '100%', cursor: 'pointer' }}
                   mapStyle="mapbox://styles/mapbox/streets-v12"
                   mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
                 >
@@ -399,6 +429,9 @@ export default function WorkerHome() {
                     </Source>
                   )}
                 </Map>
+              </div>
+              <div style={{ padding: '6px 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                💡 Tip: Click anywhere on the map to manually set your live starting/current location if GPS is blocked.
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                 <button
@@ -458,68 +491,149 @@ export default function WorkerHome() {
             </strong>
           </div>
 
-          {/* Upload Completion Images section in Stage 3 */}
+          {/* Upload Completion Images & verification section in Stage 3 */}
           {activeJob.stage === 3 && (
-            <div style={{ marginBottom: '16px', border: '1.5px dashed #ddd', padding: '14px', borderRadius: '10px', background: '#fafafa' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#444', marginBottom: '8px' }}>
-                <HiFolderOpen style={{ color: 'var(--primary)' }} />
-                <strong>Before/After Completion Photos</strong>
-              </div>
-              
-              {simulatedFiles.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={handleUploadSimulatedImages}
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #ddd',
-                    color: '#666',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%'
-                  }}
-                >
-                  📸 Upload Simulated Completion Images
-                </button>
+            <>
+              {!otpVerified ? (
+                <div style={{ marginBottom: '16px', background: '#f5f3ff', border: '1.5px solid #ddd6fe', padding: '16px', borderRadius: '12px' }}>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: '800', color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    🔑 Enter Customer Start Code
+                  </h4>
+                  <p style={{ margin: '0 0 12px', fontSize: '11px', color: '#4c1d95' }}>Ask the customer for their 4-digit OTP start code to unlock and verify this booking:</p>
+                  <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      placeholder="Enter 4-digit code"
+                      value={otpInput}
+                      onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '4px' }}
+                      required
+                    />
+                    <button type="submit" style={{ background: '#6d28d9', color: '#fff', border: 'none', padding: '0 16px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                      Verify
+                    </button>
+                  </form>
+                  {otpError && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>⚠️ {otpError}</div>}
+                </div>
               ) : (
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {simulatedFiles.map(f => (
-                    <span key={f} style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}>
-                      ✔️ {f}
-                    </span>
-                  ))}
+                <div style={{ marginBottom: '16px', background: '#ecfdf5', border: '1.5px solid #a7f3d0', padding: '14px', borderRadius: '10px' }}>
+                  <div style={{ color: '#065f46', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
+                    ✅ OTP Verified Successfully!
+                  </div>
+                  <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#444', marginBottom: '8px' }}>
+                      <HiFolderOpen style={{ color: 'var(--primary)' }} />
+                      <strong>Before/After Completion Photos</strong>
+                    </div>
+                    {simulatedFiles.length === 0 ? (
+                      <button
+                        type="button"
+                        onClick={handleUploadSimulatedImages}
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #ddd',
+                          color: '#666',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          width: '100%'
+                        }}
+                      >
+                        📸 Upload Simulated Completion Images
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {simulatedFiles.map(f => (
+                          <span key={f} style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}>
+                            ✔️ {f}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {/* Action Buttons based on stages:
               stage 1 -> Mark as En Route
-              stage 2 -> Mark as On Site
-              stage 3 -> Mark as Completed */}
+              stage 2 -> Swipe to Arrive (Mock slider)
+              stage 3 -> Mark as Completed (locked behind OTP) */}
           {activeJob.stage === 1 && (
             <button className="aj-advance" onClick={handleAdvanceStage} style={{ width: '100%', background: 'var(--primary)', color: '#fff', padding: '14px', borderRadius: '10px', border: 'none', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
               <span>Start En Route</span>
               <HiArrowRight style={{ width: 16, height: 16 }} />
             </button>
           )}
+
           {activeJob.stage === 2 && (
-            <button className="aj-advance" onClick={handleAdvanceStage} style={{ width: '100%', background: 'var(--primary)', color: '#fff', padding: '14px', borderRadius: '10px', border: 'none', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
-              <span>Arrived (On Site)</span>
-              <HiArrowRight style={{ width: 16, height: 16 }} />
-            </button>
+            <div style={{ width: '100%', marginTop: '10px' }}>
+              <div style={{ position: 'relative', width: '100%', height: '56px', background: '#3b82f6', borderRadius: '28px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#fff', fontWeight: '700', fontSize: '14px', zIndex: 1, pointerEvents: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+                  {slideVal >= 100 ? 'Release to Confirm Arrived' : '➡️ Swipe to Arrive'}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={slideVal}
+                  onChange={e => {
+                    const val = Number(e.target.value);
+                    setSlideVal(val);
+                    if (val >= 100) {
+                      handleAdvanceStage();
+                      setSlideVal(0);
+                    }
+                  }}
+                  onMouseUp={() => setSlideVal(0)}
+                  onTouchEnd={() => setSlideVal(0)}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer',
+                    zIndex: 3
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  left: `calc(3px + ${slideVal}% * 0.8)`,
+                  top: '3px',
+                  width: '50px',
+                  height: '50px',
+                  background: '#fff',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  pointerEvents: 'none',
+                  fontSize: '20px',
+                  color: '#3b82f6',
+                  zIndex: 2,
+                  transition: slideVal === 0 ? 'left 0.2s ease-out' : 'none'
+                }}>
+                  ➡️
+                </div>
+              </div>
+            </div>
           )}
+
           {activeJob.stage === 3 && (
             <button
               className="aj-advance"
               onClick={handleCompleteJob}
-              disabled={simulatedFiles.length === 0}
+              disabled={!otpVerified || simulatedFiles.length === 0}
               style={{
                 width: '100%',
-                background: simulatedFiles.length > 0 ? '#10b981' : '#ccc',
+                background: (otpVerified && simulatedFiles.length > 0) ? '#10b981' : '#ccc',
                 color: '#fff',
                 padding: '14px',
                 borderRadius: '10px',
@@ -530,11 +644,11 @@ export default function WorkerHome() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                cursor: simulatedFiles.length > 0 ? 'pointer' : 'not-allowed'
+                cursor: (otpVerified && simulatedFiles.length > 0) ? 'pointer' : 'not-allowed'
               }}
             >
-              <span>Complete Project & Credit Wallet</span>
-              <HiCheck style={{ width: 16, height: 16 }} />
+              <span>Complete Service Job</span>
+              <HiCheckCircle style={{ width: 18, height: 18 }} />
             </button>
           )}
         </div>
