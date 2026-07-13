@@ -184,7 +184,7 @@ export default function OrderTracking() {
 
                       {trackingData && trackingData.workerLocation && (
                         <Marker longitude={trackingData.workerLocation.lng} latitude={trackingData.workerLocation.lat} anchor="center">
-                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🚴</div>
+                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🛵</div>
                         </Marker>
                       )}
 

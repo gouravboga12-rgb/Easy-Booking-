@@ -106,19 +106,22 @@ export default function WorkerHome() {
   const [eta, setEta] = useState(null);
   const [workerCoords, setWorkerCoords] = useState({ lat: 12.9716, lng: 77.5946 });
 
+  const [isSimulating, setIsSimulating] = useState(false);
+
   useEffect(() => {
-    if (!activeJob) return;
+    // Watch location if worker is available/online OR has an active job
+    if (!user.available && !activeJob) return;
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setWorkerCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+          const { latitude, longitude } = position.coords;
+          setWorkerCoords({ lat: latitude, lng: longitude });
+          updateWorkerLocation(latitude, longitude);
         },
         (err) => console.warn(err)
       );
     }
-
-    if (activeJob.stage !== 2) return;
 
     const handleSuccess = (position) => {
       const { latitude, longitude } = position.coords;
@@ -137,7 +140,34 @@ export default function WorkerHome() {
     });
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [activeJob?.id, activeJob?.stage]);
+  }, [user.available, activeJob?.id, activeJob?.stage]);
+
+  useEffect(() => {
+    if (!isSimulating || !customerCoords) return;
+
+    const interval = setInterval(() => {
+      setWorkerCoords(prev => {
+        const latDiff = customerCoords.lat - prev.lat;
+        const lngDiff = customerCoords.lng - prev.lng;
+        
+        if (Math.abs(latDiff) < 0.0001 && Math.abs(lngDiff) < 0.0001) {
+          setIsSimulating(false);
+          return prev;
+        }
+
+        // Move 15% closer to destination
+        const nextLat = prev.lat + latDiff * 0.15;
+        const nextLng = prev.lng + lngDiff * 0.15;
+
+        // Sync to backend DB
+        updateWorkerLocation(nextLat, nextLng);
+
+        return { lat: nextLat, lng: nextLng };
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isSimulating, customerCoords]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -352,7 +382,7 @@ export default function WorkerHome() {
 
                   {/* Worker Live Location (Bike) */}
                   <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
-                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🚴</div>
+                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🛵</div>
                   </Marker>
 
                   {routeGeojson && (
@@ -369,6 +399,27 @@ export default function WorkerHome() {
                     </Source>
                   )}
                 </Map>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSimulating(!isSimulating)}
+                  style={{
+                    background: isSimulating ? '#ef4444' : 'var(--primary)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  {isSimulating ? '⏹️ Stop Simulation' : '🛵 Simulate Drive to Customer'}
+                </button>
               </div>
             </div>
           )}
