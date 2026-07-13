@@ -236,8 +236,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Verify OTP for customer registrations
-    if (role === 'customer') {
+    // Verify OTP for customer and worker registrations
+    if (role === 'customer' || role === 'worker') {
       if (!otp) {
         return res.status(400).json({ message: 'Verification OTP code is required' });
       }

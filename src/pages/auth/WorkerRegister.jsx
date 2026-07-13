@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
@@ -46,8 +46,27 @@ export default function WorkerRegister() {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuthStore();
+  const { register, sendRegisterOtp, resendRegisterOtp } = useAuthStore();
   const navigate = useNavigate();
+
+  const cooldownRef = useRef(null);
+  const [otp, setOtp] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const startCooldown = (seconds = 60) => {
+    setResendCooldown(seconds);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) { clearInterval(cooldownRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
 
   // Change handlers
   const handleBasicChange = (key, value) => setForm(p => ({ ...p, [key]: value }));
@@ -148,7 +167,22 @@ export default function WorkerRegister() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000)); // Simulate file/doc uploads
+    // Send register OTP first
+    const result = await sendRegisterOtp(form.email, form.name);
+    setLoading(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setStep(5); // Move to OTP verification step
+    startCooldown(60);
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (otp.length !== 6) { setError('Please enter a valid 6-digit OTP'); return; }
+    setLoading(true);
 
     const skills = professionalForm.skillsInput
       .split(',')
@@ -175,6 +209,7 @@ export default function WorkerRegister() {
       bank: verificationForm.bankAccount ? `Acct: ${verificationForm.bankAccount}, IFSC: ${verificationForm.bankIfsc}, Name: ${verificationForm.bankName}` : 'Not provided',
       aadharPhoto: verificationForm.aadharCopy,
       panPhoto: verificationForm.panCopy,
+      otp
     };
 
     const result = await register(data);
@@ -186,8 +221,24 @@ export default function WorkerRegister() {
     setStep(4); // Success approval state
   };
 
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || resendLoading) return;
+    setError('');
+    setSuccessMsg('');
+    setResendLoading(true);
+    const result = await resendRegisterOtp(form.email, form.name);
+    setResendLoading(false);
+    if (result.error) { setError(result.error); }
+    else {
+      setOtp('');
+      setSuccessMsg('New OTP sent! Check your email.');
+      startCooldown(60);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    }
+  };
+
   const STEPS = ['Account Details', 'Professional Info', 'Verification Documents'];
-  const currentStep = step - 1;
+  const currentStep = Math.min(step - 1, 2);
 
   return (
     <div className="auth-page">
@@ -464,6 +515,75 @@ export default function WorkerRegister() {
               Go to Worker Login Portal
             </button>
           </div>
+        )}
+
+        {/* Step 5: OTP Verification */}
+        {step === 5 && (
+          <>
+            <h1>Verify Your Email</h1>
+            <p className="auth-sub">Enter the verification code sent to {form.email}</p>
+            <form onSubmit={handleVerifyOtp}>
+              <div className="otp-info" style={{ display: 'flex', gap: '10px', background: '#f3f4f6', padding: '12px', borderRadius: '8px', marginBottom: '16px', alignItems: 'center' }}>
+                <HiMail style={{ fontSize: '24px', color: 'var(--primary)' }} />
+                <div>
+                  <strong style={{ fontSize: '13px', color: '#333' }}>OTP code sent to {form.email}</strong>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#666' }}>Please enter the 6-digit code to complete registration.</p>
+                </div>
+              </div>
+
+              <label>Enter OTP
+                <div className="input-wrap">
+                  <HiLockClosed className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </label>
+
+              {/* Spam folder note requested by the user */}
+              <div style={{ margin: '8px 0 16px', padding: '10px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', color: '#b45309', fontSize: '12px', lineHeight: '1.4' }}>
+                ℹ️ <strong>Spam Folder Check:</strong> If you don't see the verification email in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.
+              </div>
+
+              {error && <div className="auth-error">⚠️ {error}</div>}
+              {successMsg && (
+                <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '8px' }}>
+                  ✅ {successMsg}
+                </div>
+              )}
+
+              <button type="submit" className="auth-submit" disabled={loading || otp.length !== 6}>
+                {loading ? 'Verifying & Registering...' : <><span>Verify &amp; Register</span> <HiArrowRight style={{ width: 16, height: 16 }} /></>}
+              </button>
+
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                {resendCooldown > 0 ? (
+                  <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>
+                    Resend OTP in <strong style={{ color: 'var(--primary)' }}>{resendCooldown}s</strong>
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendLoading}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', padding: '4px 0', textDecoration: 'underline' }}
+                  >
+                    {resendLoading ? 'Sending...' : "Didn't receive OTP? Resend"}
+                  </button>
+                )}
+              </div>
+
+              <button type="button" className="auth-back" onClick={() => { setStep(3); setOtp(''); setError(''); if (cooldownRef.current) clearInterval(cooldownRef.current); }}>
+                ← Back to Docs
+              </button>
+            </form>
+          </>
         )}
       </div>
 
