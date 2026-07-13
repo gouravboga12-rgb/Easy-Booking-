@@ -35,6 +35,10 @@ async function migrate() {
       await pool.query("ALTER TABLE bookings ADD COLUMN worker_message VARCHAR(255) NULL");
       console.log("Column 'worker_message' added to bookings.");
     }
+    if (!colNamesBookings.includes('rejected_workers')) {
+      await pool.query("ALTER TABLE bookings ADD COLUMN rejected_workers TEXT NULL");
+      console.log("Column 'rejected_workers' added to bookings.");
+    }
 
     // Create worker_locations table
     await pool.query(`

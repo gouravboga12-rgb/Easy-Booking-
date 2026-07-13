@@ -38,7 +38,7 @@ const formatDbOrder = (dbOrder, services) => {
     status: dbOrder.status,
     placedAt: new Date(dbOrder.created_at).toLocaleTimeString(),
     createdAt: dbOrder.created_at,
-    rejectedWorkers: []
+    rejectedWorkers: dbOrder.rejected_workers ? JSON.parse(dbOrder.rejected_workers) : []
   };
 };
 
@@ -384,6 +384,29 @@ export const useStore = create((set, get) => ({
       });
     } catch (err) {
       console.error('Error sending worker message:', err);
+    }
+  },
+
+  rejectActiveJob: async (orderId, workerId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: 'pending', rejectWorkerId: workerId })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const formatted = formatDbOrder(data, get().services);
+        set(s => ({
+          orders: s.orders.map(o => o.id === orderId ? formatted : o),
+          activeOrder: s.activeOrder?.id === orderId ? null : s.activeOrder
+        }));
+      }
+    } catch (err) {
+      console.error('Error rejecting active job:', err);
     }
   }
 }));

@@ -32,6 +32,7 @@ export default function WorkerHome() {
   const uploadCompletionImages = useStore(s => s.uploadCompletionImages);
   const updateWorkerLocation = useStore(s => s.updateWorkerLocation);
   const sendWorkerMessage = useStore(s => s.sendWorkerMessage);
+  const rejectActiveJob = useStore(s => s.rejectActiveJob);
 
   const [simulatedFiles, setSimulatedFiles] = useState([]);
   const [completeSuccess, setCompleteSuccess] = useState(false);
@@ -40,6 +41,14 @@ export default function WorkerHome() {
   const [currentLocInput, setCurrentLocInput] = useState('');
   const [locMessage, setLocMessage] = useState('');
 
+  // Cancellation States
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Vehicle breakdown / transport issue');
+  const [customCancelReason, setCustomCancelReason] = useState('');
+
+  // Payment Collection States
+  const [paymentMode, setPaymentMode] = useState('cash');
+
   // Availability Settings States
   const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
   const [vacation, setVacation] = useState(user.availability?.vacation || false);
@@ -47,7 +56,7 @@ export default function WorkerHome() {
   const [blockedDates, setBlockedDates] = useState(user.availability?.blockedDates || []);
 
   const myOrders = orders.filter(o => o.operator?.id === user.id);
-  const activeJob = myOrders.find(o => ['assigned', 'active'].includes(o.status));
+  const activeJob = myOrders.find(o => ['assigned', 'active', 'arrived'].includes(o.status));
   const completedJobs = myOrders.filter(o => o.status === 'completed');
   const earnings = user.wallet?.balance || 0;
 
@@ -331,7 +340,7 @@ export default function WorkerHome() {
     
     // 1. Credit earnings (amount is total price)
     const amount = activeJob.booking.total || 0;
-    addWorkerEarning(user.id, amount, `Completed Project #${activeJob.id}`);
+    addWorkerEarning(user.id, amount, `Completed Project #${activeJob.id} - Paid via ${paymentMode.toUpperCase()}`);
     
     // 2. Advance stage to completed
     advanceStage(activeJob.id);
@@ -696,7 +705,9 @@ export default function WorkerHome() {
                   <div style={{ color: '#065f46', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
                     ✅ OTP Verified Successfully!
                   </div>
-                  <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
+                  
+                  {/* Photo Uploader Card */}
+                  <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#444', marginBottom: '8px' }}>
                       <HiFolderOpen style={{ color: 'var(--primary)' }} />
                       <strong>Before/After Completion Photos</strong>
@@ -728,6 +739,49 @@ export default function WorkerHome() {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Payment Collection Selection */}
+                  <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>💵 Record Payment Received:</div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMode('cash')}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: paymentMode === 'cash' ? '#10b981' : '#f8fafc',
+                          color: paymentMode === 'cash' ? '#fff' : '#475569',
+                          border: '1.5px solid',
+                          borderColor: paymentMode === 'cash' ? '#10b981' : '#cbd5e1',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        💵 Cash Collection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMode('online')}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: paymentMode === 'online' ? '#3b82f6' : '#f8fafc',
+                          color: paymentMode === 'online' ? '#fff' : '#475569',
+                          border: '1.5px solid',
+                          borderColor: paymentMode === 'online' ? '#3b82f6' : '#cbd5e1',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📱 Online / UPI
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -824,6 +878,32 @@ export default function WorkerHome() {
             >
               <span>Complete Service Job</span>
               <HiCheckCircle style={{ width: 18, height: 18 }} />
+            </button>
+          )}
+
+          {/* Cancellation button for active assignment */}
+          {(activeJob.stage === 1 || activeJob.stage === 2) && (
+            <button
+              type="button"
+              onClick={() => setShowCancelModal(true)}
+              style={{
+                width: '100%',
+                background: '#fef2f2',
+                border: '1.5px solid #fca5a5',
+                color: '#b91c1c',
+                padding: '12px',
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '13px',
+                marginTop: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>❌ Cancel Job Assignment</span>
             </button>
           )}
         </div>
@@ -993,6 +1073,122 @@ export default function WorkerHome() {
         </div>
       </div>
 
+      {showCancelModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+            border: '1.5px solid #eee'
+          }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚠️ Cancel Assignment Warning
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
+              Cancelling active assignments impacts your driver score, service reliability rating, and search visibility.
+            </p>
+            
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
+              Reason for Cancellation:
+            </label>
+            <select
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: '1.5px solid #d1d5db',
+                fontSize: '13px',
+                marginBottom: '16px',
+                outline: 'none'
+              }}
+            >
+              <option value="Vehicle breakdown / transport issue">🔧 Vehicle breakdown / transport issue</option>
+              <option value="Customer not reachable / wrong phone number">📞 Customer not reachable</option>
+              <option value="Emergency / personal reason">🚨 Emergency / personal reason</option>
+              <option value="Other">📝 Other reason (Describe below)</option>
+            </select>
+
+            {cancelReason === 'Other' && (
+              <textarea
+                placeholder="Please write down your reason here..."
+                value={customCancelReason}
+                onChange={e => setCustomCancelReason(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #d1d5db',
+                  fontSize: '13px',
+                  marginBottom: '16px',
+                  fontFamily: 'inherit',
+                  resize: 'none',
+                  outline: 'none'
+                }}
+              />
+            )}
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#f3f4f6',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#4b5563',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                No, Go Back
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const finalReason = cancelReason === 'Other' ? customCancelReason : cancelReason;
+                  await rejectActiveJob(activeJob.id, user.id);
+                  setShowCancelModal(false);
+                  alert("Order has been cancelled and returned to pool. Your cancel reason: " + finalReason);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#dc2626',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                Confirm Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

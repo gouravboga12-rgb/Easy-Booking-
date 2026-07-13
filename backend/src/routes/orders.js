@@ -114,8 +114,25 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
     if (status === 'assigned' && workerId) {
       // Worker accepting a pending job
       await pool.query('UPDATE bookings SET status = ?, worker_id = ? WHERE id = ?', ['assigned', workerId, id]);
+    } else if (status === 'pending') {
+      // Worker cancelling active job, set back to pending and append to rejected_workers list
+      const [current] = await pool.query('SELECT rejected_workers FROM bookings WHERE id = ?', [id]);
+      let list = [];
+      if (current.length > 0 && current[0].rejected_workers) {
+        try {
+          list = JSON.parse(current[0].rejected_workers);
+        } catch (e) {}
+      }
+      const rejectWorkerId = req.body.rejectWorkerId || req.user.id;
+      if (rejectWorkerId && !list.includes(rejectWorkerId)) {
+        list.push(rejectWorkerId);
+      }
+      await pool.query(
+        'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ? WHERE id = ?',
+        ['pending', JSON.stringify(list), id]
+      );
     } else {
-      // General status transition (active, completed, cancelled)
+      // General status transition (active, arrived, completed, cancelled)
       await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
     }
 
