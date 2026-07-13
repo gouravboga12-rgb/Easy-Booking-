@@ -71,7 +71,7 @@ export default function WorkerHome() {
     (user.categories && user.categories.includes(o.vehicle.category))
   );
 
-  const isSubscribed = true; // Bypass subscription check for testing/debug
+  const isSubscribed = !!user.subscription?.active;
 
   const STATS = [
     { Icon: HiStar,          val: `${user.rating}★`,                        label: 'Rating',      color: '#f59e0b' },

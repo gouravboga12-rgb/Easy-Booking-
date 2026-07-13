@@ -22,11 +22,64 @@ export default function WorkerSubscription() {
     loadPlans();
   }, [fetchSubscriptionPlans]);
 
-  const handlePurchaseSubscription = (plan) => {
-    buySubscription(user.id, plan.name, plan.duration);
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePurchaseSubscription = async (plan) => {
+    await buySubscription(user.id, plan.name, plan.duration);
     setPurchaseSuccess(true);
     setSelectedPlan(null);
     setTimeout(() => setPurchaseSuccess(false), 4000);
+  };
+
+  const handlePayment = async (plan) => {
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      alert("Failed to load Razorpay payment gateway. Please check your internet connection.");
+      return;
+    }
+
+    const options = {
+      key: "rzp_test_TCwvMqA7DCXaX0",
+      amount: Math.round(parseFloat(plan.price) * 100),
+      currency: "INR",
+      name: "Parrow Skills",
+      description: `Subscription - ${plan.name}`,
+      image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=120&q=80",
+      handler: function (response) {
+        if (response.razorpay_payment_id) {
+          handlePurchaseSubscription(plan);
+        } else {
+          alert("Payment failed or cancelled.");
+        }
+      },
+      prefill: {
+        name: user.name,
+        email: user.email,
+        contact: user.phone || ""
+      },
+      notes: {
+        userId: user.id,
+        planName: plan.name
+      },
+      theme: {
+        color: "#6d28d9"
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
   };
 
   // Only display active plans of type 'worker'
@@ -134,7 +187,7 @@ export default function WorkerSubscription() {
               <strong style={{ fontSize: '16px', color: '#0f172a' }}>Total: ₹{parseFloat(selectedPlan.price).toLocaleString()}</strong>
             </div>
             <button
-              onClick={() => handlePurchaseSubscription(selectedPlan)}
+              onClick={() => handlePayment(selectedPlan)}
               style={{
                 width: '100%',
                 background: 'var(--primary)',

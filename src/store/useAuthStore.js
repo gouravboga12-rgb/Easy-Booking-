@@ -264,24 +264,37 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  buySubscription: (userId, planName, durationMonths) => {
+  buySubscription: async (userId, planName, durationMonths) => {
     const user = get().user;
     if (!user) return;
 
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
 
-    const updated = {
-      ...user,
-      subscription: {
-        active: true,
-        plan: planName,
-        expiresAt: expiresAt.toISOString().split('T')[0]
-      }
+    const subscription = {
+      active: true,
+      plan: planName,
+      expiresAt: expiresAt.toISOString().split('T')[0]
     };
 
-    localStorage.setItem('user', JSON.stringify(updated));
-    set({ user: updated });
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ subscription })
+      });
+      const updatedUser = await response.json();
+      if (response.ok) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+      }
+    } catch (err) {
+      console.error('Failed to buy subscription:', err);
+    }
   },
 
   resetUserPassword: async (userId, newPassword) => {

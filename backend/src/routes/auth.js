@@ -44,6 +44,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('reviews')) {
       await pool.query('ALTER TABLE users ADD COLUMN reviews JSON NULL');
     }
+    if (!columnNames.includes('subscription')) {
+      await pool.query('ALTER TABLE users ADD COLUMN subscription JSON NULL');
+    }
 
     // Ensure subscription_plans table exists
     await pool.query(`
@@ -203,6 +206,9 @@ router.post('/google', async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    if (typeof user.subscription === 'string') {
+      try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
+    }
 
     const token = generateToken(user);
     res.json({ user, token });
@@ -396,6 +402,9 @@ router.post('/login', async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    if (typeof user.subscription === 'string') {
+      try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
+    }
 
     // Send Login Alert (non-blocking)
     if (user.email) {
@@ -429,6 +438,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    if (typeof user.subscription === 'string') {
+      try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
+    }
     user.vehicle = user.vehicle_details;
 
     res.json(user);
@@ -440,12 +452,13 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet } = req.body;
+  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet, subscription } = req.body;
   const finalVehicle = vehicle !== undefined ? vehicle : vehicle_details;
   try {
     const catJson = categories ? JSON.stringify(categories) : undefined;
     const skillsJson = skills ? JSON.stringify(skills) : undefined;
     const walletJson = wallet ? JSON.stringify(wallet) : undefined;
+    const subscriptionJson = subscription ? JSON.stringify(subscription) : undefined;
 
     await pool.query(
       `UPDATE users SET 
@@ -459,9 +472,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
         aadhar = COALESCE(?, aadhar),
         pan = COALESCE(?, pan),
         vehicle_details = COALESCE(?, vehicle_details),
-        wallet = COALESCE(?, wallet)
+        wallet = COALESCE(?, wallet),
+        subscription = COALESCE(?, subscription)
        WHERE id = ?`,
-      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, req.user.id]
+      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, req.user.id]
     );
 
     const [updated] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
@@ -473,6 +487,9 @@ router.put('/profile', authenticateToken, async (req, res) => {
       try { user.reviews = JSON.parse(user.reviews); } catch (e) { user.reviews = []; }
     }
     user.reviews = user.reviews || [];
+    if (typeof user.subscription === 'string') {
+      try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
+    }
     user.vehicle = user.vehicle_details;
 
     res.json(user);
@@ -519,6 +536,9 @@ router.get('/workers', authenticateToken, async (req, res) => {
         try { w.reviews = JSON.parse(w.reviews); } catch (e) { w.reviews = []; }
       }
       w.reviews = w.reviews || [];
+      if (typeof w.subscription === 'string') {
+        try { w.subscription = JSON.parse(w.subscription); } catch (e) { w.subscription = null; }
+      }
       w.vehicle = w.vehicle_details;
     });
     res.json(workers);
