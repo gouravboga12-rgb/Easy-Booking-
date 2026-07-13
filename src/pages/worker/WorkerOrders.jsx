@@ -8,7 +8,7 @@ export default function WorkerOrders() {
   const advanceStage = useStore(s => s.advanceStage);
 
   const activeOrders = orders.filter(o =>
-    o.operator?.id === user.id && ['assigned', 'active', 'pending'].includes(o.status)
+    o.operator?.id === user.id && ['assigned', 'active', 'pending', 'arrived'].includes(o.status)
   );
 
   return (
