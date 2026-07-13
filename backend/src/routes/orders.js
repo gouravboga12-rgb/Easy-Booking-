@@ -80,9 +80,11 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
   try {
     const [orders] = await pool.query(`
       SELECT b.*, 
-             c.name AS customer_name, c.phone AS customer_phone
+             c.name AS customer_name, c.phone AS customer_phone,
+             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle
       FROM bookings b
       LEFT JOIN users c ON b.customer_id = c.id
+      LEFT JOIN users w ON b.worker_id = w.id
       WHERE b.worker_id = ? OR b.status = 'pending'
       ORDER BY b.created_at DESC
     `, [id]);
