@@ -6,7 +6,7 @@ const router = express.Router();
 
 // POST /api/orders (Place an order / create booking)
 router.post('/', authenticateToken, async (req, res) => {
-  const { customerId, workerId, location, date, duration, totalAmount, vehicleId, bookingType } = req.body;
+  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType } = req.body;
   
   if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
     return res.status(400).json({ message: 'Missing required order fields' });
@@ -17,10 +17,11 @@ router.post('/', authenticateToken, async (req, res) => {
     const status = workerId ? 'assigned' : 'pending';
 
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, booking_date, duration, total_amount, vehicle_id, booking_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, customerId, workerId || null, status, location, date, duration, totalAmount, vehicleId, bookingType || 'instant']
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant']
     );
+
 
     // Fetch the newly created order
     const [orders] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);

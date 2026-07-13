@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './src/routes/auth.js';
 import orderRoutes from './src/routes/orders.js';
 import serviceRoutes from './src/routes/services.js';
+import trackingRoutes from './src/routes/tracking.js';
 
 dotenv.config();
 
@@ -17,6 +18,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/tracking', trackingRoutes);
+
 
 // Health Check
 app.get('/health', (req, res) => {

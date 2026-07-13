@@ -5,6 +5,7 @@ async function init() {
   console.log("Initializing database tables on RDS MySQL...");
   try {
     // 0. Drop existing tables to recreate with new schema
+    await pool.query("DROP TABLE IF EXISTS worker_locations");
     await pool.query("DROP TABLE IF EXISTS bookings");
     await pool.query("DROP TABLE IF EXISTS users");
     console.log("Existing tables dropped.");
@@ -29,6 +30,9 @@ async function init() {
         bank VARCHAR(255),
         available TINYINT(1) DEFAULT 1,
         approved TINYINT(1) DEFAULT 1,
+        photo LONGTEXT NULL,
+        aadhar_photo LONGTEXT NULL,
+        pan_photo LONGTEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -42,6 +46,8 @@ async function init() {
         worker_id VARCHAR(255),
         status ENUM('pending', 'assigned', 'active', 'completed', 'cancelled') DEFAULT 'pending',
         location TEXT NOT NULL,
+        customer_lat DECIMAL(10, 8) NULL,
+        customer_lng DECIMAL(11, 8) NULL,
         booking_date VARCHAR(50) NOT NULL,
         duration INT NOT NULL,
         total_amount DECIMAL(10, 2) NOT NULL,
@@ -53,6 +59,19 @@ async function init() {
       )
     `);
     console.log("Bookings table created or verified.");
+
+    // 2.5 Create Worker Locations Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS worker_locations (
+        worker_id VARCHAR(255) PRIMARY KEY,
+        lat DECIMAL(10, 8) NOT NULL,
+        lng DECIMAL(11, 8) NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (worker_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    console.log("worker_locations table created or verified.");
+
 
     // 3. Seed Users
     const saltRounds = 10;

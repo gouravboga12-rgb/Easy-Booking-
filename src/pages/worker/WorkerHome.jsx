@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import {
@@ -19,6 +19,7 @@ export default function WorkerHome() {
   const rejectOrder = useStore(s => s.rejectOrder);
   const advanceStage = useStore(s => s.advanceStage);
   const uploadCompletionImages = useStore(s => s.uploadCompletionImages);
+  const updateWorkerLocation = useStore(s => s.updateWorkerLocation);
 
   const [simulatedFiles, setSimulatedFiles] = useState([]);
   const [completeSuccess, setCompleteSuccess] = useState(false);
@@ -97,6 +98,37 @@ export default function WorkerHome() {
   const handleRejectRequest = (orderId) => {
     rejectOrder(orderId, user.id);
   };
+
+  useEffect(() => {
+    if (!activeJob || activeJob.stage !== 2) return;
+
+    if (!navigator.geolocation) {
+      console.warn("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    console.log("Starting worker location watch en-route...");
+    const handleSuccess = (position) => {
+      const { latitude, longitude } = position.coords;
+      updateWorkerLocation(latitude, longitude);
+    };
+
+    const handleError = (err) => {
+      console.error("Worker location watch error:", err);
+    };
+
+    const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 10000
+    });
+
+    return () => {
+      console.log("Stopping worker location watch.");
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activeJob?.id, activeJob?.stage, updateWorkerLocation]);
+
 
   const handleAdvanceStage = () => {
     if (!activeJob) return;
@@ -237,7 +269,9 @@ export default function WorkerHome() {
           {/* Navigation link via Google Maps */}
           <div style={{ marginBottom: '16px' }}>
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`}
+              href={activeJob.booking.lat && activeJob.booking.lng
+                ? `https://www.google.com/maps/dir/?api=1&destination=${activeJob.booking.lat},${activeJob.booking.lng}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`}
               target="_blank"
               rel="noreferrer"
               style={{

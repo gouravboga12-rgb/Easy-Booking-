@@ -31,32 +31,93 @@ export default function BookingFlow() {
     notes: ''
   });
   const [step, setStep] = useState(1);
+  const [coords, setCoords] = useState({ lat: 12.9716, lng: 77.5946 }); // Default: Bangalore
+  const [locLoading, setLocLoading] = useState(false);
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
   const total = vehicle.rate * form.duration;
 
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords({ lat: latitude, lng: longitude });
+        
+        const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+        if (token) {
+          try {
+            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`);
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+              setForm(f => ({ ...f, location: data.features[0].place_name }));
+            } else {
+              setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+            }
+          } catch (e) {
+            setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+          }
+        } else {
+          setForm(f => ({ ...f, location: `📍 Coords: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+        }
+        setLocLoading(false);
+      },
+      (err) => {
+        console.error(err);
+        alert("Unable to retrieve location. Please type manually.");
+        setLocLoading(false);
+      }
+    );
+  };
+
+  const handleContinue = async () => {
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (token && form.location && !form.location.startsWith('📍 Coords:')) {
+      try {
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(form.location)}.json?access_token=${token}&limit=1`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].center;
+          setCoords({ lat, lng });
+        }
+      } catch (e) {
+        console.error("Geocoding failed, using defaults", e);
+      }
+    }
+    setStep(2);
+  };
+
   const handleBook = () => {
     const customer = user
       ? { id: user.id, name: user.name, phone: user.phone }
       : { name: 'Guest', phone: '' };
-    const order = placeOrder(
+    placeOrder(
       vehicle,
       {
         ...form,
+        lat: coords.lat,
+        lng: coords.lng,
         date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
         timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
         bookingType,
         total
       },
       customer
-    );
-    navigate(`/track/${order.id}`);
+    ).then(order => {
+      if (order) navigate(`/track/${order.id}`);
+    });
   };
 
   const handleAddToCart = () => {
     addToCart(vehicle, {
       ...form,
+      lat: coords.lat,
+      lng: coords.lng,
       date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
       timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
       bookingType,
@@ -152,6 +213,26 @@ export default function BookingFlow() {
                   value={form.location}
                   onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
                 />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={handleLocateMe}
+                    disabled={locLoading}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--primary)',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    {locLoading ? '⌛ Locating...' : '🎯 Use Current Location'}
+                  </button>
+                </div>
               </label>
 
               {bookingType === 'scheduled' && (
@@ -212,7 +293,7 @@ export default function BookingFlow() {
               <button
                 className="btn-primary"
                 disabled={!form.location || (bookingType === 'scheduled' && !form.date)}
-                onClick={() => setStep(2)}
+                onClick={handleContinue}
                 style={{ marginTop: '14px' }}
               >
                 Continue <HiArrowRight style={{ width: 16, height: 16 }} />

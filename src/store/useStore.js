@@ -23,6 +23,8 @@ const formatDbOrder = (dbOrder, services) => {
     vehicle,
     booking: {
       location: dbOrder.location,
+      lat: dbOrder.customer_lat ? parseFloat(dbOrder.customer_lat) : null,
+      lng: dbOrder.customer_lng ? parseFloat(dbOrder.customer_lng) : null,
       date: dbOrder.booking_date,
       duration: dbOrder.duration,
       total: parseFloat(dbOrder.total_amount),
@@ -43,6 +45,8 @@ export const useStore = create((set, get) => ({
   orders: [],
   activeOrder: null,
   cart: [],
+  liveTracking: {},
+
   services: [],
 
   fetchServices: async () => {
@@ -183,6 +187,8 @@ export const useStore = create((set, get) => ({
       customerId: customer?.id || 'guest',
       workerId: null,
       location: booking.location,
+      customerLat: booking.lat || null,
+      customerLng: booking.lng || null,
       date: booking.date,
       duration: booking.duration,
       totalAmount: booking.total,
@@ -323,5 +329,43 @@ export const useStore = create((set, get) => ({
 
   getPendingOrders: () => {
     return get().orders.filter(o => o.status === 'pending');
+  },
+
+  updateWorkerLocation: async (lat, lng) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/tracking/worker/location`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ lat, lng })
+      });
+    } catch (err) {
+      console.error('Error updating worker location:', err);
+    }
+  },
+
+  fetchLiveTracking: async (orderId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/tracking/order/${orderId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({
+          liveTracking: {
+            ...s.liveTracking,
+            [orderId]: data
+          }
+        }));
+        return data;
+      }
+    } catch (err) {
+      console.error('Error fetching live tracking:', err);
+    }
+    return null;
   }
 }));

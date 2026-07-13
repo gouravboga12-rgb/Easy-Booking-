@@ -109,7 +109,14 @@ export default function AdminOrders() {
                       {o.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
                     </td>
                     <td>{o.customer?.name || 'Guest'}</td>
-                    <td className="truncate" title={o.booking?.location}>{o.booking?.location}</td>
+                    <td className="truncate" title={o.booking?.location}>
+                      <div>{o.booking?.location}</div>
+                      {o.booking?.lat && o.booking?.lng && (
+                        <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>
+                          🎯 Lat: {o.booking.lat.toFixed(5)}, Lng: {o.booking.lng.toFixed(5)}
+                        </div>
+                      )}
+                    </td>
                     <td>{o.booking?.date}</td>
                     <td style={{ fontSize: '11px', color: '#666' }}>
                       {o.stages && o.stages[o.stage] ? `${o.stage + 1}/4: ${o.stages[o.stage]}` : 'Unassigned'}

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { HiLocationMarker, HiCalendar, HiClock, HiDocumentText, HiUser } from 'react-icons/hi';
+import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import './OrderTracking.css';
 
 export default function OrderTracking() {
@@ -13,10 +15,59 @@ export default function OrderTracking() {
   const addWorkerReview = useAuthStore(s => s.addWorkerReview);
 
   const order = orders.find(o => o.id === id);
+  const fetchLiveTracking = useStore(s => s.fetchLiveTracking);
 
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const [trackingData, setTrackingData] = useState(null);
+  const [routeGeojson, setRouteGeojson] = useState(null);
+  const [eta, setEta] = useState(null);
+
+  const isComplete = order ? (order.status === 'completed' || order.stage === order.stages.length - 1) : true;
+
+  useEffect(() => {
+    if (!order || isComplete) return;
+
+    const getTracking = async () => {
+      const data = await fetchLiveTracking(order.id);
+      if (data) {
+        setTrackingData(data);
+      }
+    };
+
+    getTracking();
+    const interval = setInterval(getTracking, 10000); // Poll every 10 seconds
+    return () => clearInterval(interval);
+  }, [order?.id, isComplete, fetchLiveTracking]);
+
+  useEffect(() => {
+    if (!trackingData || !trackingData.workerLocation || !trackingData.customerLat || !trackingData.customerLng) return;
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token) return;
+
+    const { lat: wLat, lng: wLng } = trackingData.workerLocation;
+    const { customerLat: cLat, customerLng: cLng } = trackingData;
+
+    const fetchRoute = async () => {
+      try {
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${wLng},${wLat};${cLng},${cLat}?geometries=geojson&access_token=${token}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.routes && json.routes.length > 0) {
+          setRouteGeojson(json.routes[0].geometry);
+          const durationMin = Math.round(json.routes[0].duration / 60);
+          const distanceKm = (json.routes[0].distance / 1000).toFixed(1);
+          setEta(`${durationMin} mins (${distanceKm} km away)`);
+        }
+      } catch (e) {
+        console.error("Failed to fetch directions route", e);
+      }
+    };
+
+    fetchRoute();
+  }, [trackingData]);
 
   if (!order) return (
     <div className="not-found">
@@ -24,8 +75,6 @@ export default function OrderTracking() {
       <button onClick={() => navigate('/orders')}>View All Orders</button>
     </div>
   );
-
-  const isComplete = order.status === 'completed' || order.stage === order.stages.length - 1;
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -74,6 +123,61 @@ export default function OrderTracking() {
               </div>
             ))}
           </div>
+
+          {/* Map Tracking */}
+          {!isComplete && order.operator && (
+            <div className="booking-summary" style={{ marginBottom: '20px', padding: '16px' }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>Live Route Tracker</h3>
+              {import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ? (
+                trackingData && trackingData.customerLat && trackingData.customerLng ? (
+                  <div style={{ width: '100%', height: '350px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+                    <Map
+                      initialViewState={{
+                        longitude: trackingData.customerLng,
+                        latitude: trackingData.customerLat,
+                        zoom: 13
+                      }}
+                      style={{ width: '100%', height: '100%' }}
+                      mapStyle="mapbox://styles/mapbox/streets-v12"
+                      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
+                    >
+                      <Marker longitude={trackingData.customerLng} latitude={trackingData.customerLat} anchor="bottom">
+                        <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
+                      </Marker>
+
+                      {trackingData.workerLocation && (
+                        <Marker longitude={trackingData.workerLocation.lng} latitude={trackingData.workerLocation.lat} anchor="center">
+                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🚴</div>
+                        </Marker>
+                      )}
+
+                      {routeGeojson && (
+                        <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
+                          <Layer
+                            id="route-line"
+                            type="line"
+                            paint={{
+                              'line-color': '#8b5cf6',
+                              'line-width': 5,
+                              'line-opacity': 0.8
+                            }}
+                          />
+                        </Source>
+                      )}
+                    </Map>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#888', background: '#fafafa', borderRadius: '12px' }}>
+                    🛰️ Initializing GPS satellite connections...
+                  </div>
+                )
+              ) : (
+                <div style={{ padding: '20px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '12px', color: '#b45309', fontSize: '13px' }}>
+                  ⚠️ Live map tracking is disabled. Please configure your <strong>VITE_MAPBOX_ACCESS_TOKEN</strong> in the environment setup.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Booking Details */}
           <div className="booking-summary">
@@ -159,8 +263,8 @@ export default function OrderTracking() {
           {order.operator && !isComplete && (
             <div className="eta-box">
               <div className="eta-label">Estimated Arrival</div>
-              <div className="eta-time">
-                {order.stage === 1 ? 'Will approach in 15 minutes' : order.stage === 2 ? 'En Route (Approaching...)' : 'On Site (Working...)'}
+              <div className="eta-time" style={{ fontSize: (order.stage === 2 && eta) ? '18px' : '22px' }}>
+                {order.stage === 1 ? 'Will approach in 15 minutes' : (order.stage === 2 && eta) ? eta : order.stage === 2 ? 'En Route (Approaching...)' : 'On Site (Working...)'}
               </div>
             </div>
           )}
