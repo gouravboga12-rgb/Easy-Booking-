@@ -39,6 +39,9 @@ async function migrate() {
       await pool.query("ALTER TABLE bookings ADD COLUMN rejected_workers TEXT NULL");
       console.log("Column 'rejected_workers' added to bookings.");
     }
+    // Update bookings status column ENUM to include 'arrived' status
+    await pool.query("ALTER TABLE bookings MODIFY COLUMN status ENUM('pending', 'assigned', 'active', 'arrived', 'completed', 'cancelled') DEFAULT 'pending'");
+    console.log("Bookings status ENUM updated to include 'arrived'.");
 
     // Create worker_locations table
     await pool.query(`
