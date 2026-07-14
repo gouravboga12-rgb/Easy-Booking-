@@ -231,16 +231,28 @@ export default function AdminCategories() {
               <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 React Icon Component
                 <select value={newCat.icon_name} onChange={e => setNewCat(p => ({ ...p, icon_name: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
-                  <option value="MdHomeWork">MdHomeWork (Contractors)</option>
+                  <option value="MdHomeWork">MdHomeWork (Contractors & Civil)</option>
                   <option value="MdConstruction">MdConstruction (Site Labour)</option>
-                  <option value="FaHammer">FaHammer (Carpentry)</option>
-                  <option value="MdEngineering">MdEngineering (Maintenance)</option>
-                  <option value="MdBuild">MdBuild (Installations)</option>
+                  <option value="FaHammer">FaHammer (Carpentry & Woodwork)</option>
+                  <option value="MdEngineering">MdEngineering (Maintenance & Tech)</option>
+                  <option value="MdBuild">MdBuild (Installations & Repairs)</option>
                   <option value="MdCleaningServices">MdCleaningServices (Housekeeping)</option>
-                  <option value="MdDirectionsCar">MdDirectionsCar (Logistics)</option>
-                  <option value="MdRestaurant">MdRestaurant (Cooking)</option>
-                  <option value="MdHardware">MdHardware (Hardware)</option>
-                  <option value="MdHandyman">MdHandyman (Handyman)</option>
+                  <option value="MdDirectionsCar">MdDirectionsCar (Logistics & Drivers)</option>
+                  <option value="MdRestaurant">MdRestaurant (Cooking & Events)</option>
+                  <option value="MdPalette">MdPalette (Painting & Decoration)</option>
+                  <option value="MdPlumbing">MdPlumbing (Plumbing Services)</option>
+                  <option value="MdElectricBolt">MdElectricBolt (Electrical Services)</option>
+                  <option value="MdGrass">MdGrass (Gardening & Landscaping)</option>
+                  <option value="MdSecurity">MdSecurity (Security & Guarding)</option>
+                  <option value="MdLocalShipping">MdLocalShipping (Packers & Movers)</option>
+                  <option value="MdContentCut">MdContentCut (Beauty & Grooming)</option>
+                  <option value="MdMedicalServices">MdMedicalServices (Healthcare & Caregivers)</option>
+                  <option value="MdCameraAlt">MdCameraAlt (Photography & Media)</option>
+                  <option value="MdDryCleaning">MdDryCleaning (Laundry & Dry Clean)</option>
+                  <option value="MdAutoStories">MdAutoStories (Education & Tutoring)</option>
+                  <option value="MdPets">MdPets (Pet Care & Dog Walking)</option>
+                  <option value="MdHardware">MdHardware (Hardware & Tools)</option>
+                  <option value="MdHandyman">MdHandyman (Handyman Services)</option>
                 </select>
               </label>
             </div>
@@ -435,6 +447,18 @@ export default function AdminCategories() {
                      <option value="MdCleaningServices">MdCleaningServices</option>
                      <option value="MdDirectionsCar">MdDirectionsCar</option>
                      <option value="MdRestaurant">MdRestaurant</option>
+                     <option value="MdPalette">MdPalette</option>
+                     <option value="MdPlumbing">MdPlumbing</option>
+                     <option value="MdElectricBolt">MdElectricBolt</option>
+                     <option value="MdGrass">MdGrass</option>
+                     <option value="MdSecurity">MdSecurity</option>
+                     <option value="MdLocalShipping">MdLocalShipping</option>
+                     <option value="MdContentCut">MdContentCut</option>
+                     <option value="MdMedicalServices">MdMedicalServices</option>
+                     <option value="MdCameraAlt">MdCameraAlt</option>
+                     <option value="MdDryCleaning">MdDryCleaning</option>
+                     <option value="MdAutoStories">MdAutoStories</option>
+                     <option value="MdPets">MdPets</option>
                      <option value="MdHardware">MdHardware</option>
                      <option value="MdHandyman">MdHandyman</option>
                    </select>
