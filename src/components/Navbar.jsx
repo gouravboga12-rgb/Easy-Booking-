@@ -94,6 +94,33 @@ export default function Navbar() {
               </span>
             </div>
           </div>
+          {user && user.role === 'customer' && (
+            <div className="live-sync-badge desktop-only" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '11px',
+              fontWeight: '700',
+              color: '#16a34a',
+              background: '#f0fdf4',
+              padding: '4px 10px',
+              borderRadius: '20px',
+              marginLeft: '16px',
+              border: '1px solid #bbf7d0',
+              height: 'max-content',
+              alignSelf: 'center',
+              letterSpacing: '0.2px'
+            }}>
+              <span className="live-sync-dot" style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: '#16a34a',
+                animation: 'badgePop 1.5s infinite alternate'
+              }}></span>
+              Auto-Refresh Active
+            </div>
+          )}
         </div>
 
         <div className="nav-right">

@@ -37,7 +37,7 @@ export default function WorkerSubscription() {
   };
 
   const handlePurchaseSubscription = async (plan) => {
-    await buySubscription(user.id, plan.name, plan.duration);
+    await buySubscription(user.id, plan.name, plan.duration, plan.duration_unit || 'month');
     setPurchaseSuccess(true);
     setSelectedPlan(null);
     setTimeout(() => setPurchaseSuccess(false), 4000);
@@ -172,7 +172,11 @@ export default function WorkerSubscription() {
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
                   <strong style={{ fontSize: '18px', color: 'var(--primary)', fontWeight: '800' }}>₹{parseFloat(plan.price).toLocaleString()}</strong>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                    {plan.duration} {plan.duration === 1 ? 'Month' : 'Months'}
+                    {plan.duration_unit ? (
+                      `${plan.duration} ${plan.duration_unit.toLowerCase()}${plan.duration === 1 ? '' : 's'}`
+                    ) : (
+                      `${plan.duration} ${plan.duration === 1 ? 'Month' : 'Months'}`
+                    )}
                   </span>
                 </div>
               </div>

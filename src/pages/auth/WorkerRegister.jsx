@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStore } from '../../store/useStore';
 import {
   HiMail, HiLockClosed, HiUser, HiPhone, HiArrowRight,
   HiIdentification, HiBriefcase, HiMap, HiFolderOpen, HiCreditCard
@@ -8,20 +9,16 @@ import {
 import { MdConstruction } from 'react-icons/md';
 import './Auth.css';
 
-const CATEGORY_OPTIONS = [
-  { id: 'contractors', label: 'Contractors & Civil' },
-  { id: 'construction-labour', label: 'Construction & Site Labour' },
-  { id: 'interior-carpentry', label: 'Interior & Carpentry' },
-  { id: 'professionals', label: 'Maintenance Professionals' },
-  { id: 'installations', label: 'Technical Installations' },
-  { id: 'housekeeping', label: 'Housekeeping & Cleaning' },
-  { id: 'drivers-logistics', label: 'Drivers & Logistics' },
-  { id: 'cooking-events', label: 'Cooking & Events' },
-];
-
 const EXPERIENCE_OPTIONS = ['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
 
 export default function WorkerRegister() {
+  const categories = useStore(s => s.categories);
+  const fetchCategories = useStore(s => s.fetchCategories);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
   const [step, setStep] = useState(1);  // 1: Basic Info, 2: Professional Details, 3: Verification & Bank, 4: Success Message
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [professionalForm, setProfessionalForm] = useState({
@@ -189,7 +186,7 @@ export default function WorkerRegister() {
       .map(s => s.trim())
       .filter(s => s.length > 0);
 
-    const vehicleType = CATEGORY_OPTIONS.find(c => professionalForm.categories.includes(c.id))?.label || 'General Operator';
+    const vehicleType = categories.find(c => professionalForm.categories.includes(c.id))?.label || 'General Operator';
 
     const data = {
       name: form.name,
@@ -309,7 +306,7 @@ export default function WorkerRegister() {
 
               <label>Work Categories (Select all that apply)
                 <div className="category-selection-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
-                  {CATEGORY_OPTIONS.map(c => (
+                  {categories.map(c => (
                     <button
                       key={c.id}
                       type="button"

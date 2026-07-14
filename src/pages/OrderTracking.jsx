@@ -48,7 +48,7 @@ export default function OrderTracking() {
     };
 
     getTracking();
-    const interval = setInterval(getTracking, 10000); // Poll every 10 seconds
+    const interval = setInterval(getTracking, 3000); // Poll every 3 seconds
     return () => clearInterval(interval);
   }, [order?.id, isComplete, fetchLiveTracking]);
 

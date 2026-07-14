@@ -4,6 +4,13 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { HiCurrencyRupee, HiPlus, HiPencil, HiTrash, HiTag, HiCheckCircle } from 'react-icons/hi';
 import './Admin.css';
 
+const displayDuration = (duration, unit) => {
+  if (duration === 0) return 'free';
+  const u = (unit || 'month').toLowerCase();
+  const label = u === 'day' ? 'day' : u === 'week' ? 'week' : u === 'year' ? 'year' : 'month';
+  return duration === 1 ? label : `${duration} ${label}s`;
+};
+
 export default function AdminSubscriptions() {
   const users = useAuthStore(s => s.users);
   const workers = users.filter(u => u.role === 'worker');
@@ -24,6 +31,7 @@ export default function AdminSubscriptions() {
     name: '',
     price: '',
     duration: '',
+    duration_unit: 'month',
     description: '',
     featuresString: '',
     type: 'worker',
@@ -68,6 +76,7 @@ export default function AdminSubscriptions() {
       name: newPlan.name,
       price: Number(newPlan.price),
       duration: Number(newPlan.duration),
+      duration_unit: newPlan.duration_unit || 'month',
       description: newPlan.description,
       features: featuresList,
       active: newPlan.active ? 1 : 0,
@@ -79,6 +88,7 @@ export default function AdminSubscriptions() {
         name: '',
         price: '',
         duration: '',
+        duration_unit: 'month',
         description: '',
         featuresString: '',
         type: 'worker',
@@ -102,6 +112,7 @@ export default function AdminSubscriptions() {
       name: editingPlan.name,
       price: Number(editingPlan.price),
       duration: Number(editingPlan.duration),
+      duration_unit: editingPlan.duration_unit || 'month',
       description: editingPlan.description,
       features: featuresList,
       type: editingPlan.type,
@@ -223,7 +234,7 @@ export default function AdminSubscriptions() {
                       <div style={{ flex: 1, minWidth: '200px' }}>
                         <strong style={{ fontSize: '15px', color: '#1a1a1a' }}>{plan.name}</strong>
                         <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', margin: '4px 0' }}>
-                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {plan.duration === 0 ? 'free' : plan.duration === 1 ? 'month' : `${plan.duration} months`}</span>
+                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {displayDuration(plan.duration, plan.duration_unit)}</span>
                         </div>
                         {plan.description && <p style={{ fontSize: '12px', color: '#666', margin: '4px 0' }}>{plan.description}</p>}
                         {plan.features && plan.features.length > 0 && (
@@ -277,7 +288,7 @@ export default function AdminSubscriptions() {
                       <div style={{ flex: 1, minWidth: '200px' }}>
                         <strong style={{ fontSize: '15px', color: '#1a1a1a' }}>{plan.name}</strong>
                         <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', margin: '4px 0' }}>
-                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {plan.duration === 0 ? 'free' : plan.duration === 1 ? 'month' : `${plan.duration} months`}</span>
+                          ₹{parseFloat(plan.price).toLocaleString()} <span style={{ fontSize: '12px', fontWeight: '400', color: '#888' }}>/ {displayDuration(plan.duration, plan.duration_unit)}</span>
                         </div>
                         {plan.description && <p style={{ fontSize: '12px', color: '#666', margin: '4px 0' }}>{plan.description}</p>}
                         {plan.features && plan.features.length > 0 && (
@@ -334,10 +345,21 @@ export default function AdminSubscriptions() {
                   Price (₹)
                   <input type="number" value={newPlan.price} onChange={e => setNewPlan(p => ({ ...p, price: e.target.value }))} placeholder="199" required min="0" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                 </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
-                  Duration (Months)
-                  <input type="number" value={newPlan.duration} onChange={e => setNewPlan(p => ({ ...p, duration: e.target.value }))} placeholder="3" required min="0" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
-                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '6px' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                    Duration
+                    <input type="number" value={newPlan.duration} onChange={e => setNewPlan(p => ({ ...p, duration: e.target.value }))} placeholder="3" required min="0" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                    Unit
+                    <select value={newPlan.duration_unit} onChange={e => setNewPlan(p => ({ ...p, duration_unit: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}>
+                      <option value="day">Day(s)</option>
+                      <option value="week">Week(s)</option>
+                      <option value="month">Month(s)</option>
+                      <option value="year">Year(s)</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -453,9 +475,19 @@ export default function AdminSubscriptions() {
               <label style={{ fontSize: '12px', fontWeight: '700' }}>Price (₹)
                 <input type="number" value={editingPlan.price} onChange={e => setEditingPlan(p => ({ ...p, price: Number(e.target.value) }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
               </label>
-              <label style={{ fontSize: '12px', fontWeight: '700' }}>Duration (months, 0 = free)
-                <input type="number" value={editingPlan.duration} onChange={e => setEditingPlan(p => ({ ...p, duration: Number(e.target.value) }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
-              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '700' }}>Duration (0 = free)
+                  <input type="number" value={editingPlan.duration} onChange={e => setEditingPlan(p => ({ ...p, duration: Number(e.target.value) }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
+                </label>
+                <label style={{ fontSize: '12px', fontWeight: '700' }}>Duration Unit
+                  <select value={editingPlan.duration_unit || 'month'} onChange={e => setEditingPlan(p => ({ ...p, duration_unit: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }}>
+                    <option value="day">Day(s)</option>
+                    <option value="week">Week(s)</option>
+                    <option value="month">Month(s)</option>
+                    <option value="year">Year(s)</option>
+                  </select>
+                </label>
+              </div>
               <label style={{ fontSize: '12px', fontWeight: '700' }}>Audience Type
                 <select value={editingPlan.type} onChange={e => setEditingPlan(p => ({ ...p, type: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }}>
                   <option value="worker">Worker</option>

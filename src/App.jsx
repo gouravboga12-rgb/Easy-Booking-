@@ -99,8 +99,8 @@ function Layout() {
     // Initial fetch
     refreshData();
 
-    // Background polling interval (every 6 seconds) to refresh the lists
-    const interval = setInterval(refreshData, 6000);
+    // Background polling interval (every 3 seconds) to refresh the lists
+    const interval = setInterval(refreshData, 3000);
 
     return () => clearInterval(interval);
   }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin]);

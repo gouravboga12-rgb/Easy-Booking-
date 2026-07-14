@@ -1,22 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStore } from '../../store/useStore';
 import { HiUser, HiPhone, HiMail, HiStar, HiBriefcase, HiLogout, HiMap, HiFolderOpen, HiCreditCard, HiCheckCircle } from 'react-icons/hi';
 import { MdDirectionsCar, MdBuild } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import './Worker.css';
 
-const CATEGORY_OPTIONS = [
-  { id: 'contractors', label: 'Contractors & Civil' },
-  { id: 'construction-labour', label: 'Construction & Site Labour' },
-  { id: 'interior-carpentry', label: 'Interior & Carpentry' },
-  { id: 'professionals', label: 'Maintenance Professionals' },
-  { id: 'installations', label: 'Technical Installations' },
-  { id: 'housekeeping', label: 'Housekeeping & Cleaning' },
-  { id: 'drivers-logistics', label: 'Drivers & Logistics' },
-  { id: 'cooking-events', label: 'Cooking & Events' },
-];
-
 export default function WorkerProfile() {
+  const categories = useStore(s => s.categories);
+  const fetchCategories = useStore(s => s.fetchCategories);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
   const user = useAuthStore(s => s.user);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
   const updateWorkerProfile = useAuthStore(s => s.updateWorkerProfile);
@@ -77,7 +74,7 @@ export default function WorkerProfile() {
       .filter(s => s.length > 0);
 
     const bank = bankAccount ? `Acct: ${bankAccount}, IFSC: ${bankIfsc}, Name: ${bankName}` : 'Not provided';
-    const primaryCategory = CATEGORY_OPTIONS.find(c => selectedCategories.includes(c.id))?.label || 'General Operator';
+    const primaryCategory = categories.find(c => selectedCategories.includes(c.id))?.label || 'General Operator';
 
     const profileData = {
       name,
@@ -215,7 +212,7 @@ export default function WorkerProfile() {
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '13px', fontWeight: '600' }}>Operational Categories
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
-              {CATEGORY_OPTIONS.map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat.id}
                   type="button"
@@ -325,7 +322,7 @@ export default function WorkerProfile() {
               <span style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '6px' }}>Operational Categories:</span>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {(user.categories || []).map(catId => {
-                  const label = CATEGORY_OPTIONS.find(c => c.id === catId)?.label || catId;
+                  const label = categories.find(c => c.id === catId)?.label || catId;
                   return (
                     <span key={catId} style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '12px' }}>
                       {label}

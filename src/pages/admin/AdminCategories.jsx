@@ -1,69 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useStore } from '../../store/useStore';
 import { HiPlus, HiPencil, HiTrash, HiCheckCircle } from 'react-icons/hi';
 import './Admin.css';
-
-const INITIAL_CATEGORIES = [
-  { id: 'contractors', label: 'Contractors & Civil', icon: '🏗️', labourTypes: ['Site Supervisor', 'General Contractor', 'Civil Estimator'] },
-  { id: 'construction-labour', label: 'Construction & Site Labour', icon: '⛏️', labourTypes: ['Mason', 'Brick Layer', 'Shuttering Worker', 'Steel Fixer'] },
-  { id: 'interior-carpentry', label: 'Interior & Carpentry', icon: '🪵', labourTypes: ['Carpenter', 'Cabinet Maker', 'Interior Designer', 'Furniture Fixer'] },
-  { id: 'professionals', label: 'Maintenance Professionals', icon: '🔧', labourTypes: ['Electrician', 'Plumber', 'AC Technician', 'Painter'] },
-  { id: 'installations', label: 'Technical Installations', icon: '⚙️', labourTypes: ['CCTV Installer', 'Home Automation Technician', 'Solar Panel Fitter'] },
-  { id: 'housekeeping', label: 'Housekeeping & Cleaning', icon: '🧹', labourTypes: ['House Cleaner', 'Deep Clean Expert', 'Pest Control', 'Laundry Worker'] },
-  { id: 'drivers-logistics', label: 'Drivers & Logistics', icon: '🚛', labourTypes: ['Truck Driver', 'Auto Driver', 'Loading Labour', 'Goods Mover'] },
-  { id: 'cooking-events', label: 'Cooking & Events', icon: '🍳', labourTypes: ['Cook', 'Caterer', 'Event Helper', 'Waiter', 'Bartender'] },
-];
 
 const PRESET_ICONS = [
   '🏗️', '⛏️', '🪵', '🔧', '⚙️', '🧹', '🚛', '🍳', '🏠', '🛋️', '⚡', '💧', '🩹', '🎨', '🚨', '🧰', '📐', '🔩', '🪴', '🧺', '🧼', '🚚', '📦', '🦺'
 ];
 
 export default function AdminCategories() {
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const categories = useStore(s => s.categories);
+  const fetchCategories = useStore(s => s.fetchCategories);
+  const addCategory = useStore(s => s.addCategory);
+  const updateCategory = useStore(s => s.updateCategory);
+  const deleteCategory = useStore(s => s.deleteCategory);
+
   const [editingCat, setEditingCat] = useState(null);
   const [addingLabourType, setAddingLabourType] = useState(null);
   const [newLabourInput, setNewLabourInput] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCat, setNewCat] = useState({ label: '', icon: '📦' });
+  const [newCat, setNewCat] = useState({ label: '', icon: '📦', image_url: '', color: '#6d28d9', icon_name: 'MdBuild' });
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
 
-  const handleAddCategory = (e) => {
+  const handleImageUpload = (file, isEdit = false) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (isEdit) {
+        setEditingCat(p => ({ ...p, image_url: reader.result }));
+      } else {
+        setNewCat(p => ({ ...p, image_url: reader.result }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCat.label) return;
     const id = newCat.label.toLowerCase().replace(/\s+/g, '-');
-    setCategories(prev => [...prev, { id, label: newCat.label, icon: newCat.icon, labourTypes: [] }]);
-    setNewCat({ label: '', icon: '📦' });
-    setShowAddForm(false);
-    showSuccess('Category added successfully!');
+    const res = await addCategory({
+      id,
+      label: newCat.label,
+      icon: newCat.icon,
+      image_url: newCat.image_url,
+      color: newCat.color,
+      icon_name: newCat.icon_name,
+      labour_types: []
+    });
+    if (res && res.success) {
+      setNewCat({ label: '', icon: '📦', image_url: '', color: '#6d28d9', icon_name: 'MdBuild' });
+      setShowAddForm(false);
+      showSuccess('Category added successfully!');
+    } else {
+      alert(res?.error || 'Failed to add category');
+    }
   };
 
-  const handleDeleteCategory = (id) => {
+  const handleDeleteCategory = async (id) => {
     if (!window.confirm('Delete this category permanently? This may affect existing service listings.')) return;
-    setCategories(prev => prev.filter(c => c.id !== id));
+    const res = await deleteCategory(id);
+    if (res && res.success) {
+      showSuccess('Category deleted successfully!');
+    } else {
+      alert(res?.error || 'Failed to delete category');
+    }
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    setCategories(prev => prev.map(c => c.id === editingCat.id ? editingCat : c));
-    setEditingCat(null);
-    showSuccess('Category updated!');
+    const res = await updateCategory(editingCat.id, {
+      label: editingCat.label,
+      icon: editingCat.icon,
+      image_url: editingCat.image_url,
+      color: editingCat.color,
+      icon_name: editingCat.icon_name
+    });
+    if (res && res.success) {
+      setEditingCat(null);
+      showSuccess('Category updated!');
+    } else {
+      alert(res?.error || 'Failed to update category');
+    }
   };
 
-  const handleAddLabourType = (catId) => {
+  const handleAddLabourType = async (catId) => {
     if (!newLabourInput.trim()) return;
-    setCategories(prev => prev.map(c =>
-      c.id === catId ? { ...c, labourTypes: [...c.labourTypes, newLabourInput.trim()] } : c
-    ));
-    setNewLabourInput('');
-    setAddingLabourType(null);
-    showSuccess('Labour type added!');
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return;
+    const updatedLabour = [...(cat.labourTypes || []), newLabourInput.trim()];
+    const res = await updateCategory(catId, {
+      labour_types: updatedLabour
+    });
+    if (res && res.success) {
+      setNewLabourInput('');
+      setAddingLabourType(null);
+      showSuccess('Labour type added!');
+    } else {
+      alert(res?.error || 'Failed to add labour type');
+    }
   };
 
-  const handleDeleteLabourType = (catId, type) => {
-    setCategories(prev => prev.map(c =>
-      c.id === catId ? { ...c, labourTypes: c.labourTypes.filter(t => t !== type) } : c
-    ));
+  const handleDeleteLabourType = async (catId, type) => {
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return;
+    const updatedLabour = (cat.labourTypes || []).filter(t => t !== type);
+    const res = await updateCategory(catId, {
+      labour_types: updatedLabour
+    });
+    if (res && res.success) {
+      showSuccess('Labour type removed!');
+    } else {
+      alert(res?.error || 'Failed to remove labour type');
+    }
   };
 
   return (
@@ -92,14 +146,102 @@ export default function AdminCategories() {
         <div style={{ background: '#fff', padding: '24px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>New Service Category</h2>
           <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px', width: '80px' }}>
-                Icon
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1.5fr', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                Icon (Emoji)
                 <input value={newCat.icon} onChange={e => setNewCat(p => ({ ...p, icon: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center' }} maxLength={2} />
               </label>
-              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: '200px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 Category Name
                 <input value={newCat.label} onChange={e => setNewCat(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Landscaping & Gardening" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                Category Cover Image
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {newCat.image_url ? (
+                    <div style={{ position: 'relative', width: '80px', height: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                      <img src={newCat.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button
+                        type="button"
+                        onClick={() => setNewCat(p => ({ ...p, image_url: '' }))}
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          background: 'rgba(239, 68, 68, 0.9)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '18px',
+                          height: '18px',
+                          fontSize: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        flex: 1,
+                        height: '42px',
+                        border: '2px dashed #ccc',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafafa',
+                        cursor: 'pointer',
+                        position: 'relative'
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', color: '#666' }}>Click to upload image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageUpload(e.target.files[0], false)}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          opacity: 0,
+                          cursor: 'pointer'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                Accent Color
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input type="color" value={newCat.color} onChange={e => setNewCat(p => ({ ...p, color: e.target.value }))} style={{ padding: 0, width: '40px', height: '36px', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }} />
+                  <input value={newCat.color} onChange={e => setNewCat(p => ({ ...p, color: e.target.value }))} placeholder="#6d28d9" style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+                </div>
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                React Icon Component
+                <select value={newCat.icon_name} onChange={e => setNewCat(p => ({ ...p, icon_name: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
+                  <option value="MdHomeWork">MdHomeWork (Contractors)</option>
+                  <option value="MdConstruction">MdConstruction (Site Labour)</option>
+                  <option value="FaHammer">FaHammer (Carpentry)</option>
+                  <option value="MdEngineering">MdEngineering (Maintenance)</option>
+                  <option value="MdBuild">MdBuild (Installations)</option>
+                  <option value="MdCleaningServices">MdCleaningServices (Housekeeping)</option>
+                  <option value="MdDirectionsCar">MdDirectionsCar (Logistics)</option>
+                  <option value="MdRestaurant">MdRestaurant (Cooking)</option>
+                  <option value="MdHardware">MdHardware (Hardware)</option>
+                  <option value="MdHandyman">MdHandyman (Handyman)</option>
+                </select>
               </label>
             </div>
 
@@ -203,14 +345,101 @@ export default function AdminCategories() {
           <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', width: '100%', borderRadius: '16px' }}>
             <h3>Edit Category</h3>
             <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '700', width: '80px' }}>Icon
-                  <input value={editingCat.icon} onChange={e => setEditingCat(p => ({ ...p, icon: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center', marginTop: '4px', boxSizing: 'border-box' }} maxLength={2} />
-                </label>
-                <label style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>Name
-                  <input value={editingCat.label} onChange={e => setEditingCat(p => ({ ...p, label: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
-                </label>
-              </div>
+               <div style={{ display: 'flex', gap: '12px' }}>
+                 <label style={{ fontSize: '12px', fontWeight: '700', width: '80px' }}>Icon
+                   <input value={editingCat.icon} onChange={e => setEditingCat(p => ({ ...p, icon: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '20px', textAlign: 'center', marginTop: '4px', boxSizing: 'border-box' }} maxLength={2} />
+                 </label>
+                 <label style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>Name
+                   <input value={editingCat.label} onChange={e => setEditingCat(p => ({ ...p, label: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }} required />
+                 </label>
+               </div>
+
+               <label style={{ fontSize: '12px', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                 Category Cover Image
+                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px' }}>
+                   {editingCat.image_url ? (
+                     <div style={{ position: 'relative', width: '80px', height: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                       <img src={editingCat.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                       <button
+                         type="button"
+                         onClick={() => setEditingCat(p => ({ ...p, image_url: '' }))}
+                         style={{
+                           position: 'absolute',
+                           top: '2px',
+                           right: '2px',
+                           background: 'rgba(239, 68, 68, 0.9)',
+                           color: '#fff',
+                           border: 'none',
+                           borderRadius: '50%',
+                           width: '18px',
+                           height: '18px',
+                           fontSize: '10px',
+                           display: 'flex',
+                           alignItems: 'center',
+                           justifyContent: 'center',
+                           cursor: 'pointer'
+                         }}
+                       >
+                         ×
+                       </button>
+                     </div>
+                   ) : (
+                     <div
+                       style={{
+                         flex: 1,
+                         height: '42px',
+                         border: '2px dashed #ccc',
+                         borderRadius: '8px',
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         background: '#fafafa',
+                         cursor: 'pointer',
+                         position: 'relative'
+                       }}
+                     >
+                       <span style={{ fontSize: '12px', color: '#666' }}>Click to upload image</span>
+                       <input
+                         type="file"
+                         accept="image/*"
+                         onChange={e => handleImageUpload(e.target.files[0], true)}
+                         style={{
+                           position: 'absolute',
+                           top: 0,
+                           left: 0,
+                           width: '100%',
+                           height: '100%',
+                           opacity: 0,
+                           cursor: 'pointer'
+                         }}
+                       />
+                     </div>
+                   )}
+                 </div>
+               </label>
+
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                 <label style={{ fontSize: '12px', fontWeight: '700' }}>Accent Color
+                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                     <input type="color" value={editingCat.color || '#6d28d9'} onChange={e => setEditingCat(p => ({ ...p, color: e.target.value }))} style={{ padding: 0, width: '36px', height: '36px', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }} />
+                     <input value={editingCat.color || ''} onChange={e => setEditingCat(p => ({ ...p, color: e.target.value }))} placeholder="#6d28d9" style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box' }} required />
+                   </div>
+                 </label>
+                 <label style={{ fontSize: '12px', fontWeight: '700' }}>React Icon Name
+                   <select value={editingCat.icon_name || 'MdBuild'} onChange={e => setEditingCat(p => ({ ...p, icon_name: e.target.value }))} style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '6px', marginTop: '4px', boxSizing: 'border-box' }}>
+                     <option value="MdHomeWork">MdHomeWork</option>
+                     <option value="MdConstruction">MdConstruction</option>
+                     <option value="FaHammer">FaHammer</option>
+                     <option value="MdEngineering">MdEngineering</option>
+                     <option value="MdBuild">MdBuild</option>
+                     <option value="MdCleaningServices">MdCleaningServices</option>
+                     <option value="MdDirectionsCar">MdDirectionsCar</option>
+                     <option value="MdRestaurant">MdRestaurant</option>
+                     <option value="MdHardware">MdHardware</option>
+                     <option value="MdHandyman">MdHandyman</option>
+                   </select>
+                 </label>
+               </div>
 
               {/* Quick Icon Presets Grid */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

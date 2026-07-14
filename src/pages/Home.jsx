@@ -1,8 +1,17 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { categories } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import Footer from '../components/Footer';
+import * as MdIcons from 'react-icons/md';
+import * as FaIcons from 'react-icons/fa';
+import * as HiIcons from 'react-icons/hi';
+
+const getCategoryIcon = (iconName) => {
+  if (MdIcons[iconName]) return MdIcons[iconName];
+  if (FaIcons[iconName]) return FaIcons[iconName];
+  if (HiIcons[iconName]) return HiIcons[iconName];
+  return MdIcons.MdBuild; // fallback icon
+};
 import {
   HiStar, HiUsers, HiTruck, HiLocationMarker,
   HiShieldCheck, HiLightningBolt, HiPhone,
@@ -88,7 +97,15 @@ export default function Home() {
     }
   }, [params, setParams, setShowOffersModal]);
 
+  const categories = useStore(s => s.categories);
+  const fetchCategories = useStore(s => s.fetchCategories);
+  const fetchServices = useStore(s => s.fetchServices);
   const services = useStore(s => s.services);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchServices();
+  }, [fetchCategories, fetchServices]);
 
   const handleCopyCode = (code) => {
     alert("Thank you for your interest! The promo code system is planned for a future release. We will update you soon!");
@@ -151,7 +168,7 @@ export default function Home() {
       <div className="top-categories-container">
         <div className="top-categories-row">
           {categories.map(cat => {
-            const imgUrl = CAT_IMAGES[cat.id] || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80';
+            const imgUrl = cat.image_url || CAT_IMAGES[cat.id] || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80';
             return (
               <div
                 key={cat.id}
@@ -282,8 +299,11 @@ export default function Home() {
 
       {/* ── Category Scroll Sections ── */}
       {categories.map((cat, idx) => {
-        const CatIcon = CAT_ICONS[cat.id] || MdConstruction;
-        const color = CAT_COLORS[cat.id] || '#4f46e5';
+        const catServices = services.filter(s => s.category === cat.id && s.id !== 'admin-approved-category');
+        if (catServices.length === 0) return null;
+
+        const CatIcon = getCategoryIcon(cat.icon_name);
+        const color = cat.color || '#4f46e5';
         return (
           <section key={cat.id} className={`section ${idx % 2 === 1 ? 'section-gray' : ''}`}>
             <div className="section-inner">
@@ -294,13 +314,13 @@ export default function Home() {
                   </div>
                   <div>
                     <h2>{cat.label}</h2>
-                    <span className="cat-section-count">{cat.vehicles.filter(v => v.id !== 'admin-approved-category').length} services</span>
+                    <span className="cat-section-count">{catServices.length} services</span>
                   </div>
                 </div>
                 <button className="see-all-btn" onClick={() => navigate(`/browse?cat=${cat.id}`)}>See all <HiChevronRight style={{ width: 14, height: 14, verticalAlign: 'middle' }} /></button>
               </div>
               <div className="h-scroll">
-                {cat.vehicles.filter(v => v.id !== 'admin-approved-category').map(v => (
+                {catServices.map(v => (
                   <div key={v.id} className="hs-card" onClick={() => navigate(`/book/${v.id}`)}>
                     <div className="hs-img-wrap">
                       <img src={v.image} alt={v.name} className="hs-img" />

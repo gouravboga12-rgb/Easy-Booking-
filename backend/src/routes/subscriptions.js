@@ -32,7 +32,7 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ message: 'Forbidden. Admin access required' });
   }
 
-  const { name, price, duration, description, features, active, type } = req.body;
+  const { name, price, duration, duration_unit, description, features, active, type } = req.body;
   if (!name || price === undefined || duration === undefined) {
     return res.status(400).json({ message: 'Name, price, and duration are required' });
   }
@@ -40,9 +40,9 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     const featuresJson = features ? JSON.stringify(features) : '[]';
     const [result] = await pool.query(
-      `INSERT INTO subscription_plans (name, price, duration, description, features, active, type)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, price, duration, description || '', featuresJson, active !== undefined ? active : 1, type || 'worker']
+      `INSERT INTO subscription_plans (name, price, duration, duration_unit, description, features, active, type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, price, duration, duration_unit || 'month', description || '', featuresJson, active !== undefined ? active : 1, type || 'worker']
     );
 
     const [created] = await pool.query('SELECT * FROM subscription_plans WHERE id = ?', [result.insertId]);
@@ -64,7 +64,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name, price, duration, description, features, active, type } = req.body;
+  const { name, price, duration, duration_unit, description, features, active, type } = req.body;
 
   try {
     const [existing] = await pool.query('SELECT * FROM subscription_plans WHERE id = ?', [id]);
@@ -80,12 +80,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
         name = COALESCE(?, name),
         price = COALESCE(?, price),
         duration = COALESCE(?, duration),
+        duration_unit = COALESCE(?, duration_unit),
         description = COALESCE(?, description),
         features = COALESCE(?, features),
         active = COALESCE(?, active),
         type = COALESCE(?, type)
        WHERE id = ?`,
-      [name, price, duration, description, featuresJson, active, type, id]
+      [name, price, duration, duration_unit, description, featuresJson, active, type, id]
     );
 
     const [updated] = await pool.query('SELECT * FROM subscription_plans WHERE id = ?', [id]);

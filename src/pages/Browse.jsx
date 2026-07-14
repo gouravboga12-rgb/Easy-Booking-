@@ -1,27 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { categories } from '../data/vehicles';
 import { useStore } from '../store/useStore';
 import { HiSearch, HiFilter, HiStar, HiClock, HiCheckCircle, HiShoppingCart, HiX, HiLocationMarker, HiCalendar } from 'react-icons/hi';
 import { MdConstruction, MdEngineering, MdHomeWork, MdCleaningServices, MdDirectionsCar, MdRestaurant, MdBuild } from 'react-icons/md';
 import { FaHammer } from 'react-icons/fa';
+import * as MdIcons from 'react-icons/md';
+import * as FaIcons from 'react-icons/fa';
+import * as HiIcons from 'react-icons/hi';
 import './Browse.css';
 
-const CAT_ICONS = {
-  contractors:           MdHomeWork,
-  'construction-labour': MdConstruction,
-  'interior-carpentry':  FaHammer,
-  professionals:         MdEngineering,
-  installations:         MdBuild,
-  housekeeping:          MdCleaningServices,
-  'drivers-logistics':   MdDirectionsCar,
-  'cooking-events':      MdRestaurant,
+const getCategoryIcon = (iconName) => {
+  if (MdIcons[iconName]) return MdIcons[iconName];
+  if (FaIcons[iconName]) return FaIcons[iconName];
+  if (HiIcons[iconName]) return HiIcons[iconName];
+  return MdIcons.MdBuild; // fallback icon
 };
 
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
 
 export default function Browse() {
   const allVehicles = useStore(s => s.services);
+  const categories = useStore(s => s.categories);
+  const fetchCategories = useStore(s => s.fetchCategories);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
   const [params] = useSearchParams();
   const [activeCat, setActiveCat] = useState(params.get('cat') || 'all');
   const [search, setSearch] = useState(params.get('q') || '');
@@ -85,7 +89,7 @@ export default function Browse() {
           <MdBuild className="tab-icon" /> All Services
         </button>
         {categories.map(c => {
-          const Icon = CAT_ICONS[c.id] || MdConstruction;
+          const Icon = getCategoryIcon(c.icon_name);
           return (
             <button
               key={c.id}

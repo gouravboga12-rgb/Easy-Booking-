@@ -6,6 +6,7 @@ import orderRoutes from './src/routes/orders.js';
 import serviceRoutes from './src/routes/services.js';
 import trackingRoutes from './src/routes/tracking.js';
 import subscriptionRoutes from './src/routes/subscriptions.js';
+import categoryRoutes from './src/routes/categories.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/categories', categoryRoutes);
 
 
 // Health Check

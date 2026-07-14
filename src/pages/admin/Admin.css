@@ -193,7 +193,7 @@
 .wr-rating { font-size: 12px; color: #888; }
 
 /* Workers grid */
-.workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; align-items: start; }
 .worker-card {
   background: #fff;
   border: 1.5px solid #eee;

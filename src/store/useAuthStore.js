@@ -264,12 +264,21 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  buySubscription: async (userId, planName, durationMonths) => {
+  buySubscription: async (userId, planName, duration, durationUnit = 'month') => {
     const user = get().user;
     if (!user) return;
 
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+    const val = Number(duration);
+    if (durationUnit === 'day') {
+      expiresAt.setDate(expiresAt.getDate() + val);
+    } else if (durationUnit === 'week') {
+      expiresAt.setDate(expiresAt.getDate() + val * 7);
+    } else if (durationUnit === 'year') {
+      expiresAt.setFullYear(expiresAt.getFullYear() + val);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + val);
+    }
 
     const subscription = {
       active: true,

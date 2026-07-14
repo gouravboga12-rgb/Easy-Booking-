@@ -26,13 +26,37 @@ export default function WorkerLayout() {
           <span>Parrow <b>Skills</b></span>
           <span className="ws-badge">Worker</span>
         </div>
-        <div className="ws-user-profile">
+        <div className="ws-user-profile" style={{ position: 'relative' }}>
           <div className="ws-avatar">{user.name.charAt(0)}</div>
           <div className="ws-user-info">
             <strong>{user.name}</strong>
             <span className={`ws-status ${user.available ? 'online' : 'offline'}`}>
               {user.available ? '● Online' : '○ Offline'}
             </span>
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '9px',
+            fontWeight: '800',
+            color: '#10b981',
+            background: '#ecfdf5',
+            padding: '2px 6px',
+            borderRadius: '10px',
+            border: '1px solid #a7f3d0'
+          }}>
+            <span className="live-dot" style={{
+              width: '5px',
+              height: '5px',
+              borderRadius: '50%',
+              background: '#10b981',
+              animation: 'livePulse 1.5s infinite'
+            }}></span>
+            LIVE
           </div>
         </div>
         <nav className="ws-nav">
@@ -59,13 +83,35 @@ export default function WorkerLayout() {
             <span>Parrow <b>Skills</b></span>
             <span className="wth-badge">Worker</span>
           </div>
-          <div className="wth-user">
+          <div className="wth-user" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div className="wth-avatar">{user.name.charAt(0)}</div>
             <div className="wth-info">
               <strong>{user.name.split(' ')[0]}</strong>
               <span className={`wth-status ${user.available ? 'online' : 'offline'}`}>
                 {user.available ? '● Online' : '○ Offline'}
               </span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '8.5px',
+              fontWeight: '800',
+              color: '#10b981',
+              background: '#ecfdf5',
+              padding: '1.5px 5px',
+              borderRadius: '8px',
+              border: '1px solid #a7f3d0',
+              marginLeft: '4px'
+            }}>
+              <span className="live-dot" style={{
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#10b981',
+                animation: 'livePulse 1.5s infinite'
+              }}></span>
+              LIVE
             </div>
           </div>
         </header>

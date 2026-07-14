@@ -27,13 +27,22 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     const [columns] = await pool.query('SHOW COLUMNS FROM users');
     const columnNames = columns.map(c => c.Field);
     if (!columnNames.includes('photo')) {
-      await pool.query('ALTER TABLE users ADD COLUMN photo TEXT');
+      await pool.query('ALTER TABLE users ADD COLUMN photo LONGTEXT');
     }
     if (!columnNames.includes('aadhar_photo')) {
-      await pool.query('ALTER TABLE users ADD COLUMN aadhar_photo TEXT');
+      await pool.query('ALTER TABLE users ADD COLUMN aadhar_photo LONGTEXT');
     }
     if (!columnNames.includes('pan_photo')) {
-      await pool.query('ALTER TABLE users ADD COLUMN pan_photo TEXT');
+      await pool.query('ALTER TABLE users ADD COLUMN pan_photo LONGTEXT');
+    }
+    // Migrate existing columns to LONGTEXT to prevent truncation of base64 images
+    try {
+      await pool.query('ALTER TABLE users MODIFY COLUMN photo LONGTEXT NULL');
+      await pool.query('ALTER TABLE users MODIFY COLUMN aadhar_photo LONGTEXT NULL');
+      await pool.query('ALTER TABLE users MODIFY COLUMN pan_photo LONGTEXT NULL');
+      console.log('Database columns migrated to LONGTEXT successfully.');
+    } catch (colErr) {
+      console.warn('Database column modification failed/skipped:', colErr.message);
     }
     if (!columnNames.includes('google_id')) {
       await pool.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(255)');
@@ -55,6 +64,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         name VARCHAR(255) NOT NULL,
         price DECIMAL(10, 2) NOT NULL,
         duration INT NOT NULL,
+        duration_unit VARCHAR(50) DEFAULT 'month',
         description TEXT NULL,
         features JSON NULL,
         active TINYINT(1) DEFAULT 1,
@@ -62,6 +72,18 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Ensure duration_unit column exists in subscription_plans
+    try {
+      const [subPlanCols] = await pool.query('SHOW COLUMNS FROM subscription_plans');
+      const subPlanColNames = subPlanCols.map(c => c.Field);
+      if (!subPlanColNames.includes('duration_unit')) {
+        await pool.query("ALTER TABLE subscription_plans ADD COLUMN duration_unit VARCHAR(50) DEFAULT 'month'");
+        console.log("Column 'duration_unit' added to subscription_plans.");
+      }
+    } catch (err) {
+      console.warn("Adding duration_unit column failed/skipped:", err.message);
+    }
 
     // Seed default subscription plans if table is empty
     const [existingPlans] = await pool.query('SELECT COUNT(*) AS count FROM subscription_plans');
@@ -80,6 +102,54 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         );
       }
       console.log('DB migration: Seeded default subscription plans');
+    }
+
+    // Ensure service_categories table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS service_categories (
+        id VARCHAR(100) PRIMARY KEY,
+        label VARCHAR(255) NOT NULL,
+        icon VARCHAR(50),
+        image_url LONGTEXT,
+        color VARCHAR(50) DEFAULT '#6d28d9',
+        icon_name VARCHAR(50) DEFAULT 'MdBuild',
+        labour_types JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Ensure image_url column is LONGTEXT in service_categories
+    try {
+      const [catCols] = await pool.query('SHOW COLUMNS FROM service_categories');
+      const imageCol = catCols.find(c => c.Field === 'image_url');
+      if (imageCol && imageCol.Type.toLowerCase() !== 'longtext') {
+        await pool.query('ALTER TABLE service_categories MODIFY COLUMN image_url LONGTEXT');
+        console.log("Column 'image_url' in service_categories altered to LONGTEXT.");
+      }
+    } catch (err) {
+      console.warn("Altering service_categories image_url column failed/skipped:", err.message);
+    }
+
+    // Seed default categories if table is empty
+    const [existingCats] = await pool.query('SELECT COUNT(*) AS count FROM service_categories');
+    if (existingCats[0].count === 0) {
+      const defaultCats = [
+        ['contractors', 'Contractors & Civil', '🏗️', 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=150&q=80', '#4f46e5', 'MdHomeWork', JSON.stringify(['Site Supervisor', 'General Contractor', 'Civil Estimator'])],
+        ['construction-labour', 'Construction & Site Labour', '⛏️', 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150&q=80', '#f59e0b', 'MdConstruction', JSON.stringify(['Mason', 'Brick Layer', 'Shuttering Worker', 'Steel Fixer'])],
+        ['interior-carpentry', 'Interior & Carpentry', '🪵', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=150&q=80', '#8b5cf6', 'FaHammer', JSON.stringify(['Carpenter', 'Cabinet Maker', 'Interior Designer', 'Furniture Fixer'])],
+        ['professionals', 'Maintenance Professionals', '🔧', 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=150&q=80', '#3b82f6', 'MdEngineering', JSON.stringify(['Electrician', 'Plumber', 'AC Technician', 'Painter'])],
+        ['installations', 'Technical Installations', '⚙️', 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=150&q=80', '#ec4899', 'MdBuild', JSON.stringify(['CCTV Installer', 'Home Automation Technician', 'Solar Panel Fitter'])],
+        ['housekeeping', 'Housekeeping & Cleaning', '🧹', 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&q=80', '#10b981', 'MdCleaningServices', JSON.stringify(['House Cleaner', 'Deep Clean Expert', 'Pest Control', 'Laundry Worker'])],
+        ['drivers-logistics', 'Drivers & Logistics', '🚛', 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=150&q=80', '#84cc16', 'MdDirectionsCar', JSON.stringify(['Truck Driver', 'Auto Driver', 'Loading Labour', 'Goods Mover'])],
+        ['cooking-events', 'Cooking & Events', '🍳', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=150&q=80', '#06b6d4', 'MdRestaurant', JSON.stringify(['Cook', 'Caterer', 'Event Helper', 'Waiter', 'Bartender'])]
+      ];
+      for (const c of defaultCats) {
+        await pool.query(
+          'INSERT INTO service_categories (id, label, icon, image_url, color, icon_name, labour_types) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          c
+        );
+      }
+      console.log('DB migration: Seeded default categories');
     }
 
     // Ensure bookings columns exist

@@ -3,6 +3,17 @@ import { API_BASE_URL } from '../config';
 
 const ORDER_STAGES = ['Confirmed', 'Operator Assigned', 'En Route', 'On Site', 'Completed'];
 
+const DEFAULT_CATEGORIES = [
+  { id: 'contractors', label: 'Contractors & Civil', icon: '🏗️', image_url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=150&q=80', color: '#4f46e5', icon_name: 'MdHomeWork', labourTypes: ['Site Supervisor', 'General Contractor', 'Civil Estimator'] },
+  { id: 'construction-labour', label: 'Construction & Site Labour', icon: '⛏️', image_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150&q=80', color: '#f59e0b', icon_name: 'MdConstruction', labourTypes: ['Mason', 'Brick Layer', 'Shuttering Worker', 'Steel Fixer'] },
+  { id: 'interior-carpentry', label: 'Interior & Carpentry', icon: '🪵', image_url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=150&q=80', color: '#8b5cf6', icon_name: 'FaHammer', labourTypes: ['Carpenter', 'Cabinet Maker', 'Interior Designer', 'Furniture Fixer'] },
+  { id: 'professionals', label: 'Maintenance Professionals', icon: '🔧', image_url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=150&q=80', color: '#3b82f6', icon_name: 'MdEngineering', labourTypes: ['Electrician', 'Plumber', 'AC Technician', 'Painter'] },
+  { id: 'installations', label: 'Technical Installations', icon: '⚙️', image_url: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=150&q=80', color: '#ec4899', icon_name: 'MdBuild', labourTypes: ['CCTV Installer', 'Home Automation Technician', 'Solar Panel Fitter'] },
+  { id: 'housekeeping', label: 'Housekeeping & Cleaning', icon: '🧹', image_url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&q=80', color: '#10b981', icon_name: 'MdCleaningServices', labourTypes: ['House Cleaner', 'Deep Clean Expert', 'Pest Control', 'Laundry Worker'] },
+  { id: 'drivers-logistics', label: 'Drivers & Logistics', icon: '🚛', image_url: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=150&q=80', color: '#84cc16', icon_name: 'MdDirectionsCar', labourTypes: ['Truck Driver', 'Auto Driver', 'Loading Labour', 'Goods Mover'] },
+  { id: 'cooking-events', label: 'Cooking & Events', icon: '🍳', image_url: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=150&q=80', color: '#06b6d4', icon_name: 'MdRestaurant', labourTypes: ['Cook', 'Caterer', 'Event Helper', 'Waiter', 'Bartender'] }
+];
+
 const formatDbOrder = (dbOrder, services) => {
   const vehicle = services.find(v => v.id === dbOrder.vehicle_id) || { id: dbOrder.vehicle_id, name: 'Service', rate: 0 };
   const customer = { id: dbOrder.customer_id, name: dbOrder.customer_name || 'Customer', phone: dbOrder.customer_phone || '' };
@@ -622,6 +633,121 @@ export const useStore = create((set, get) => ({
       }
     } catch (err) {
       console.error('Delete subscription plan error:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
+  categories: DEFAULT_CATEGORIES,
+
+  fetchCategories: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      const data = await response.json();
+      if (response.ok) {
+        const normalized = data.map(c => ({
+          id: c.id,
+          label: c.label,
+          icon: c.icon,
+          image_url: c.image_url,
+          color: c.color || '#6d28d9',
+          icon_name: c.icon_name || 'MdBuild',
+          labourTypes: c.labour_types ? (typeof c.labour_types === 'string' ? JSON.parse(c.labour_types) : c.labour_types) : []
+        }));
+        set({ categories: normalized });
+      }
+    } catch (err) {
+      console.error('Fetch categories error:', err);
+    }
+  },
+
+  addCategory: async (catData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(catData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const normalized = {
+          id: data.id,
+          label: data.label,
+          icon: data.icon,
+          image_url: data.image_url,
+          color: data.color || '#6d28d9',
+          icon_name: data.icon_name || 'MdBuild',
+          labourTypes: data.labour_types ? (typeof data.labour_types === 'string' ? JSON.parse(data.labour_types) : data.labour_types) : []
+        };
+        set(s => ({ categories: [...s.categories, normalized] }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to add category' };
+      }
+    } catch (err) {
+      console.error('Add category error:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
+  updateCategory: async (id, catData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(catData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const normalized = {
+          id: data.id,
+          label: data.label,
+          icon: data.icon,
+          image_url: data.image_url,
+          color: data.color || '#6d28d9',
+          icon_name: data.icon_name || 'MdBuild',
+          labourTypes: data.labour_types ? (typeof data.labour_types === 'string' ? JSON.parse(data.labour_types) : data.labour_types) : []
+        };
+        set(s => ({
+          categories: s.categories.map(c => c.id === id ? normalized : c)
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to update category' };
+      }
+    } catch (err) {
+      console.error('Update category error:', err);
+      return { error: 'Connection error' };
+    }
+  },
+
+  deleteCategory: async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(s => ({
+          categories: s.categories.filter(c => c.id !== id)
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to delete category' };
+      }
+    } catch (err) {
+      console.error('Delete category error:', err);
       return { error: 'Connection error' };
     }
   }

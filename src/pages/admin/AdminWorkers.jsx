@@ -5,6 +5,50 @@ import { HiStar, HiPhone, HiCheck, HiX, HiIdentification, HiCreditCard, HiTrash,
 import { MdDirectionsCar } from 'react-icons/md';
 import './Admin.css';
 
+const downloadBase64 = (base64String, fileName) => {
+  try {
+    if (!base64String || typeof base64String !== 'string') return;
+    if (!base64String.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = base64String;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    const parts = base64String.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+
+    const blob = new Blob([uInt8Array], { type: contentType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (e) {
+    console.error("Base64 download failed:", e);
+    const link = document.createElement('a');
+    link.href = base64String;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
 const CATEGORIES = [
   { id: 'contractors', label: 'Contractors & Civil' },
   { id: 'construction-labour', label: 'Construction & Site Labour' },
@@ -33,6 +77,8 @@ export default function AdminWorkers() {
   
   // State to view details in a separate page view
   const [viewReviewsWorker, setViewReviewsWorker] = useState(null);
+  const [viewDocUrl, setViewDocUrl] = useState(null);
+  const [viewDocTitle, setViewDocTitle] = useState('');
 
   const handleEditClick = (w) => {
     setEditingWorker(w);
@@ -221,21 +267,107 @@ export default function AdminWorkers() {
                     <span>📍 <strong>Address:</strong> {w.address}</span>
                     <span>📞 <strong>Phone:</strong> {w.phone}</span>
                     <span>✉ <strong>Email:</strong> {w.email}</span>
+                    <span>🆔 <strong>Aadhaar No:</strong> {w.aadhar || 'Not Provided'}</span>
+                    <span>💳 <strong>PAN No:</strong> {w.pan || 'Not Provided'}</span>
                   </div>
 
                   <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                    <strong style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Verification Documents</strong>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {w.aadhaar ? (
-                        <a href={w.aadhaar} target="_blank" rel="noreferrer" style={{ flex: 1, textDecoration: 'none', padding: '6px 10px', background: '#fff', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center', fontSize: '11px', fontWeight: '600' }}>Download Aadhaar</a>
-                      ) : (
-                        <span style={{ flex: 1, padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No Aadhaar Copy</span>
-                      )}
-                      {w.pan ? (
-                        <a href={w.pan} target="_blank" rel="noreferrer" style={{ flex: 1, textDecoration: 'none', padding: '6px 10px', background: '#fff', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center', fontSize: '11px', fontWeight: '600' }}>Download PAN</a>
-                      ) : (
-                        <span style={{ flex: 1, padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No PAN Copy</span>
-                      )}
+                    <strong style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>Verification Documents</strong>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {/* Aadhaar Copy Actions */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Aadhaar Copy:</span>
+                        {w.aadhar_photo ? (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              type="button"
+                              onClick={() => { setViewDocUrl(w.aadhar_photo); setViewDocTitle('Aadhaar Card Copy'); }}
+                              style={{ 
+                                flex: 1, 
+                                border: '1px solid #bfdbfe', 
+                                background: '#fff',
+                                color: '#2563eb',
+                                padding: '6px 4px', 
+                                borderRadius: '6px', 
+                                textAlign: 'center', 
+                                fontSize: '10px', 
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              👁️ View
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => downloadBase64(w.aadhar_photo, `Aadhaar_${w.name.replace(/\s+/g, '_')}.jpg`)}
+                              style={{ 
+                                flex: 1, 
+                                border: 'none', 
+                                background: '#2563eb', 
+                                color: '#fff', 
+                                padding: '6px 4px', 
+                                borderRadius: '6px', 
+                                textAlign: 'center', 
+                                fontSize: '10px', 
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              📥 Download
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No Aadhaar Copy</span>
+                        )}
+                      </div>
+
+                      {/* PAN Copy Actions */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>PAN Copy:</span>
+                        {w.pan_photo ? (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              type="button"
+                              onClick={() => { setViewDocUrl(w.pan_photo); setViewDocTitle('PAN Card Copy'); }}
+                              style={{ 
+                                flex: 1, 
+                                border: '1px solid #bfdbfe', 
+                                background: '#fff',
+                                color: '#2563eb',
+                                padding: '6px 4px', 
+                                borderRadius: '6px', 
+                                textAlign: 'center', 
+                                fontSize: '10px', 
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              👁️ View
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => downloadBase64(w.pan_photo, `PAN_${w.name.replace(/\s+/g, '_')}.jpg`)}
+                              style={{ 
+                                flex: 1, 
+                                border: 'none', 
+                                background: '#2563eb', 
+                                color: '#fff', 
+                                padding: '6px 4px', 
+                                borderRadius: '6px', 
+                                textAlign: 'center', 
+                                fontSize: '10px', 
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              📥 Download
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ padding: '6px 10px', background: '#f1f5f9', color: '#94a3b8', borderRadius: '6px', textAlign: 'center', fontSize: '11px' }}>No PAN Copy</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -340,6 +472,88 @@ export default function AdminWorkers() {
                 <button type="submit" className="cm-confirm" style={{ background: '#10b981' }}>Save Profile</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Document View Overlay Modal */}
+      {viewDocUrl && (
+        <div className="modal-overlay" onClick={() => setViewDocUrl(null)} style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '24px',
+            borderRadius: '16px',
+            position: 'relative',
+            maxWidth: '560px',
+            width: '100%',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px'
+          }} onClick={e => e.stopPropagation()}>
+            <button 
+              type="button"
+              onClick={() => setViewDocUrl(null)} 
+              style={{
+                position: 'absolute',
+                top: '16px', right: '16px',
+                background: '#f1f5f9',
+                color: '#64748b',
+                border: 'none',
+                width: '32px', height: '32px',
+                borderRadius: '50%',
+                fontSize: '16px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+            >
+              ✕
+            </button>
+            <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>
+              {viewDocTitle}
+            </h3>
+            <div style={{ width: '100%', maxHeight: '420px', overflowY: 'auto', display: 'flex', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px', background: '#f8fafc' }}>
+              {viewDocUrl.startsWith('data:application/pdf') || viewDocUrl.endsWith('.pdf') ? (
+                <embed src={viewDocUrl} type="application/pdf" width="100%" height="380px" />
+              ) : (
+                <img src={viewDocUrl} alt={viewDocTitle} style={{ maxWidth: '100%', maxHeight: '380px', objectFit: 'contain', borderRadius: '6px' }} />
+              )}
+            </div>
+            <button 
+              type="button"
+              onClick={() => downloadBase64(viewDocUrl, `${viewDocTitle.replace(/\s+/g, '_')}.jpg`)}
+              style={{
+                background: 'var(--primary)',
+                color: '#fff',
+                border: 'none',
+                padding: '11px 20px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                width: '100%',
+                transition: 'background 0.18s'
+              }}
+            >
+              📥 Download Document Copy
+            </button>
           </div>
         </div>
       )}
