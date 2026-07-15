@@ -157,6 +157,49 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  disableWorker: async (workerId, disabled) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/workers/${workerId}/disable`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ disabled })
+      });
+      if (response.ok) {
+        // Optimistically update local state
+        set(s => ({
+          users: s.users.map(u => u.id === workerId ? { ...u, disabled } : u)
+        }));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  },
+
+  deleteWorker: async (workerId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/workers/${workerId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        set(s => ({ users: s.users.filter(u => u.id !== workerId) }));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  },
+
   updateWorkerProfile: async (workerId, profileData) => {
     try {
       const token = localStorage.getItem('token');

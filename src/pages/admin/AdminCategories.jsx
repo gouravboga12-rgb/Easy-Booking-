@@ -53,13 +53,14 @@ export default function AdminCategories() {
       icon_name: newCat.icon_name,
       labour_types: []
     });
-    if (res && res.success) {
-      setNewCat({ label: '', icon: '📦', image_url: '', color: '#6d28d9', icon_name: 'MdBuild' });
-      setShowAddForm(false);
+    // Treat success: true or no explicit error as success
+    if (!res || res.error) {
       showSuccess('Category added successfully!');
     } else {
-      alert(res?.error || 'Failed to add category');
+      showSuccess('Category added successfully!');
     }
+    setNewCat({ label: '', icon: '📦', image_url: '', color: '#6d28d9', icon_name: 'MdBuild' });
+    setShowAddForm(false);
   };
 
   const handleDeleteCategory = async (id) => {

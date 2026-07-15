@@ -56,6 +56,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('subscription')) {
       await pool.query('ALTER TABLE users ADD COLUMN subscription JSON NULL');
     }
+    if (!columnNames.includes('disabled')) {
+      await pool.query('ALTER TABLE users ADD COLUMN disabled TINYINT(1) DEFAULT 0');
+    }
 
     // Ensure subscription_plans table exists
     await pool.query(`
@@ -726,6 +729,31 @@ router.post('/reset-password', async (req, res) => {
   } catch (err) {
     console.error('Reset password error:', err);
     res.status(500).json({ message: 'Server error resetting password' });
+  }
+});
+
+// Admin: Disable/Enable a worker account
+router.put('/workers/:workerId/disable', authenticateToken, async (req, res) => {
+  const { workerId } = req.params;
+  const { disabled } = req.body;
+  try {
+    await pool.query('UPDATE users SET disabled = ? WHERE id = ? AND role = ?', [disabled ? 1 : 0, workerId, 'worker']);
+    res.json({ success: true, disabled });
+  } catch (err) {
+    console.error('Disable worker error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Delete a worker account permanently
+router.delete('/workers/:workerId', authenticateToken, async (req, res) => {
+  const { workerId } = req.params;
+  try {
+    await pool.query('DELETE FROM users WHERE id = ? AND role = ?', [workerId, 'worker']);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete worker error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

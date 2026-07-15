@@ -65,6 +65,8 @@ export default function AdminWorkers() {
   const approveWorker = useAuthStore(s => s.approveWorker);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
   const updateWorkerProfile = useAuthStore(s => s.updateWorkerProfile);
+  const disableWorker = useAuthStore(s => s.disableWorker);
+  const deleteWorker = useAuthStore(s => s.deleteWorker);
   
   const orders = useStore(s => s.orders);
   
@@ -74,6 +76,8 @@ export default function AdminWorkers() {
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
   const [editingWorker, setEditingWorker] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', phone: '', vehicle: '', address: '', skillsInput: '' });
+  const [confirmDeleteWorker, setConfirmDeleteWorker] = useState(null);
+  const [actionMsg, setActionMsg] = useState('');
   
   // State to view details in a separate page view
   const [viewReviewsWorker, setViewReviewsWorker] = useState(null);
@@ -245,19 +249,62 @@ export default function AdminWorkers() {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f9f9f9', paddingTop: '12px', marginTop: '12px' }}>
-                <button
-                  onClick={() => handleEditClick(w)}
-                  style={{ flex: 1, background: '#f3f4f6', color: '#4b5563', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
-                >
-                  ✏ Edit Profile
-                </button>
-                <button
-                  onClick={() => setSelectedWorkerId(isSelected ? null : w.id)}
-                  style={{ background: isSelected ? 'var(--primary)' : '#fff', color: isSelected ? '#fff' : 'var(--primary)', border: '1.5px solid var(--primary)', width: '38px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {isSelected ? '▲' : '▼'}
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #f9f9f9', paddingTop: '12px', marginTop: '12px' }}>
+                {/* Top row: Edit + Expand */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleEditClick(w)}
+                    style={{ flex: 1, background: '#f3f4f6', color: '#4b5563', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+                  >
+                    ✏ Edit Profile
+                  </button>
+                  <button
+                    onClick={() => setSelectedWorkerId(isSelected ? null : w.id)}
+                    style={{ background: isSelected ? 'var(--primary)' : '#fff', color: isSelected ? '#fff' : 'var(--primary)', border: '1.5px solid var(--primary)', width: '38px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {isSelected ? '▲' : '▼'}
+                  </button>
+                </div>
+                {/* Bottom row: Disable + Delete */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={async () => {
+                      const newDisabled = !w.disabled;
+                      await disableWorker(w.id, newDisabled);
+                      setActionMsg(newDisabled ? `${w.name}'s account disabled.` : `${w.name}'s account re-enabled.`);
+                      setTimeout(() => setActionMsg(''), 3000);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: w.disabled ? '#dcfce7' : '#fef9c3',
+                      color: w.disabled ? '#15803d' : '#854d0e',
+                      border: `1px solid ${w.disabled ? '#86efac' : '#fde047'}`,
+                      padding: '7px 8px',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      fontSize: '11px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {w.disabled ? '✅ Enable Account' : '🚫 Disable Account'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteWorker(w)}
+                    style={{
+                      flex: 1,
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      border: '1px solid #fca5a5',
+                      padding: '7px 8px',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      fontSize: '11px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🗑 Delete Worker
+                  </button>
+                </div>
               </div>
 
               {/* Collapsible details pane */}
@@ -438,6 +485,43 @@ export default function AdminWorkers() {
           );
         })}
       </div>
+
+      {/* Action Toast */}
+      {actionMsg && (
+        <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', background: '#1e293b', color: '#fff', padding: '10px 22px', borderRadius: '12px', fontSize: '13px', fontWeight: '700', zIndex: 9999, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          ✅ {actionMsg}
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteWorker && (
+        <div className="modal-overlay" onClick={() => setConfirmDeleteWorker(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px', width: '100%' }}>
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '40px' }}>🗑️</span>
+              <h3 style={{ margin: '8px 0 4px', fontSize: '18px' }}>Delete Worker Account</h3>
+              <p style={{ color: '#666', fontSize: '13px', margin: 0 }}>
+                Are you sure you want to permanently delete <strong>{confirmDeleteWorker.name}</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="cm-actions">
+              <button className="cm-cancel" onClick={() => setConfirmDeleteWorker(null)}>Cancel</button>
+              <button
+                className="cm-confirm"
+                style={{ background: '#dc2626' }}
+                onClick={async () => {
+                  await deleteWorker(confirmDeleteWorker.id);
+                  setConfirmDeleteWorker(null);
+                  setActionMsg(`${confirmDeleteWorker.name}'s account deleted.`);
+                  setTimeout(() => setActionMsg(''), 3000);
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Worker Profile Modal */}
       {editingWorker && (
