@@ -51,10 +51,12 @@ router.get('/', authenticateToken, async (req, res) => {
     const [orders] = await pool.query(`
       SELECT b.*, 
              c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
-             w.name AS worker_name, w.email AS worker_email, w.phone AS worker_phone
+             w.name AS worker_name, w.email AS worker_email, w.phone AS worker_phone,
+             s.custom_fields AS service_custom_fields
       FROM bookings b
       LEFT JOIN users c ON b.customer_id = c.id
       LEFT JOIN users w ON b.worker_id = w.id
+      LEFT JOIN services s ON b.vehicle_id = s.id
       ORDER BY b.created_at DESC
     `);
     res.json(orders);
@@ -70,9 +72,11 @@ router.get('/customer/:id', authenticateToken, async (req, res) => {
   try {
     const [orders] = await pool.query(`
       SELECT b.*, 
-             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle
+             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle,
+             s.custom_fields AS service_custom_fields
       FROM bookings b
       LEFT JOIN users w ON b.worker_id = w.id
+      LEFT JOIN services s ON b.vehicle_id = s.id
       WHERE b.customer_id = ?
       ORDER BY b.created_at DESC
     `, [id]);
@@ -91,10 +95,12 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
       SELECT b.*, 
              c.name AS customer_name,
              CASE WHEN b.status = 'pending' THEN NULL ELSE c.phone END AS customer_phone,
-             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle
+             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle,
+             s.custom_fields AS service_custom_fields
       FROM bookings b
       LEFT JOIN users c ON b.customer_id = c.id
       LEFT JOIN users w ON b.worker_id = w.id
+      LEFT JOIN services s ON b.vehicle_id = s.id
       WHERE b.worker_id = ? OR b.status = 'pending'
       ORDER BY b.created_at DESC
     `, [id]);
@@ -245,7 +251,12 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
-    const [updated] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    const [updated] = await pool.query(`
+      SELECT b.*, s.custom_fields AS service_custom_fields
+      FROM bookings b
+      LEFT JOIN services s ON b.vehicle_id = s.id
+      WHERE b.id = ?
+    `, [id]);
     res.json(updated[0]);
   } catch (err) {
     console.error('Update order status error:', err);
@@ -357,7 +368,12 @@ router.post('/:id/verify-otp', authenticateToken, async (req, res) => {
 
     if (otp.trim() === expectedOtp.trim()) {
       await pool.query('UPDATE bookings SET otp_verified = 1 WHERE id = ?', [id]);
-      const [updated] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+      const [updated] = await pool.query(`
+        SELECT b.*, s.custom_fields AS service_custom_fields
+        FROM bookings b
+        LEFT JOIN services s ON b.vehicle_id = s.id
+        WHERE b.id = ?
+      `, [id]);
       return res.json({ success: true, message: 'OTP verified successfully', booking: updated[0] });
     } else {
       return res.status(400).json({ message: 'Invalid OTP. Please check the code with the customer.' });

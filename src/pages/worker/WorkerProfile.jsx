@@ -26,14 +26,27 @@ export default function WorkerProfile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Profile fields state
-  const [name, setName] = useState(user.name || '');
-  const [phone, setPhone] = useState(user.phone || '');
-  const [address, setAddress] = useState(user.address || '');
-  const [radius, setRadius] = useState(user.radius || 10);
-  const [skillsInput, setSkillsInput] = useState((user.skills || []).join(', '));
-  const [workClass, setWorkClass] = useState(user.vehicle || user.vehicle_details || '');
-  const [selectedCategories, setSelectedCategories] = useState(user.categories || []);
-  const [photo, setPhoto] = useState(user.photo || '');
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [address, setAddress] = useState(user?.address || '');
+  const [radius, setRadius] = useState(user?.radius || 10);
+  const [skillsInput, setSkillsInput] = useState((user?.skills || []).join(', '));
+  const [workClass, setWorkClass] = useState(user?.vehicle || user?.vehicle_details || '');
+  const [selectedCategories, setSelectedCategories] = useState(user?.categories || []);
+  const [photo, setPhoto] = useState(user?.photo || '');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setAddress(user.address || '');
+      setRadius(user.radius || 10);
+      setSkillsInput((user.skills || []).join(', '));
+      setWorkClass(user.vehicle || user.vehicle_details || '');
+      setSelectedCategories(user.categories || []);
+      setPhoto(user.photo || '');
+    }
+  }, [user]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];

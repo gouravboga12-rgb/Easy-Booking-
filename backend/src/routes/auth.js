@@ -566,7 +566,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet, subscription } = req.body;
+  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet, subscription, photo } = req.body;
   const finalVehicle = vehicle !== undefined ? vehicle : vehicle_details;
   try {
     const catJson = categories ? JSON.stringify(categories) : undefined;
@@ -587,9 +587,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
         pan = COALESCE(?, pan),
         vehicle_details = COALESCE(?, vehicle_details),
         wallet = COALESCE(?, wallet),
-        subscription = COALESCE(?, subscription)
+        subscription = COALESCE(?, subscription),
+        photo = COALESCE(?, photo)
        WHERE id = ?`,
-      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, req.user.id]
+      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, photo, req.user.id]
     );
 
     const [updated] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
