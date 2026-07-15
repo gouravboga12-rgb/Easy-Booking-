@@ -174,6 +174,12 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!serviceColNames.includes('custom_fields')) {
       await pool.query('ALTER TABLE services ADD COLUMN custom_fields JSON NULL');
     }
+    if (!serviceColNames.includes('pricing_type')) {
+      await pool.query("ALTER TABLE services ADD COLUMN pricing_type VARCHAR(20) NOT NULL DEFAULT 'direct'");
+    }
+    if (!serviceColNames.includes('pricing_rules')) {
+      await pool.query('ALTER TABLE services ADD COLUMN pricing_rules JSON NULL');
+    }
     // Make password_hash nullable to support Google OAuth users (who have no password)
     const passwordCol = columns.find(c => c.Field === 'password_hash');
     if (passwordCol && passwordCol.Null === 'NO') {

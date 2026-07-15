@@ -49,6 +49,21 @@ export default function BookingFlow() {
   const [isMoving, setIsMoving] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
 
+  // Selected tier hours for tiered pricing
+  const [selectedTier, setSelectedTier] = useState(null);
+  // Workers count for per-person pricing
+  const [workersCount, setWorkersCount] = useState(1);
+
+  // Initialize selected tier on service load
+  useEffect(() => {
+    if (vehicle && vehicle.pricing_type === 'dynamic' && vehicle.pricing_rules?.type === 'tier') {
+      const ts = vehicle.pricing_rules.tiers || [];
+      if (ts.length > 0) {
+        setSelectedTier(ts[0]);
+      }
+    }
+  }, [vehicle]);
+
   const getShortAddress = (addr) => {
     if (!addr) return 'Select location';
     const parts = addr.split(',');
@@ -57,7 +72,16 @@ export default function BookingFlow() {
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
-  const total = vehicle.rate * form.duration;
+  let total = 0;
+  if (vehicle.pricing_type === 'dynamic') {
+    if (vehicle.pricing_rules?.type === 'person') {
+      total = (vehicle.pricing_rules.rate_per_person || 0) * workersCount;
+    } else if (vehicle.pricing_rules?.type === 'tier') {
+      total = selectedTier ? selectedTier.price : 0;
+    }
+  } else {
+    total = vehicle.rate * form.duration;
+  }
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -109,6 +133,15 @@ export default function BookingFlow() {
 
   const compileNotesAndAnswers = () => {
     let compiled = form.notes || '';
+    if (vehicle.pricing_type === 'dynamic') {
+      if (vehicle.pricing_rules?.type === 'person') {
+        const pricingText = `Requested Workers: ${workersCount} Worker(s) (at ₹${vehicle.pricing_rules.rate_per_person || 0}/worker)`;
+        compiled = compiled ? `${pricingText}\n\n${compiled}` : pricingText;
+      } else if (vehicle.pricing_rules?.type === 'tier' && selectedTier) {
+        const pricingText = `Selected Duration Tier: ${selectedTier.hours} hrs (for ₹${selectedTier.price})`;
+        compiled = compiled ? `${pricingText}\n\n${compiled}` : pricingText;
+      }
+    }
     if (vehicle.custom_fields && vehicle.custom_fields.length > 0) {
       const answersText = vehicle.custom_fields
         .map(f => {
@@ -147,6 +180,9 @@ export default function BookingFlow() {
       : { name: 'Guest', phone: '' };
     
     const finalNotes = compileNotesAndAnswers();
+    const finalDuration = (vehicle.pricing_type === 'dynamic' && vehicle.pricing_rules?.type === 'tier' && selectedTier)
+      ? selectedTier.hours
+      : form.duration;
 
     placeOrder(
       vehicle,
@@ -159,6 +195,7 @@ export default function BookingFlow() {
         timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
         bookingType,
         total,
+        duration: finalDuration,
         notes: finalNotes
       },
       customer
@@ -169,6 +206,9 @@ export default function BookingFlow() {
 
   const handleAddToCart = () => {
     const finalNotes = compileNotesAndAnswers();
+    const finalDuration = (vehicle.pricing_type === 'dynamic' && vehicle.pricing_rules?.type === 'tier' && selectedTier)
+      ? selectedTier.hours
+      : form.duration;
 
     addToCart(vehicle, {
       ...form,
@@ -179,6 +219,7 @@ export default function BookingFlow() {
       timeSlot: bookingType === 'instant' ? 'Will approach in 15 minutes' : timeSlot,
       bookingType,
       total,
+      duration: finalDuration,
       notes: finalNotes
     });
     navigate('/cart');
@@ -371,17 +412,53 @@ export default function BookingFlow() {
                 </>
               )}
 
-              {vehicle.unit === 'hr' && (
-                <label style={{ marginTop: '10px' }}>
-                  <span className="lbl-text">
-                    <HiClock className="lbl-icon" /> Duration (Hours)
-                  </span>
-                  <div className="duration-ctrl">
-                    <button onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
-                    <span>{form.duration} hrs</span>
-                    <button onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
-                  </div>
-                </label>
+              {vehicle.pricing_type === 'dynamic' ? (
+                vehicle.pricing_rules?.type === 'person' ? (
+                  <label style={{ marginTop: '10px' }}>
+                    <span className="lbl-text">
+                      👥 Number of Workers
+                    </span>
+                    <div className="duration-ctrl" style={{ marginTop: '6px' }}>
+                      <button type="button" onClick={() => setWorkersCount(c => Math.max(1, c - 1))}>−</button>
+                      <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '80px', textAlign: 'center' }}>
+                        {workersCount} {workersCount === 1 ? 'Worker' : 'Workers'}
+                      </span>
+                      <button type="button" onClick={() => setWorkersCount(c => c + 1)}>+</button>
+                    </div>
+                  </label>
+                ) : (
+                  vehicle.pricing_rules?.type === 'tier' && (
+                    <label style={{ marginTop: '10px' }}>
+                      <span className="lbl-text">
+                        <HiClock className="lbl-icon" /> Select Duration (Hours)
+                      </span>
+                      <select
+                        value={selectedTier ? JSON.stringify(selectedTier) : ''}
+                        onChange={e => setSelectedTier(e.target.value ? JSON.parse(e.target.value) : null)}
+                        style={{ padding: '12px', border: '1.5px solid #eee', borderRadius: '8px', width: '100%', fontSize: '14px', marginTop: '6px', background: '#fff' }}
+                      >
+                        {(vehicle.pricing_rules.tiers || []).map((t, idx) => (
+                          <option key={idx} value={JSON.stringify(t)}>
+                            {t.hours} Hours — ₹{t.price.toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )
+                )
+              ) : (
+                vehicle.unit === 'hr' && (
+                  <label style={{ marginTop: '10px' }}>
+                    <span className="lbl-text">
+                      <HiClock className="lbl-icon" /> Duration (Hours)
+                    </span>
+                    <div className="duration-ctrl">
+                      <button type="button" onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
+                      <span>{form.duration} hrs</span>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
+                    </div>
+                  </label>
+                )
               )}
 
               {/* Dynamic Service Specifications / Custom Fields */}
@@ -490,11 +567,25 @@ export default function BookingFlow() {
                   <span><HiCalendar className="cd-icon" /> Date / Time</span>
                   <strong>{bookingType === 'instant' ? 'Will approach in 15 minutes' : `${form.date} @ ${timeSlot}`}</strong>
                 </div>
-                {vehicle.unit === 'hr' && (
-                  <div className="cd-row">
-                    <span><HiClock className="cd-icon" /> Duration</span>
-                    <strong>{form.duration} hrs</strong>
-                  </div>
+                {vehicle.pricing_type === 'dynamic' ? (
+                  vehicle.pricing_rules?.type === 'person' ? (
+                    <div className="cd-row">
+                      <span>👥 Workers</span>
+                      <strong>{workersCount} {workersCount === 1 ? 'Worker' : 'Workers'}</strong>
+                    </div>
+                  ) : (
+                    <div className="cd-row">
+                      <span><HiClock className="cd-icon" /> Selected Tier</span>
+                      <strong>{selectedTier ? `${selectedTier.hours} hrs` : '—'}</strong>
+                    </div>
+                  )
+                ) : (
+                  vehicle.unit === 'hr' && (
+                    <div className="cd-row">
+                      <span><HiClock className="cd-icon" /> Duration</span>
+                      <strong>{form.duration} hrs</strong>
+                    </div>
+                  )
                 )}
                 {form.notes && (
                   <div className="cd-row">
@@ -522,9 +613,22 @@ export default function BookingFlow() {
 
               <div className="payment-info">
                 <h3><HiCurrencyRupee style={{ width: 16, height: 16, verticalAlign: 'middle' }} /> Payment Summary</h3>
-                <div className="pay-row"><span>Rate</span><span>₹{vehicle.rate.toLocaleString()} / {vehicle.unit}</span></div>
-                {vehicle.unit === 'hr' && (
-                  <div className="pay-row"><span>Duration</span><span>× {form.duration}</span></div>
+                {vehicle.pricing_type === 'dynamic' ? (
+                  vehicle.pricing_rules?.type === 'person' ? (
+                    <>
+                      <div className="pay-row"><span>Rate per Worker</span><span>₹{(vehicle.pricing_rules.rate_per_person || 0).toLocaleString()}</span></div>
+                      <div className="pay-row"><span>Workers Count</span><span>× {workersCount}</span></div>
+                    </>
+                  ) : (
+                    <div className="pay-row"><span>Selected Tier Duration</span><span>{selectedTier ? `${selectedTier.hours} hrs` : '—'}</span></div>
+                  )
+                ) : (
+                  <>
+                    <div className="pay-row"><span>Rate</span><span>₹{vehicle.rate.toLocaleString()} / {vehicle.unit}</span></div>
+                    {vehicle.unit === 'hr' && (
+                      <div className="pay-row"><span>Duration</span><span>× {form.duration}</span></div>
+                    )}
+                  </>
                 )}
                 <div className="pay-row total"><span>Total</span><span>₹{total.toLocaleString()}</span></div>
               </div>
@@ -558,7 +662,15 @@ export default function BookingFlow() {
             <h3>{vehicle.name}</h3>
             <p>{vehicle.desc}</p>
             <div className="vs-rate">
-              ₹{vehicle.rate.toLocaleString()} <span>/ {vehicle.unit}</span>
+              {vehicle.pricing_type === 'dynamic' ? (
+                vehicle.pricing_rules?.type === 'person' ? (
+                  <>₹{(vehicle.pricing_rules.rate_per_person || 0).toLocaleString()} <span>/ worker</span></>
+                ) : (
+                  <>Tiered <span>(Hourly)</span></>
+                )
+              ) : (
+                <>₹{vehicle.rate.toLocaleString()} <span>/ {vehicle.unit}</span></>
+              )}
             </div>
             <div className="vs-features">
               {FEATURES.map(({ Icon, text }) => (

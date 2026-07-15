@@ -32,6 +32,30 @@ export default function AdminProducts() {
   const [newFieldType, setNewFieldType] = useState('text');
   const [newFieldChoices, setNewFieldChoices] = useState('');
 
+  // Pricing Mode States
+  const [pricingType, setPricingType] = useState('direct'); // 'direct' or 'dynamic'
+  const [dynamicType, setDynamicType] = useState('person'); // 'person' or 'tier'
+  const [ratePerPerson, setRatePerPerson] = useState('300');
+  const [tiers, setTiers] = useState([]);
+  const [newTierHours, setNewTierHours] = useState('');
+  const [newTierPrice, setNewTierPrice] = useState('');
+
+  const handleAddTier = () => {
+    const hoursVal = Number(newTierHours);
+    const priceVal = Number(newTierPrice);
+    if (!hoursVal || !priceVal) return;
+    
+    // Sort tiers by hours after adding
+    const updated = [...tiers, { hours: hoursVal, price: priceVal }].sort((a, b) => a.hours - b.hours);
+    setTiers(updated);
+    setNewTierHours('');
+    setNewTierPrice('');
+  };
+
+  const handleDeleteTier = (idx) => {
+    setTiers(tiers.filter((_, i) => i !== idx));
+  };
+
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 3000);
@@ -51,6 +75,12 @@ export default function AdminProducts() {
     setNewFieldName('');
     setNewFieldChoices('');
     setNewFieldType('text');
+    setPricingType('direct');
+    setDynamicType('person');
+    setRatePerPerson('300');
+    setTiers([]);
+    setNewTierHours('');
+    setNewTierPrice('');
     setShowModal(true);
   };
 
@@ -68,6 +98,20 @@ export default function AdminProducts() {
     setNewFieldName('');
     setNewFieldChoices('');
     setNewFieldType('text');
+
+    const prType = v.pricing_type || 'direct';
+    setPricingType(prType);
+    if (prType === 'dynamic' && v.pricing_rules) {
+      setDynamicType(v.pricing_rules.type || 'person');
+      setRatePerPerson(String(v.pricing_rules.rate_per_person || '300'));
+      setTiers(v.pricing_rules.tiers || []);
+    } else {
+      setDynamicType('person');
+      setRatePerPerson('300');
+      setTiers([]);
+    }
+    setNewTierHours('');
+    setNewTierPrice('');
     setShowModal(true);
   };
 
@@ -126,6 +170,12 @@ export default function AdminProducts() {
       finalCustomFields.push(newField);
     }
 
+    const pricingRules = pricingType === 'dynamic' ? {
+      type: dynamicType,
+      rate_per_person: dynamicType === 'person' ? Number(ratePerPerson) : undefined,
+      tiers: dynamicType === 'tier' ? tiers : undefined
+    } : null;
+
     const serviceData = {
       name: form.name,
       desc: form.desc,
@@ -134,7 +184,9 @@ export default function AdminProducts() {
       rate: Number(form.rate),
       unit: form.unit,
       image: form.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80',
-      custom_fields: finalCustomFields
+      custom_fields: finalCustomFields,
+      pricing_type: pricingType,
+      pricing_rules: pricingRules
     };
 
     if (editingId) {
@@ -224,7 +276,17 @@ export default function AdminProducts() {
                 <h3 style={{ fontSize: '15px', fontWeight: '800', margin: '0 0 6px', color: '#1a1a1a' }}>{v.name}</h3>
                 <p style={{ fontSize: '12px', color: '#666', margin: '0 0 16px', lineHeight: '1.4', height: '3.6em', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{v.desc}</p>
                 <div className="pc-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="pc-rate" style={{ fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>₹{v.rate.toLocaleString()}<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}>/{v.unit}</span></span>
+                  <span className="pc-rate" style={{ fontSize: '15px', fontWeight: '800', color: 'var(--primary)' }}>
+                    {v.pricing_type === 'dynamic' ? (
+                      v.pricing_rules?.type === 'person' ? (
+                        <>₹{(v.pricing_rules.rate_per_person || 0).toLocaleString()}<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}>/worker</span></>
+                      ) : (
+                        <>Tiered<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}> (Hourly)</span></>
+                      )
+                    ) : (
+                      <>₹{v.rate.toLocaleString()}<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}>/{v.unit}</span></>
+                    )}
+                  </span>
                   <button className="act-btn assign" onClick={() => handleOpenEdit(v)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
                     <HiPencil style={{ width: 12, height: 12 }} /> Edit
                   </button>
@@ -260,10 +322,24 @@ export default function AdminProducts() {
                     ))}
                   </select>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700' }}>Pricing Model</span>
+                  <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+                    <button type="button" onClick={() => setPricingType('direct')} style={{ flex: 1, padding: '7px', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', background: pricingType === 'direct' ? '#fff' : 'transparent', color: pricingType === 'direct' ? 'var(--primary)' : '#64748b', boxShadow: pricingType === 'direct' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+                      Flat Rate
+                    </button>
+                    <button type="button" onClick={() => setPricingType('dynamic')} style={{ flex: 1, padding: '7px', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', background: pricingType === 'dynamic' ? '#fff' : 'transparent', color: pricingType === 'dynamic' ? 'var(--primary)' : '#64748b', boxShadow: pricingType === 'dynamic' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+                      Dynamic
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {pricingType === 'direct' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
                     Rate (₹)
-                    {/* Hides up/down spin buttons by using type="text" with numeric filters */}
                     <input type="text" value={form.rate} onChange={e => setForm(p => ({ ...p, rate: e.target.value.replace(/\D/g, '') }))} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }} required />
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
@@ -276,7 +352,51 @@ export default function AdminProducts() {
                     </select>
                   </label>
                 </div>
-              </div>
+              )}
+
+              {pricingType === 'dynamic' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                    Dynamic Calculation Type
+                    <select value={dynamicType} onChange={e => setDynamicType(e.target.value)} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }}>
+                      <option value="person">Per Worker / Person (e.g. ₹300 per person)</option>
+                      <option value="tier">Hourly Tiers (e.g. 3 Hours = ₹500)</option>
+                    </select>
+                  </label>
+
+                  {dynamicType === 'person' && (
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
+                      Rate per Worker / Person (₹)
+                      <input type="text" value={ratePerPerson} onChange={e => setRatePerPerson(e.target.value.replace(/\D/g, ''))} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }} required />
+                    </label>
+                  )}
+
+                  {dynamicType === 'tier' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Hourly Price Tiers</span>
+                      
+                      {tiers.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {tiers.map((t, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
+                              <span><strong>{t.hours} Hours</strong>: ₹{t.price}</span>
+                              <button type="button" onClick={() => handleDeleteTier(idx)} style={{ border: 'none', background: 'none', color: '#ef4444', fontWeight: '700', cursor: 'pointer' }}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input type="text" placeholder="Hours" value={newTierHours} onChange={e => setNewTierHours(e.target.value.replace(/\D/g, ''))} style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }} />
+                        <input type="text" placeholder="Price (₹)" value={newTierPrice} onChange={e => setNewTierPrice(e.target.value.replace(/\D/g, ''))} style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }} />
+                        <button type="button" onClick={handleAddTier} style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                          + Add Tier
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: '700' }}>Service Image</span>

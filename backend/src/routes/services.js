@@ -17,6 +17,16 @@ router.get('/', async (req, res) => {
         }
       }
       r.custom_fields = r.custom_fields || [];
+
+      if (typeof r.pricing_rules === 'string') {
+        try {
+          r.pricing_rules = JSON.parse(r.pricing_rules);
+        } catch (e) {
+          r.pricing_rules = null;
+        }
+      }
+      r.pricing_type = r.pricing_type || 'direct';
+      r.pricing_rules = r.pricing_rules || null;
     });
     res.json(rows);
   } catch (err) {
@@ -31,22 +41,28 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ message: 'Forbidden. Admin access required' });
   }
 
-  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields } = req.body;
+  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules } = req.body;
   if (!id || !name || !category || !rate || !unit) {
     return res.status(400).json({ message: 'Missing required fields: id, name, category, rate, unit' });
   }
 
   try {
     const customFieldsJson = custom_fields ? JSON.stringify(custom_fields) : '[]';
+    const pricingRulesJson = pricing_rules ? JSON.stringify(pricing_rules) : null;
+    const finalPricingType = pricing_type || 'direct';
+
     await pool.query(
-      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
-      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson]
+      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
+      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson]
     );
     const [created] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = created[0];
     if (typeof service.custom_fields === 'string') {
       try { service.custom_fields = JSON.parse(service.custom_fields); } catch (e) { service.custom_fields = []; }
+    }
+    if (typeof service.pricing_rules === 'string') {
+      try { service.pricing_rules = JSON.parse(service.pricing_rules); } catch (e) { service.pricing_rules = null; }
     }
     res.status(201).json(service);
   } catch (err) {
@@ -62,7 +78,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields } = req.body;
+  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules } = req.body;
 
   try {
     const [existing] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
@@ -90,6 +106,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
     const customFieldsJson = JSON.stringify(finalCustomFields || []);
 
+    const finalPricingType = pricing_type !== undefined ? pricing_type : currentService.pricing_type;
+    let finalPricingRules = pricing_rules !== undefined ? pricing_rules : currentService.pricing_rules;
+    if (typeof finalPricingRules === 'string') {
+      try {
+        finalPricingRules = JSON.parse(finalPricingRules);
+      } catch (e) {
+        finalPricingRules = null;
+      }
+    }
+    const pricingRulesJson = finalPricingRules ? JSON.stringify(finalPricingRules) : null;
+
     await pool.query(
       `UPDATE services SET 
         name = ?, 
@@ -99,15 +126,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
         rate = ?, 
         unit = ?, 
         image = ?,
-        custom_fields = ?
+        custom_fields = ?,
+        pricing_type = ?,
+        pricing_rules = ?
        WHERE id = ?`,
-      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, id]
+      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, finalPricingType, pricingRulesJson, id]
     );
 
     const [updated] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = updated[0];
     if (typeof service.custom_fields === 'string') {
       try { service.custom_fields = JSON.parse(service.custom_fields); } catch (e) { service.custom_fields = []; }
+    }
+    if (typeof service.pricing_rules === 'string') {
+      try { service.pricing_rules = JSON.parse(service.pricing_rules); } catch (e) { service.pricing_rules = null; }
     }
     res.json(service);
   } catch (err) {
