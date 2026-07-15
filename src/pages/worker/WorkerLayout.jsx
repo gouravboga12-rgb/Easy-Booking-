@@ -145,7 +145,7 @@ export default function WorkerLayout() {
               Reliable on-demand professional labor and booking management platform.
             </p>
             <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '280px', margin: '4px auto 0' }}>
-              Developed by <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>Quotec IT Solutions</span>
+              Developed by <a href="https://www.codtechitsolutions.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>CODTECH IT SOLUTIONS</a>
             </div>
           </footer>
         </main>
