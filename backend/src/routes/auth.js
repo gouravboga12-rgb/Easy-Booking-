@@ -174,6 +174,22 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!bookingColNames.includes('notes')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN notes TEXT NULL');
     }
+    if (!bookingColNames.includes('payment_mode')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN payment_mode VARCHAR(50) NULL');
+    }
+    if (!bookingColNames.includes('payment_status')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN payment_status VARCHAR(50) DEFAULT \'pending\'');
+    }
+    if (!bookingColNames.includes('cancel_reason')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN cancel_reason VARCHAR(255) NULL');
+    }
+    if (!bookingColNames.includes('cancel_details')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN cancel_details TEXT NULL');
+    }
+    if (!bookingColNames.includes('completed_at')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN completed_at TIMESTAMP NULL');
+    }
+
 
     // Ensure services columns exist
     const [serviceCols] = await pool.query('SHOW COLUMNS FROM services');

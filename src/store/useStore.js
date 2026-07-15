@@ -74,7 +74,12 @@ const formatDbOrder = (dbOrder, services) => {
     placedAt: new Date(dbOrder.created_at).toLocaleTimeString(),
     createdAt: dbOrder.created_at,
     rejectedWorkers: rejectedList,
-    completionImages: completionPhotos
+    completionImages: completionPhotos,
+    paymentMode: dbOrder.payment_mode || null,
+    paymentStatus: dbOrder.payment_status || 'pending',
+    cancelReason: dbOrder.cancel_reason || null,
+    cancelDetails: dbOrder.cancel_details || null,
+    completedAt: dbOrder.completed_at || null
   };
 };
 
@@ -326,11 +331,15 @@ export const useStore = create((set, get) => ({
         const formatted = formatDbOrder(data, get().services);
         set(s => ({
           orders: s.orders.map(o => o.id === orderId ? formatted : o),
-          activeOrder: s.activeOrder?.id === orderId ? formatted : s.activeOrder
+          activeOrder: formatted
         }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Failed to accept order' };
       }
     } catch (err) {
       console.error(err);
+      return { error: 'Connection error' };
     }
   },
 
@@ -390,7 +399,7 @@ export const useStore = create((set, get) => ({
     });
   },
 
-  advanceStage: async (orderId) => {
+  advanceStage: async (orderId, paymentMode) => {
     const order = get().orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -404,6 +413,9 @@ export const useStore = create((set, get) => ({
       const body = { status: nextStatus };
       if (nextStatus === 'completed' && order.completionImages) {
         body.completionPhotos = order.completionImages;
+      }
+      if (nextStatus === 'completed' && paymentMode) {
+        body.paymentMode = paymentMode;
       }
 
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {

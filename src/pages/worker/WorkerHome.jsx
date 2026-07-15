@@ -44,11 +44,14 @@ export default function WorkerHome() {
 
   // Cancellation States
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState('Vehicle breakdown / transport issue');
+  const [cancelReason, setCancelReason] = useState('Unable to reach the location');
   const [customCancelReason, setCustomCancelReason] = useState('');
 
   // Payment Collection States
   const [paymentMode, setPaymentMode] = useState('cash');
+
+  // Navigation Mode: 'google' | 'inapp'
+  const [navMode, setNavMode] = useState('google');
 
   // Availability Settings States
   const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
@@ -109,9 +112,12 @@ export default function WorkerHome() {
   };
 
   // Job flow handlers
-  const handleAcceptRequest = (orderId) => {
-    if (!isSubscribed) return;
-    assignWorker(orderId, {
+  const handleAcceptRequest = async (orderId) => {
+    if (!isSubscribed) {
+      alert("⚠️ Your subscription is inactive or expired. Please purchase or renew your subscription package to accept booking requests.");
+      return;
+    }
+    const res = await assignWorker(orderId, {
       id: user.id,
       name: user.name,
       phone: user.phone,
@@ -119,6 +125,9 @@ export default function WorkerHome() {
       vehicle: user.vehicle,
       photo: user.photo
     });
+    if (res && res.error) {
+      alert(res.error);
+    }
   };
 
   const handleRejectRequest = (orderId) => {
@@ -343,10 +352,12 @@ export default function WorkerHome() {
     const amount = activeJob.booking.total || 0;
     addWorkerEarning(user.id, amount, `Completed Project #${activeJob.id} - Paid via ${paymentMode.toUpperCase()}`);
     
-    // 2. Advance stage to completed
-    advanceStage(activeJob.id);
+    // 2. Advance stage to completed, passing payment mode
+    advanceStage(activeJob.id, paymentMode);
     setCompleteSuccess(true);
     setSimulatedFiles([]);
+    setOtpVerified(false);
+    setOtpInput('');
     setTimeout(() => setCompleteSuccess(false), 5000);
   };
 
@@ -515,213 +526,124 @@ export default function WorkerHome() {
             </div>
           </div>
 
-          {/* Embedded Mapbox Navigation Map */}
-          {MAPBOX_TOKEN && customerCoords && (
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#333' }}>🗺️ Live Navigation Map (Mapbox)</span>
-                {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
-              </div>
-              <div style={{ width: '100%', height: '280px', borderRadius: '12px', overflow: 'hidden', position: 'relative', border: '1.5px solid #eee' }}>
-                <Map
-                  initialViewState={{
-                    longitude: workerCoords.lng,
-                    latitude: workerCoords.lat,
-                    zoom: 13
-                  }}
-                  onClick={handleMapClick}
-                  style={{ width: '100%', height: '100%', cursor: 'pointer' }}
-                  mapStyle="mapbox://styles/mapbox/streets-v12"
-                  mapboxAccessToken={MAPBOX_TOKEN}
-                >
-                  {/* Customer Destination Pin */}
-                  <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
-                    <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
-                  </Marker>
 
-                  {/* Worker Live Location (Bike) */}
-                  <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
-                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🛵</div>
-                  </Marker>
 
-                  {routeGeojson && (
-                    <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
-                      <Layer
-                        id="route-line"
-                        type="line"
-                        paint={{
-                          'line-color': '#4f46e5',
-                          'line-width': 5,
-                          'line-opacity': 0.8
-                        }}
-                      />
-                    </Source>
-                  )}
-                </Map>
-              </div>
-              <div style={{ padding: '6px 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                💡 Tip: Click anywhere on the map to manually set your live starting/current location if GPS is blocked.
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsSimulating(!isSimulating)}
+          {/* ── NAVIGATION OPTIONS BAR ── */}
+          <div style={{ marginBottom: '20px', background: '#f8fafc', borderRadius: '14px', padding: '16px', border: '1.5px solid #e2e8f0' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              🗺️ Navigation
+            </div>
+            {/* Tab toggle */}
+            <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '10px', padding: '3px', marginBottom: '14px' }}>
+              <button
+                type="button"
+                onClick={() => setNavMode('google')}
+                style={{
+                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                  background: navMode === 'google' ? '#fff' : 'transparent',
+                  color: navMode === 'google' ? '#4f46e5' : '#64748b',
+                  boxShadow: navMode === 'google' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🌐 Google Maps
+              </button>
+              <button
+                type="button"
+                onClick={() => setNavMode('inapp')}
+                style={{
+                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                  background: navMode === 'inapp' ? '#fff' : 'transparent',
+                  color: navMode === 'inapp' ? '#4f46e5' : '#64748b',
+                  boxShadow: navMode === 'inapp' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📍 In-App Navigation
+              </button>
+            </div>
+
+            {navMode === 'google' ? (
+              /* Google Maps Prominent Button */
+              <div>
+                <a
+                  href={activeJob.booking.lat && activeJob.booking.lng
+                    ? `https://www.google.com/maps/dir/?api=1&destination=${activeJob.booking.lat},${activeJob.booking.lng}`
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`}
+                  target="_blank"
+                  rel="noreferrer"
                   style={{
-                    background: isSimulating ? '#ef4444' : 'var(--primary)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    background: 'linear-gradient(135deg, #4285f4, #0f9d58)',
+                    color: '#fff', padding: '14px 20px', borderRadius: '12px',
+                    fontSize: '15px', fontWeight: '800', textDecoration: 'none',
+                    boxShadow: '0 4px 14px rgba(66,133,244,0.35)',
+                    letterSpacing: '0.3px'
                   }}
                 >
-                  {isSimulating ? '⏹️ Stop Simulation' : '🛵 Simulate Drive to Customer'}
-                </button>
-              </div>
-
-              {/* Manual Location Input override */}
-              <div style={{ marginTop: '14px', background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>📍 Set Current Live Location:</div>
-                
-                {/* Direct GPS Fetch Button */}
-                <button
-                  type="button"
-                  onClick={handleFetchGpsLocation}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--primary)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    marginBottom: '10px'
-                  }}
-                >
-                  🧭 Fetch My Current GPS Location
-                </button>
-
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', margin: '6px 0' }}>Or search & update manually:</div>
-                <form onSubmit={handleUpdateLocationByName} style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. Hyderabad City Center"
-                    value={currentLocInput}
-                    onChange={e => setCurrentLocInput(e.target.value)}
-                    style={{ flex: 1, padding: '6px 10px', fontSize: '12px', borderRadius: '6px', border: '1px solid #d1d5db' }}
-                  />
-                  <button type="submit" style={{ padding: '6px 12px', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                    Search
-                  </button>
-                </form>
-                {locMessage && <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>{locMessage}</div>}
-              </div>
-
-              {/* Send Message to Customer (Image copy 3 mockup style) */}
-              <div style={{ marginTop: '16px', background: '#eff6ff', border: '1px dashed #bfdbfe', padding: '16px', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <div style={{ background: '#3b82f6', color: '#fff', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                    💬
-                  </div>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1e3a8a' }}>Send message to customer</h4>
-                    <p style={{ margin: 0, fontSize: '11px', color: '#60a5fa' }}>Predefined templates for quick update:</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  {['I am on my way. Kindly wait', 'I have reached your location. Please check', 'I will arrive in 10 minutes'].map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setCustomMsg(opt)}
-                      style={{
-                        background: customMsg === opt ? '#2563eb' : '#fff',
-                        color: customMsg === opt ? '#fff' : '#4b5563',
-                        border: '1px solid #d1d5db',
-                        padding: '4px 8px',
-                        borderRadius: '16px',
-                        fontSize: '11px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {opt.split('.')[0]}
-                    </button>
-                  ))}
-                </div>
-
-                <form onSubmit={handleSendMsg} style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="text"
-                    value={customMsg}
-                    onChange={e => setCustomMsg(e.target.value)}
-                    placeholder="Type message to customer..."
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '12px' }}
-                  />
-                  <button
-                    type="submit"
-                    style={{
-                      background: '#fbbf24',
-                      color: '#000',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      fontWeight: '700',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    Send ➡️
-                  </button>
-                </form>
-                {messageSentStatus && (
-                  <div style={{ color: '#16a34a', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>
-                    ✔️ {messageSentStatus}
+                  <span style={{ fontSize: '22px' }}>🗺️</span>
+                  <span>Open in Google Maps</span>
+                </a>
+                {eta && (
+                  <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+                    ⏰ ETA: {eta}
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* Navigation link via Google Maps */}
-          <div style={{ marginBottom: '16px' }}>
-            <a
-              href={activeJob.booking.lat && activeJob.booking.lng
-                ? `https://www.google.com/maps/dir/?api=1&destination=${activeJob.booking.lat},${activeJob.booking.lng}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: '#f3f4f6',
-                color: '#4b5563',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                textDecoration: 'none',
-                border: '1px solid #e5e5e5'
-              }}
-            >
-              <HiMap style={{ color: 'var(--primary)' }} />
-              <span>Navigate in Google Maps</span>
-            </a>
+            ) : (
+              /* In-App Mapbox Navigation */
+              <div>
+                {MAPBOX_TOKEN && customerCoords ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#333' }}>Live Route (Mapbox)</span>
+                      {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
+                    </div>
+                    <div style={{ width: '100%', height: '280px', borderRadius: '12px', overflow: 'hidden', position: 'relative', border: '1.5px solid #eee' }}>
+                      <Map
+                        initialViewState={{ longitude: workerCoords.lng, latitude: workerCoords.lat, zoom: 13 }}
+                        onClick={handleMapClick}
+                        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+                        mapStyle="mapbox://styles/mapbox/streets-v12"
+                        mapboxAccessToken={MAPBOX_TOKEN}
+                      >
+                        <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
+                          <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
+                        </Marker>
+                        <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
+                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🛵</div>
+                        </Marker>
+                        {routeGeojson && (
+                          <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
+                            <Layer id="route-line" type="line" paint={{ 'line-color': '#4f46e5', 'line-width': 5, 'line-opacity': 0.8 }} />
+                          </Source>
+                        )}
+                      </Map>
+                    </div>
+                    <div style={{ padding: '6px 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                      💡 Tip: Click anywhere on the map to manually set your current location.
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsSimulating(!isSimulating)}
+                        style={{
+                          background: isSimulating ? '#ef4444' : 'var(--primary)', color: '#fff', border: 'none',
+                          padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        {isSimulating ? '⏹️ Stop Simulation' : '🛵 Simulate Drive'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                    🛰️ Initializing GPS...
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ background: '#fafafa', padding: '14px', borderRadius: '10px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1140,10 +1062,14 @@ export default function WorkerHome() {
                 outline: 'none'
               }}
             >
-              <option value="Vehicle breakdown / transport issue">🔧 Vehicle breakdown / transport issue</option>
-              <option value="Customer not reachable / wrong phone number">📞 Customer not reachable</option>
-              <option value="Emergency / personal reason">🚨 Emergency / personal reason</option>
-              <option value="Other">📝 Other reason (Describe below)</option>
+              <option value="Unable to reach the location">📍 Unable to reach the location</option>
+              <option value="Too far from current location">📏 Too far from current location</option>
+              <option value="Unable to contact customer">📞 Unable to contact customer</option>
+              <option value="Vehicle/transport issue">🔧 Vehicle / transport issue</option>
+              <option value="Already assigned another service">📋 Already assigned another service</option>
+              <option value="Personal emergency">🚨 Personal emergency</option>
+              <option value="Not available">⏸️ Not available right now</option>
+              <option value="Other">📝 Other (describe below)</option>
             </select>
 
             {cancelReason === 'Other' && (

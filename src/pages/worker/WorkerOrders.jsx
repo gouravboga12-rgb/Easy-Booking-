@@ -132,21 +132,37 @@ export default function WorkerOrders() {
           ) : (
             <div className="order-cards">
               {completedOrders.map(o => (
-                <div key={o.id} className="order-card" style={{ borderLeft: '4px solid #10b981' }}>
+                <div key={o.id} className="order-card" style={{ borderLeft: '4px solid #10b981', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
                   <div className="oc-header">
                     <div>
                       <div className="oc-id">#{o.id}</div>
                       <div className="oc-vehicle">{o.vehicle?.name}</div>
                     </div>
-                    <span className={`status-chip ${o.status}`}>{o.status}</span>
+                    <span style={{
+                      background: '#d1fae5', color: '#065f46', padding: '6px 12px', borderRadius: '20px',
+                      fontSize: '11.5px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      border: '1px solid #a7f3d0'
+                    }}>
+                      ✨ Successfully Completed
+                    </span>
                   </div>
-                  <div className="oc-details">
+                  <div className="oc-details" style={{ margin: '14px 0' }}>
                     <div className="oc-row"><HiLocationMarker className="oc-icon" />{o.booking?.location}</div>
-                    <div className="oc-row"><HiCalendar className="oc-icon" />{o.booking?.date} · {o.booking?.duration} {o.vehicle?.unit}</div>
-                    <div className="oc-row"><HiUser className="oc-icon" />{o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
+                    <div className="oc-row"><HiCalendar className="oc-icon" />Scheduled: {o.booking?.date} · {o.booking?.duration} {o.vehicle?.unit}</div>
+                    <div className="oc-row"><HiUser className="oc-icon" />Customer: {o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
+                    
+                    {/* Payment details */}
+                    <div className="oc-row" style={{ color: '#0f766e', fontWeight: '600' }}>
+                      💳 Payment: <span style={{ textTransform: 'capitalize' }}>{o.paymentStatus === 'paid' ? `Paid (${o.paymentMode || 'cash'})` : 'Pending'}</span>
+                    </div>
+
+                    {/* Completion Time */}
+                    <div className="oc-row" style={{ color: '#4b5563', fontSize: '12px' }}>
+                      ⏱️ Finished: {o.completedAt ? new Date(o.completedAt).toLocaleString() : 'N/A'}
+                    </div>
                   </div>
                   <div className="oc-footer" style={{ borderBottom: o.completionImages && o.completionImages.length > 0 ? '1px solid #f5f5f5' : 'none', paddingBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0', marginBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0' }}>
-                    <div className="oc-amount">₹{o.booking?.total?.toLocaleString()}</div>
+                    <div className="oc-amount" style={{ fontSize: '16px', fontWeight: '800', color: '#111827' }}>₹{o.booking?.total?.toLocaleString()}</div>
                   </div>
                   {o.completionImages && o.completionImages.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
@@ -164,9 +180,6 @@ export default function WorkerOrders() {
                       </div>
                     </div>
                   )}
-                  <div className="oc-stage" style={{ marginTop: '10px' }}>
-                    Stage: <strong>{o.stages[o.stage]}</strong>
-                  </div>
                 </div>
               ))}
             </div>

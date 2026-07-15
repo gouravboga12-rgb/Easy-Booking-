@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
@@ -76,6 +76,92 @@ function Layout() {
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
   const fetchOrdersForAdmin = useStore(s => s.fetchOrdersForAdmin);
   const fetchServices = useStore(s => s.fetchServices);
+  const orders = useStore(s => s.orders);
+
+  const [toasts, setToasts] = useState([]);
+  const prevOrdersRef = useRef([]);
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  };
+
+  const playChime = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+      gain1.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+      osc1.start();
+      osc1.stop(audioCtx.currentTime + 0.4);
+
+      setTimeout(() => {
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.frequency.setValueAtTime(880.00, audioCtx.currentTime); // A5
+        gain2.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+        osc2.start();
+        osc2.stop(audioCtx.currentTime + 0.5);
+      }, 100);
+    } catch (e) {
+      console.warn("Audio Context blocked or not supported:", e);
+    }
+  };
+
+  // Listen for order changes and status transitions
+  useEffect(() => {
+    if (!user || orders.length === 0) {
+      prevOrdersRef.current = orders;
+      return;
+    }
+
+    const prevOrders = prevOrdersRef.current;
+    if (prevOrders && prevOrders.length > 0) {
+      orders.forEach(currentOrder => {
+        const matchingPrev = prevOrders.find(o => o.id === currentOrder.id);
+        if (matchingPrev) {
+          if (matchingPrev.status !== currentOrder.status) {
+            // Status changed!
+            if (user.role === 'customer' && currentOrder.customer?.id === user.id) {
+              const statusLabel = currentOrder.status === 'assigned' ? 'Accepted by worker' : currentOrder.status;
+              addToast(`Order #${currentOrder.id} status updated to: ${statusLabel.toUpperCase()}`, 'success');
+              playChime();
+            } else if (user.role === 'worker' && currentOrder.operator?.id === user.id) {
+              if (currentOrder.status === 'cancelled') {
+                addToast(`⚠️ Customer has cancelled Order #${currentOrder.id}`, 'danger');
+                playChime();
+              } else if (currentOrder.status === 'assigned' && matchingPrev.status === 'pending') {
+                addToast(`🎉 New Order Assigned: #${currentOrder.id}!`, 'success');
+                playChime();
+              } else {
+                addToast(`Order #${currentOrder.id} status is now: ${currentOrder.status.toUpperCase()}`, 'info');
+                playChime();
+              }
+            }
+          }
+        } else {
+          // A brand new order was found in list
+          if (user.role === 'worker' && currentOrder.status === 'pending') {
+            addToast(`🔔 New Pending Job Available in your Area: #${currentOrder.id}!`, 'warning');
+            playChime();
+          }
+        }
+      });
+    }
+
+    prevOrdersRef.current = orders;
+  }, [orders, user]);
 
   useEffect(() => {
     // Always fetch services from DB on app load (for all users, public too)
@@ -107,6 +193,16 @@ function Layout() {
 
   return (
     <>
+      {/* Toast Overlay */}
+      <div className="notification-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`realtime-toast ${t.type}`}>
+            <span>{t.message}</span>
+            <button className="realtime-toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>✕</button>
+          </div>
+        ))}
+      </div>
+
       {!isAdminOrWorker && <Navbar />}
       <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '68px' }}>
         <Routes>

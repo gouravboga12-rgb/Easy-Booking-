@@ -20,6 +20,7 @@ export default function OrderTracking() {
   const { id } = useParams();
   const navigate = useNavigate();
   const orders = useStore(s => s.orders);
+  const cancelOrder = useStore(s => s.cancelOrder);
   const user = useAuthStore(s => s.user);
   const submitOrderReview = useStore(s => s.submitOrderReview);
 
@@ -35,7 +36,13 @@ export default function OrderTracking() {
   const [eta, setEta] = useState(null);
   const [customerCoords, setCustomerCoords] = useState(null);
 
-  const isComplete = order ? (order.status === 'completed' || order.stage === order.stages.length - 1) : true;
+  // Customer Cancellation State
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Change of mind');
+  const [customCancelReason, setCustomCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  const isComplete = order ? (order.status === 'completed' || order.status === 'cancelled' || order.stage === order.stages.length - 1) : true;
 
   useEffect(() => {
     if (!order || isComplete) return;
@@ -133,6 +140,38 @@ export default function OrderTracking() {
     }
   };
 
+  const CUSTOMER_CANCEL_REASONS = [
+    'Found a better service provider',
+    'Found an alternative service',
+    'Change of mind',
+    'Booked by mistake',
+    'Service no longer required',
+    'Price is too high',
+    'Worker is taking too long to arrive',
+    'Unable to wait',
+    'Other'
+  ];
+
+  const handleCustomerCancel = async () => {
+    const finalReason = cancelReason === 'Other' ? customCancelReason.trim() : cancelReason;
+    if (!finalReason) { alert('Please specify a reason.'); return; }
+    setCancelling(true);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${import.meta.env.VITE_API_URL || 'https://api.testcodtech.online/api'}/orders/${order.id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ status: 'cancelled', cancelReason: cancelReason, cancelDetails: finalReason })
+      });
+      await cancelOrder(order.id);
+      setShowCancelModal(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <div className="tracking-page">
       <button className="back-btn" onClick={() => navigate('/orders')}>← My Orders</button>
@@ -145,8 +184,18 @@ export default function OrderTracking() {
               <div className="order-id">Order #{order.id}</div>
               <div className="order-time">Placed at {order.placedAt}</div>
             </div>
-            <div className={`status-badge ${isComplete ? 'complete' : 'active'}`}>
-              {isComplete ? '✅ Completed' : '🔴 Live'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className={`status-badge ${isComplete ? 'complete' : 'active'}`}>
+                {order.status === 'cancelled' ? '❌ Cancelled' : isComplete ? '✅ Completed' : '🔴 Live'}
+              </div>
+              {!isComplete && order.status !== 'cancelled' && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  ✕ Cancel
+                </button>
+              )}
             </div>
           </div>
 
@@ -357,6 +406,57 @@ export default function OrderTracking() {
           )}
         </div>
       </div>
+
+      {/* Customer Cancellation Modal */}
+      {showCancelModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '28px 24px 36px', width: '100%', maxWidth: '480px', boxShadow: '0 -10px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#111' }}>Cancel Order</h3>
+              <button onClick={() => setShowCancelModal(false)} style={{ background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '30px', height: '30px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 18px' }}>Select the reason for cancellation:</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {CUSTOMER_CANCEL_REASONS.map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setCancelReason(r)}
+                  style={{
+                    background: cancelReason === r ? '#fef2f2' : '#f8fafc',
+                    border: `1.5px solid ${cancelReason === r ? '#ef4444' : '#e2e8f0'}`,
+                    borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                    color: cancelReason === r ? '#dc2626' : '#374151', textAlign: 'left', transition: 'all 0.15s'
+                  }}
+                >
+                  {cancelReason === r ? '● ' : '○ '}{r}
+                </button>
+              ))}
+              {cancelReason === 'Other' && (
+                <textarea
+                  value={customCancelReason}
+                  onChange={e => setCustomCancelReason(e.target.value)}
+                  placeholder="Please describe your reason..."
+                  rows={2}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '12px', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              )}
+            </div>
+            <button
+              onClick={handleCustomerCancel}
+              disabled={cancelling}
+              style={{
+                width: '100%', background: cancelling ? '#9ca3af' : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                color: '#fff', border: 'none', borderRadius: '12px', padding: '14px',
+                fontSize: '15px', fontWeight: '800', cursor: cancelling ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 14px rgba(220,38,38,0.3)'
+              }}
+            >
+              {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

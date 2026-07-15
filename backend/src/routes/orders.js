@@ -115,7 +115,32 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
 
     // Status logic updates
     if (status === 'assigned' && workerId) {
-      // Worker accepting a pending job
+      // 1. Worker Subscription Validation
+      const [workers] = await pool.query('SELECT subscription FROM users WHERE id = ?', [workerId]);
+      if (workers.length === 0) {
+        return res.status(404).json({ message: 'Worker profile not found' });
+      }
+      
+      let sub = null;
+      if (workers[0].subscription) {
+        try {
+          sub = typeof workers[0].subscription === 'string' ? JSON.parse(workers[0].subscription) : workers[0].subscription;
+        } catch (e) {}
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const subActive = sub && sub.active && (!sub.expiresAt || sub.expiresAt >= todayStr);
+
+      if (!subActive) {
+        return res.status(403).json({ message: 'Your subscription package is inactive or expired. Please purchase/renew a plan to accept orders.' });
+      }
+
+      // 2. Prevent race conditions: Check if this order is already assigned
+      if (order.status !== 'pending' || order.worker_id !== null) {
+        return res.status(409).json({ message: 'This service order has already been accepted by another worker.' });
+      }
+
+      // Accept the pending job
       await pool.query('UPDATE bookings SET status = ?, worker_id = ? WHERE id = ?', ['assigned', workerId, id]);
     } else if (status === 'pending') {
       // Worker cancelling active job, set back to pending and append to rejected_workers list
@@ -139,14 +164,20 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       }
 
       await pool.query(
-        'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ?, notes = ? WHERE id = ?',
-        ['pending', JSON.stringify(list), updatedNotes, id]
+        'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ?, notes = ?, cancel_reason = ?, cancel_details = ? WHERE id = ?',
+        ['pending', JSON.stringify(list), updatedNotes, req.body.cancelReason || null, req.body.cancelDetails || null, id]
       );
     } else if (status === 'completed') {
       const photos = req.body.completionPhotos ? JSON.stringify(req.body.completionPhotos) : null;
+      const paymentMode = req.body.paymentMode || 'cash';
       await pool.query(
-        'UPDATE bookings SET status = ?, completion_photos = ? WHERE id = ?',
-        ['completed', photos, id]
+        'UPDATE bookings SET status = ?, completion_photos = ?, payment_mode = ?, payment_status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['completed', photos, paymentMode, 'paid', id]
+      );
+    } else if (status === 'cancelled') {
+      await pool.query(
+        'UPDATE bookings SET status = ?, cancel_reason = ?, cancel_details = ? WHERE id = ?',
+        ['cancelled', req.body.cancelReason || null, req.body.cancelDetails || null, id]
       );
     } else {
       // General status transition (active, arrived, completed, cancelled)
