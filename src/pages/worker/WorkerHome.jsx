@@ -21,6 +21,20 @@ const getCustomerOtp = (customer) => {
   return '4821';
 };
 
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return null;
+  if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) return null;
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 export default function WorkerHome() {
   const user = useAuthStore(s => s.user);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
@@ -34,6 +48,7 @@ export default function WorkerHome() {
   const sendWorkerMessage = useStore(s => s.sendWorkerMessage);
   const rejectActiveJob = useStore(s => s.rejectActiveJob);
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
+  const verifyCompletionOtp = useStore(s => s.verifyCompletionOtp);
 
   const [simulatedFiles, setSimulatedFiles] = useState([]);
   const [completeSuccess, setCompleteSuccess] = useState(false);
@@ -48,7 +63,7 @@ export default function WorkerHome() {
   const [customCancelReason, setCustomCancelReason] = useState('');
 
   // Payment Collection States
-  const [paymentMode, setPaymentMode] = useState('cash');
+  const [paymentMode, setPaymentMode] = useState(null);
 
   // Navigation Mode: 'google' | 'inapp'
   const [navMode, setNavMode] = useState('google');
@@ -235,6 +250,14 @@ export default function WorkerHome() {
   }, [activeJob?.id, activeJob?.booking?.location]);
 
   useEffect(() => {
+    if (activeJob) {
+      setOtpVerified(!!activeJob.otpVerified);
+    } else {
+      setOtpVerified(false);
+    }
+  }, [activeJob?.id, activeJob?.otpVerified]);
+
+  useEffect(() => {
     if (!customerCoords || !workerCoords) return;
     const token = MAPBOX_TOKEN;
     if (!token) return;
@@ -269,15 +292,16 @@ export default function WorkerHome() {
     updateWorkerLocation(lat, lng);
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!activeJob) return;
-    const expected = getCustomerOtp(activeJob.customer);
-    if (otpInput.trim() === expected) {
+    setOtpError('');
+    const res = await verifyCompletionOtp(activeJob.id, otpInput);
+    if (res && res.success) {
       setOtpVerified(true);
       setOtpError('');
     } else {
-      setOtpError('Invalid customer code. Please check with customer.');
+      setOtpError(res?.error || 'Invalid OTP. Please enter the same customer verification code.');
     }
   };
 
@@ -358,6 +382,7 @@ export default function WorkerHome() {
     setSimulatedFiles([]);
     setOtpVerified(false);
     setOtpInput('');
+    setPaymentMode(null);
     setTimeout(() => setCompleteSuccess(false), 5000);
   };
 
@@ -658,10 +683,12 @@ export default function WorkerHome() {
             <>
               {!otpVerified ? (
                 <div style={{ marginBottom: '16px', background: '#f5f3ff', border: '1.5px solid #ddd6fe', padding: '16px', borderRadius: '12px' }}>
-                  <h4 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: '800', color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    🔑 Enter Customer Start Code
+                  <h4 style={{ margin: '0 0 8px', fontSize: '13.5px', fontWeight: '800', color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    🔑 Enter Customer Completion OTP
                   </h4>
-                  <p style={{ margin: '0 0 12px', fontSize: '11px', color: '#4c1d95' }}>Ask the customer for their 4-digit OTP start code to unlock and verify this booking:</p>
+                  <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#4c1d95', fontWeight: '600', lineHeight: '1.4' }}>
+                    💡 Please ask the customer to share the <strong>SAME 4-digit code</strong> used at arrival. Enter it below to unlock completion payment confirmation:
+                  </p>
                   <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="text"
@@ -673,7 +700,7 @@ export default function WorkerHome() {
                       required
                     />
                     <button type="submit" style={{ background: '#6d28d9', color: '#fff', border: 'none', padding: '0 16px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                      Verify
+                      Verify OTP
                     </button>
                   </form>
                   {otpError && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>⚠️ {otpError}</div>}
@@ -802,10 +829,10 @@ export default function WorkerHome() {
             <button
               className="aj-advance"
               onClick={handleCompleteJob}
-              disabled={!otpVerified}
+              disabled={!otpVerified || !paymentMode}
               style={{
                 width: '100%',
-                background: otpVerified ? '#10b981' : '#ccc',
+                background: (otpVerified && paymentMode) ? '#10b981' : '#ccc',
                 color: '#fff',
                 padding: '14px',
                 borderRadius: '10px',
@@ -816,7 +843,7 @@ export default function WorkerHome() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                cursor: otpVerified ? 'pointer' : 'not-allowed'
+                cursor: (otpVerified && paymentMode) ? 'pointer' : 'not-allowed'
               }}
             >
               <span>Complete Service Job</span>
@@ -884,43 +911,66 @@ export default function WorkerHome() {
           </div>
         ) : (
           <div className="txn-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {pendingRequests.map(req => (
-              <div key={req.id} className="txn-item" style={{ background: '#fff', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span style={{ background: req.bookingType === 'instant' ? '#eff6ff' : '#fef3c7', color: req.bookingType === 'instant' ? '#2563eb' : '#d97706', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px', display: 'inline-block', marginBottom: '6px' }}>
-                      {req.bookingType === 'instant' ? '⚡ INSTANT' : '📅 SCHEDULED'}
-                    </span>
-                    <strong style={{ display: 'block', fontSize: '16px', color: '#1a1a1a' }}>{req.vehicle.name}</strong>
-                    <span style={{ display: 'block', fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                      📍 {req.booking.location}
-                    </span>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)' }}>₹{req.booking.total?.toLocaleString()}</div>
-                    <span style={{ fontSize: '11px', color: '#888' }}>
-                      {req.booking.duration} {req.vehicle.unit === 'hr' ? 'hrs' : 'trips'}
-                    </span>
-                  </div>
-                </div>
+            {pendingRequests.map(req => {
+              const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
+              const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
+              const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
+              const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
-                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f9f9f9', paddingTop: '10px' }}>
-                  <button
-                    onClick={() => handleRejectRequest(req.id)}
-                    style={{ flex: 1, border: '1px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '8px', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                  >
-                    <HiX /> Reject
-                  </button>
-                  <button
-                    onClick={() => handleAcceptRequest(req.id)}
-                    disabled={!!activeJob}
-                    style={{ flex: 2, background: !!activeJob ? '#ccc' : 'var(--primary)', color: '#fff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                  >
-                    <HiCheck /> Accept Booking
-                  </button>
+              return (
+                <div key={req.id} className="txn-item" style={{ background: '#fff', padding: '18px', borderRadius: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        <span style={{ background: req.bookingType === 'instant' ? '#eff6ff' : '#fef3c7', color: req.bookingType === 'instant' ? '#2563eb' : '#d97706', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px', textTransform: 'uppercase' }}>
+                          {req.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
+                        </span>
+                        {req.vehicle?.categoryLabel && (
+                          <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px' }}>
+                            🛠️ {req.vehicle.categoryLabel}
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '16.5px', color: '#0f172a', fontWeight: '800' }}>{req.vehicle?.name}</strong>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px', fontSize: '12.5px', color: '#475569' }}>
+                        <div>📍 <span style={{ fontWeight: '500' }}>Location:</span> {req.booking?.location}</div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', color: '#64748b', fontSize: '12px', marginTop: '2px' }}>
+                          <span>📏 Straight Distance: <strong>{formattedDistance}</strong></span>
+                          <span>🛵 Est. Travel: <strong>{formattedTravel}</strong></span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                          ⏰ Booked at: <strong>{bookingTimeStr}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '900', color: '#4f46e5' }}>₹{req.booking?.total?.toLocaleString()}</div>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>
+                        {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '4px' }}>
+                    <button
+                      onClick={() => handleRejectRequest(req.id)}
+                      style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    >
+                      <HiX /> Reject
+                    </button>
+                    <button
+                      onClick={() => handleAcceptRequest(req.id)}
+                      disabled={!!activeJob}
+                      style={{ flex: 2, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px', cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: !!activeJob ? 'none' : '0 4px 10px rgba(79,70,229,0.2)' }}
+                    >
+                      <HiCheck /> Accept Booking
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

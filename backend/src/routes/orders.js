@@ -17,10 +17,16 @@ router.post('/', authenticateToken, async (req, res) => {
     const id = `order-${Date.now()}`;
     const status = workerId ? 'assigned' : 'pending';
 
+    // Fetch customer's phone number to generate suffix-based completion OTP
+    const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [customerId]);
+    const phone = custUsers.length > 0 ? custUsers[0].phone : '';
+    const digits = phone ? phone.replace(/\D/g, '') : '';
+    const completionOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
+
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null]
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp]
     );
 
 
@@ -81,7 +87,8 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
   try {
     const [orders] = await pool.query(`
       SELECT b.*, 
-             c.name AS customer_name, c.phone AS customer_phone,
+             c.name AS customer_name,
+             CASE WHEN b.status = 'pending' THEN NULL ELSE c.phone END AS customer_phone,
              w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle
       FROM bookings b
       LEFT JOIN users c ON b.customer_id = c.id
@@ -135,7 +142,16 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         return res.status(403).json({ message: 'Your subscription package is inactive or expired. Please purchase/renew a plan to accept orders.' });
       }
 
-      // 2. Prevent race conditions: Check if this order is already assigned
+      // 2. Single Active Service constraint
+      const [activeAssignments] = await pool.query(
+        "SELECT id FROM bookings WHERE worker_id = ? AND status IN ('assigned', 'active', 'arrived')",
+        [workerId]
+      );
+      if (activeAssignments.length > 0) {
+        return res.status(400).json({ message: 'You already have an active service order. Please complete your current order first.' });
+      }
+
+      // 3. Prevent race conditions: Check if this order is already assigned
       if (order.status !== 'pending' || order.worker_id !== null) {
         return res.status(409).json({ message: 'This service order has already been accepted by another worker.' });
       }
@@ -168,8 +184,18 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         ['pending', JSON.stringify(list), updatedNotes, req.body.cancelReason || null, req.body.cancelDetails || null, id]
       );
     } else if (status === 'completed') {
+      // 1. Check if completion OTP has been verified
+      if (!order.otp_verified) {
+        return res.status(400).json({ message: 'Cannot complete service: Customer completion OTP must be verified first.' });
+      }
+
+      // 2. Check if payment collection option has been selected
+      const paymentMode = req.body.paymentMode;
+      if (!paymentMode || !['cash', 'online'].includes(paymentMode)) {
+        return res.status(400).json({ message: 'Cannot complete service: Payment collection option (Online or Cash) must be selected.' });
+      }
+
       const photos = req.body.completionPhotos ? JSON.stringify(req.body.completionPhotos) : null;
-      const paymentMode = req.body.paymentMode || 'cash';
       await pool.query(
         'UPDATE bookings SET status = ?, completion_photos = ?, payment_mode = ?, payment_status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
         ['completed', photos, paymentMode, 'paid', id]
@@ -296,6 +322,46 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Booking deleted successfully' });
   } catch (err) {
     console.error('Delete booking error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/orders/:id/verify-otp (Verify customer completion OTP)
+router.post('/:id/verify-otp', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { otp } = req.body;
+
+  if (!otp) {
+    return res.status(400).json({ message: 'OTP code is required' });
+  }
+
+  try {
+    const [bookings] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+    if (bookings.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const order = bookings[0];
+
+    // Get expected completion OTP
+    let expectedOtp = order.completion_otp;
+    if (!expectedOtp) {
+      // Fallback: calculate if not stored
+      const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [order.customer_id]);
+      const phone = custUsers.length > 0 ? custUsers[0].phone : '';
+      const digits = phone ? phone.replace(/\D/g, '') : '';
+      expectedOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
+    }
+
+    if (otp.trim() === expectedOtp.trim()) {
+      await pool.query('UPDATE bookings SET otp_verified = 1 WHERE id = ?', [id]);
+      const [updated] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+      return res.json({ success: true, message: 'OTP verified successfully', booking: updated[0] });
+    } else {
+      return res.status(400).json({ message: 'Invalid OTP. Please check the code with the customer.' });
+    }
+  } catch (err) {
+    console.error('Verify completion OTP error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -189,6 +189,12 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!bookingColNames.includes('completed_at')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN completed_at TIMESTAMP NULL');
     }
+    if (!bookingColNames.includes('completion_otp')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN completion_otp VARCHAR(10) NULL');
+    }
+    if (!bookingColNames.includes('otp_verified')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN otp_verified TINYINT DEFAULT 0');
+    }
 
 
     // Ensure services columns exist

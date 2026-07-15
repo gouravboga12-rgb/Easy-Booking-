@@ -79,7 +79,8 @@ const formatDbOrder = (dbOrder, services) => {
     paymentStatus: dbOrder.payment_status || 'pending',
     cancelReason: dbOrder.cancel_reason || null,
     cancelDetails: dbOrder.cancel_details || null,
-    completedAt: dbOrder.completed_at || null
+    completedAt: dbOrder.completed_at || null,
+    otpVerified: dbOrder.otp_verified === 1
   };
 };
 
@@ -436,6 +437,33 @@ export const useStore = create((set, get) => ({
       }
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  verifyCompletionOtp: async (orderId, otp) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ otp })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const formatted = formatDbOrder(data.booking, get().services);
+        set(s => ({
+          orders: s.orders.map(o => o.id === orderId ? formatted : o),
+          activeOrder: s.activeOrder?.id === orderId ? formatted : s.activeOrder
+        }));
+        return { success: true };
+      } else {
+        return { error: data.message || 'Verification failed' };
+      }
+    } catch (err) {
+      console.error(err);
+      return { error: 'Network error verifying OTP' };
     }
   },
 
