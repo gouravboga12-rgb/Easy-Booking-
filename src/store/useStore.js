@@ -64,7 +64,8 @@ const formatDbOrder = (dbOrder, services) => {
       date: dbOrder.booking_date,
       duration: dbOrder.duration,
       total: parseFloat(dbOrder.total_amount),
-      bookingType: dbOrder.booking_type
+      bookingType: dbOrder.booking_type,
+      notes: dbOrder.notes
     },
     customer,
     operator,

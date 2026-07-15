@@ -584,6 +584,15 @@ export default function WorkerHome() {
               </div>
             </div>
 
+            {activeJob.booking?.notes && (
+              <div style={{ marginTop: '4px', background: '#fff9f0', border: '1px solid #ffe0b2', padding: '12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Booking Notes & Specifications:</span>
+                <div style={{ fontSize: '13px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                  {activeJob.booking.notes}
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Specifications */}
             {activeJob.vehicle?.custom_fields && activeJob.vehicle.custom_fields.length > 0 && (
               <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1088,6 +1097,14 @@ export default function WorkerHome() {
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                           ⏰ Booked at: <strong>{bookingTimeStr}</strong>
                         </div>
+                        {req.booking?.notes && (
+                          <div style={{ marginTop: '8px', background: '#fff9f0', border: '1px solid #ffe0b2', padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Booking Notes & Specifications:</span>
+                            <div style={{ fontSize: '12px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                              {req.booking.notes}
+                            </div>
+                          </div>
+                        )}
                         {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
                           <div style={{ marginTop: '10px', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements:</span>
