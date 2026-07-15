@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import { HiUsers, HiPhone, HiMail, HiLockOpen, HiTrash, HiBan, HiClock, HiChevronDown, HiChevronUp, HiPrinter } from 'react-icons/hi';
+import { createPortal } from 'react-dom';
 import './Admin.css';
 
 export default function AdminCustomers() {
@@ -263,7 +264,7 @@ export default function AdminCustomers() {
       </div>
 
       {/* Invoice modal overlay */}
-      {selectedInvoiceOrder && (
+      {selectedInvoiceOrder && createPortal(
         <div className="invoice-modal-overlay print-receipt-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setSelectedInvoiceOrder(null)}>
           <div className="invoice-modal-card print-receipt-card" style={{ background: '#fff', width: '100%', maxWidth: '440px', borderRadius: '16px', padding: '24px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
             <button className="print-hide-btn" style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }} onClick={() => setSelectedInvoiceOrder(null)}>×</button>
@@ -293,7 +294,8 @@ export default function AdminCustomers() {
               <button onClick={() => setSelectedInvoiceOrder(null)} style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', flex: 1 }}>Close Window</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -34,6 +34,11 @@ a { color: inherit; }
 
 /* ── Print Media Styles: Prints only the invoice card cleanly on a single page ── */
 @media print {
+  /* Hide the entire React application root container to prevent double print templates */
+  #root {
+    display: none !important;
+  }
+  
   html, body {
     margin: 0 !important;
     padding: 0 !important;
@@ -43,36 +48,33 @@ a { color: inherit; }
     height: auto !important;
   }
   
-  /* Hide every element on the screen by default */
-  #root,
-  body > *:not(.print-receipt-overlay) {
-    display: none !important;
-  }
-  
-  /* Make overlay fullscreen and non-blocking */
+  /* Render receipt overlay fullscreen as a direct sibling of root under body */
   .print-receipt-overlay {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    background: transparent !important;
+    background: #fff !important;
     display: block !important;
     padding: 0 !important;
     margin: 0 !important;
+    z-index: 99999 !important;
   }
   
-  /* Make the card render centered on page without shadow/borders */
+  /* Render print card cleanly centered on the first page */
   .print-receipt-card {
     position: relative !important;
-    margin: 40px auto !important;
+    margin: 30px auto !important;
     box-shadow: none !important;
     border: 1px solid #e2e8f0 !important;
     width: 90% !important;
     max-width: 440px !important;
+    padding: 20px !important;
+    page-break-inside: avoid !important;
   }
   
-  /* Hide buttons, cross icon close button, etc */
+  /* Hide close and print action buttons */
   .print-actions,
   .print-hide-btn {
     display: none !important;
