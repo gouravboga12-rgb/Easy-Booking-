@@ -85,7 +85,7 @@
   text-decoration: none;
   letter-spacing: -0.5px;
 }
-.brand-logo { font-size: 26px; }
+.brand-logo { height: 50px; width: auto; object-fit: contain; }
 .brand b { color: var(--primary); }
 
 .nav-right { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
@@ -288,7 +288,7 @@
     gap: 4px !important;
   }
   .brand-logo {
-    font-size: 22px !important;
+    height: 40px !important;
   }
 }
 

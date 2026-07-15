@@ -132,9 +132,12 @@ export const useStore = create((set, get) => ({
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : []
         };
         set(s => ({ services: [...s.services, normalized] }));
+        return true;
       }
+      return false;
     } catch (err) {
       console.error('Add service error:', err);
+      return false;
     }
   },
 
@@ -160,9 +163,12 @@ export const useStore = create((set, get) => ({
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : []
         };
         set(s => ({ services: s.services.map(v => v.id === id ? normalized : v) }));
+        return true;
       }
+      return false;
     } catch (err) {
       console.error('Update service error:', err);
+      return false;
     }
   },
 
@@ -175,9 +181,12 @@ export const useStore = create((set, get) => ({
       });
       if (response.ok) {
         set(s => ({ services: s.services.filter(v => v.id !== id) }));
+        return true;
       }
+      return false;
     } catch (err) {
       console.error('Delete service error:', err);
+      return false;
     }
   },
 

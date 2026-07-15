@@ -121,21 +121,34 @@ export default function AdminProducts() {
     };
 
     if (editingId) {
-      await updateService(editingId, serviceData);
-      showSuccess('Service updated successfully!');
+      const success = await updateService(editingId, serviceData);
+      if (success) {
+        showSuccess('Service updated successfully!');
+        setShowModal(false);
+      } else {
+        alert('Failed to update service. Please check server connection.');
+      }
     } else {
       const newId = `service-${Date.now()}`;
-      await addService({ id: newId, ...serviceData });
-      showSuccess('New service added successfully!');
+      const success = await addService({ id: newId, ...serviceData });
+      if (success) {
+        showSuccess('New service added successfully!');
+        setShowModal(false);
+      } else {
+        alert('Failed to add service. Please check server connection.');
+      }
     }
-    setShowModal(false);
   };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this service? This cannot be undone.')) {
-      await deleteService(editingId);
-      setShowModal(false);
-      showSuccess('Service deleted successfully!');
+      const success = await deleteService(editingId);
+      if (success) {
+        setShowModal(false);
+        showSuccess('Service deleted successfully!');
+      } else {
+        alert('Failed to delete service. Please check server connection.');
+      }
     }
   };
 

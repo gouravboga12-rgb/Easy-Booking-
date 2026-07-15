@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
-import { MdConstruction } from 'react-icons/md';
 import './Footer.css';
 
 export default function Footer() {
@@ -9,7 +8,7 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <MdConstruction className="footer-logo-icon" /> Parrow <b>Skills</b>
+            <img src="/logo.png" alt="Parrow Skills Logo" className="footer-logo-img" /> Parrow <b>Skills</b>
           </Link>
           <p>India's #1 on-demand construction vehicle booking platform. Book JCBs, Cranes, Tippers & more — instantly.</p>
           <div className="footer-social">

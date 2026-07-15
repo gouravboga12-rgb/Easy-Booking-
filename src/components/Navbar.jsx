@@ -8,7 +8,6 @@ import {
   HiShoppingCart, HiLocationMarker, HiUser,
   HiSearch
 } from 'react-icons/hi';
-import { MdConstruction } from 'react-icons/md';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -74,7 +73,7 @@ export default function Navbar() {
       <div className="nav-inner">
         <div className="nav-left">
           <Link to="/" className="brand">
-            <MdConstruction className="brand-logo" />
+            <img src="/logo.png" alt="Parrow Skills Logo" className="brand-logo" />
             <span>Parrow <b>Skills</b></span>
           </Link>
           

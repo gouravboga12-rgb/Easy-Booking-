@@ -27,7 +27,7 @@
   margin-bottom: 12px;
 }
 .footer-logo b { color: var(--primary); }
-.footer-logo-icon { width: 26px; height: 26px; color: var(--primary); }
+.footer-logo-img { height: 60px; width: auto; object-fit: contain; }
 
 .footer-brand p {
   font-size: 14px;

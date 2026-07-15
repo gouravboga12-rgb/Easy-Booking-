@@ -29,6 +29,7 @@ export default function BookingFlow() {
   const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
   const [form, setForm] = useState({
     location: '',
+    manualAddress: '',
     date: new Date().toISOString().split('T')[0],
     duration: 1,
     notes: ''
@@ -44,6 +45,15 @@ export default function BookingFlow() {
 
   // Dynamic answers state for custom options fields
   const [customAnswers, setCustomAnswers] = useState({});
+
+  const [isMoving, setIsMoving] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
+
+  const getShortAddress = (addr) => {
+    if (!addr) return 'Select location';
+    const parts = addr.split(',');
+    return parts[0].trim();
+  };
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
@@ -76,6 +86,7 @@ export default function BookingFlow() {
   const reverseGeocode = async (lat, lng) => {
     const token = MAPBOX_TOKEN;
     if (token) {
+      setAddressLoading(true);
       try {
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&limit=1`);
         const data = await res.json();
@@ -84,6 +95,8 @@ export default function BookingFlow() {
         }
       } catch (err) {
         console.error("Reverse geocoding error:", err);
+      } finally {
+        setAddressLoading(false);
       }
     }
   };
@@ -139,6 +152,7 @@ export default function BookingFlow() {
       vehicle,
       {
         ...form,
+        location: form.location + (form.manualAddress ? `, ${form.manualAddress}` : ''),
         lat: coords.lat,
         lng: coords.lng,
         date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
@@ -158,6 +172,7 @@ export default function BookingFlow() {
 
     addToCart(vehicle, {
       ...form,
+      location: form.location + (form.manualAddress ? `, ${form.manualAddress}` : ''),
       lat: coords.lat,
       lng: coords.lng,
       date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
@@ -280,26 +295,48 @@ export default function BookingFlow() {
                   <div style={{ position: 'relative', width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginTop: '10px', border: '1.5px solid #eee' }}>
                     <Map
                       {...viewState}
+                      onMoveStart={() => setIsMoving(true)}
                       onMove={e => setViewState(e.viewState)}
-                      onMoveEnd={handleMapMoveEnd}
+                      onMoveEnd={(e) => {
+                        setIsMoving(false);
+                        handleMapMoveEnd(e);
+                      }}
                       style={{ width: '100%', height: '100%' }}
                       mapStyle="mapbox://styles/mapbox/streets-v12"
                       mapboxAccessToken={MAPBOX_TOKEN}
                     />
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -100%)',
-                      pointerEvents: 'none',
-                      fontSize: '32px',
-                      zIndex: 2,
-                      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))'
-                    }}>
-                      📍
+                    <div className={`map-pin-container ${isMoving ? 'is-moving' : ''}`}>
+                      <div className="map-address-bubble">
+                        {addressLoading ? (
+                          <>
+                            <span className="map-spinner" />
+                            <span>Locating...</span>
+                          </>
+                        ) : (
+                          <span>{form.location ? getShortAddress(form.location) : 'Pin location'}</span>
+                        )}
+                      </div>
+                      <div className="map-pin-wrapper">
+                        <svg width="36" height="46" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg" className="map-svg-pin">
+                          <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0ZM18 25C14.134 25 11 21.866 11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25Z" fill="var(--primary)"/>
+                          <circle cx="18" cy="18" r="4.5" fill="#ffffff"/>
+                        </svg>
+                        <div className="map-pin-shadow" />
+                      </div>
                     </div>
                   </div>
                 )}
+              </label>
+
+              <label style={{ marginTop: '10px' }}>
+                <span className="lbl-text">
+                  🏠 Manual Address Details (Optional)
+                </span>
+                <input
+                  placeholder="Flat/House No, Building, Apartment, Detailed Landmark"
+                  value={form.manualAddress}
+                  onChange={e => setForm(f => ({ ...f, manualAddress: e.target.value }))}
+                />
               </label>
 
               {bookingType === 'scheduled' && (
@@ -334,16 +371,18 @@ export default function BookingFlow() {
                 </>
               )}
 
-              <label style={{ marginTop: '10px' }}>
-                <span className="lbl-text">
-                  <HiClock className="lbl-icon" /> Duration ({vehicle.unit === 'hr' ? 'Hours' : 'Trips'})
-                </span>
-                <div className="duration-ctrl">
-                  <button onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
-                  <span>{form.duration} {vehicle.unit === 'hr' ? 'hrs' : 'trips'}</span>
-                  <button onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
-                </div>
-              </label>
+              {vehicle.unit === 'hr' && (
+                <label style={{ marginTop: '10px' }}>
+                  <span className="lbl-text">
+                    <HiClock className="lbl-icon" /> Duration (Hours)
+                  </span>
+                  <div className="duration-ctrl">
+                    <button onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
+                    <span>{form.duration} hrs</span>
+                    <button onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
+                  </div>
+                </label>
+              )}
 
               {/* Dynamic Service Specifications / Custom Fields */}
               {vehicle.custom_fields && vehicle.custom_fields.length > 0 && (
@@ -441,14 +480,22 @@ export default function BookingFlow() {
                   <span><HiLoc className="cd-icon" /> Location</span>
                   <strong>{form.location}</strong>
                 </div>
+                {form.manualAddress && (
+                  <div className="cd-row">
+                    <span>🏠 Manual Address Details</span>
+                    <strong>{form.manualAddress}</strong>
+                  </div>
+                )}
                 <div className="cd-row">
                   <span><HiCalendar className="cd-icon" /> Date / Time</span>
                   <strong>{bookingType === 'instant' ? 'Will approach in 15 minutes' : `${form.date} @ ${timeSlot}`}</strong>
                 </div>
-                <div className="cd-row">
-                  <span><HiClock className="cd-icon" /> Duration</span>
-                  <strong>{form.duration} {vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong>
-                </div>
+                {vehicle.unit === 'hr' && (
+                  <div className="cd-row">
+                    <span><HiClock className="cd-icon" /> Duration</span>
+                    <strong>{form.duration} hrs</strong>
+                  </div>
+                )}
                 {form.notes && (
                   <div className="cd-row">
                     <span><HiDocumentText className="cd-icon" /> Special Notes</span>
@@ -476,7 +523,9 @@ export default function BookingFlow() {
               <div className="payment-info">
                 <h3><HiCurrencyRupee style={{ width: 16, height: 16, verticalAlign: 'middle' }} /> Payment Summary</h3>
                 <div className="pay-row"><span>Rate</span><span>₹{vehicle.rate.toLocaleString()} / {vehicle.unit}</span></div>
-                <div className="pay-row"><span>Duration</span><span>× {form.duration}</span></div>
+                {vehicle.unit === 'hr' && (
+                  <div className="pay-row"><span>Duration</span><span>× {form.duration}</span></div>
+                )}
                 <div className="pay-row total"><span>Total</span><span>₹{total.toLocaleString()}</span></div>
               </div>
 

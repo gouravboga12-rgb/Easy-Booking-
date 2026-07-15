@@ -70,7 +70,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    const customFieldsJson = custom_fields ? JSON.stringify(custom_fields) : undefined;
+    const currentService = existing[0];
+
+    const finalName = name !== undefined ? name : currentService.name;
+    const finalDesc = desc !== undefined ? desc : currentService.desc;
+    const finalCategory = category !== undefined ? category : currentService.category;
+    const finalCategoryLabel = categoryLabel !== undefined ? categoryLabel : (currentService.category_label || finalCategory);
+    const finalRate = rate !== undefined ? Number(rate) : Number(currentService.rate);
+    const finalUnit = unit !== undefined ? unit : currentService.unit;
+    const finalImage = image !== undefined ? image : currentService.image;
+
+    let finalCustomFields = custom_fields !== undefined ? custom_fields : currentService.custom_fields;
+    if (typeof finalCustomFields === 'string') {
+      try {
+        finalCustomFields = JSON.parse(finalCustomFields);
+      } catch (e) {
+        finalCustomFields = [];
+      }
+    }
+    const customFieldsJson = JSON.stringify(finalCustomFields || []);
 
     await pool.query(
       `UPDATE services SET 
@@ -81,10 +99,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
         rate = ?, 
         unit = ?, 
         image = ?,
-        custom_fields = COALESCE(?, custom_fields)
+        custom_fields = ?
        WHERE id = ?`,
-      [name, desc, category, categoryLabel || category, Number(rate), unit, image, customFieldsJson, id]
+      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, id]
     );
+
     const [updated] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = updated[0];
     if (typeof service.custom_fields === 'string') {

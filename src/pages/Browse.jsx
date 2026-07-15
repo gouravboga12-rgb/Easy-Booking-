@@ -174,14 +174,16 @@ export default function Browse() {
               <span><HiCalendar className="cm-lbl-icon" /> Date</span>
               <input type="date" value={form.date} min={new Date().toISOString().split('T')[0]} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
             </label>
-            <label>
-              <span>Duration ({cartModal.unit === 'hr' ? 'Hours' : 'Trips'})</span>
-              <div className="duration-ctrl">
-                <button onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
-                <span>{form.duration}</span>
-                <button onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
-              </div>
-            </label>
+            {cartModal.unit === 'hr' && (
+              <label>
+                <span>Duration (Hours)</span>
+                <div className="duration-ctrl">
+                  <button onClick={() => setForm(f => ({ ...f, duration: Math.max(1, f.duration - 1) }))}>−</button>
+                  <span>{form.duration}</span>
+                  <button onClick={() => setForm(f => ({ ...f, duration: f.duration + 1 }))}>+</button>
+                </div>
+              </label>
+            )}
             <div className="cm-total">Total: <strong>₹{(cartModal.rate * form.duration).toLocaleString()}</strong></div>
             <button className="cm-add-btn" disabled={!form.location || !form.date} onClick={handleAddToCart}>
               <HiShoppingCart style={{ width: 16, height: 16 }} /> Add to Cart
