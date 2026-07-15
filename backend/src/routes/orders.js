@@ -7,7 +7,7 @@ const router = express.Router();
 
 // POST /api/orders (Place an order / create booking)
 router.post('/', authenticateToken, async (req, res) => {
-  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType, notes } = req.body;
+  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType, notes, customAnswers } = req.body;
   
   if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
     return res.status(400).json({ message: 'Missing required order fields' });
@@ -23,10 +23,12 @@ router.post('/', authenticateToken, async (req, res) => {
     const digits = phone ? phone.replace(/\D/g, '') : '';
     const completionOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
 
+    const customAnswersStr = customAnswers ? JSON.stringify(customAnswers) : null;
+
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp]
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp, customAnswersStr]
     );
 
 

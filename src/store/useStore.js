@@ -80,7 +80,8 @@ const formatDbOrder = (dbOrder, services) => {
     cancelReason: dbOrder.cancel_reason || null,
     cancelDetails: dbOrder.cancel_details || null,
     completedAt: dbOrder.completed_at || null,
-    otpVerified: dbOrder.otp_verified === 1
+    otpVerified: dbOrder.otp_verified === 1,
+    customAnswers: dbOrder.custom_answers ? (typeof dbOrder.custom_answers === 'string' ? JSON.parse(dbOrder.custom_answers) : dbOrder.custom_answers) : null
   };
 };
 
@@ -272,7 +273,8 @@ export const useStore = create((set, get) => ({
       totalAmount: booking.total,
       vehicleId: vehicle.id,
       bookingType: booking.bookingType || 'instant',
-      notes: booking.notes || booking.instructions || null
+      notes: booking.notes || booking.instructions || null,
+      customAnswers: booking.customAnswers || null
     };
     try {
       const response = await fetch(`${API_BASE_URL}/orders`, {

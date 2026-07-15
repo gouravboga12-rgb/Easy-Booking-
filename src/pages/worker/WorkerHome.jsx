@@ -65,6 +65,9 @@ export default function WorkerHome() {
   // Payment Collection States
   const [paymentMode, setPaymentMode] = useState(null);
 
+  // Selected details request for Available Job popup modal
+  const [selectedDetailsRequest, setSelectedDetailsRequest] = useState(null);
+
   // Navigation Mode: 'google' | 'inapp'
   const [navMode, setNavMode] = useState('google');
 
@@ -956,16 +959,22 @@ export default function WorkerHome() {
                   <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '4px' }}>
                     <button
                       onClick={() => handleRejectRequest(req.id)}
-                      style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                      style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
                     >
                       <HiX /> Reject
                     </button>
                     <button
+                      onClick={() => setSelectedDetailsRequest(req)}
+                      style={{ flex: 1.5, border: '1.5px solid #3b82f6', color: '#3b82f6', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
+                    >
+                      🔍 View Details
+                    </button>
+                    <button
                       onClick={() => handleAcceptRequest(req.id)}
                       disabled={!!activeJob}
-                      style={{ flex: 2, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px', cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: !!activeJob ? 'none' : '0 4px 10px rgba(79,70,229,0.2)' }}
+                      style={{ flex: 1.5, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px', cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px', boxShadow: !!activeJob ? 'none' : '0 4px 10px rgba(79,70,229,0.2)' }}
                     >
-                      <HiCheck /> Accept Booking
+                      <HiCheck /> Accept
                     </button>
                   </div>
                 </div>
@@ -1186,6 +1195,160 @@ export default function WorkerHome() {
           </div>
         </div>
       )}
+
+      {/* ── SERVICE REQUEST DETAILS POPUP MODAL ── */}
+      {selectedDetailsRequest && (() => {
+        const req = selectedDetailsRequest;
+        const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
+        const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
+        const estTravelMinutes = distanceVal !== null ? (distanceVal * 2.0).toFixed(0) : '8';
+        const customFields = req.vehicle?.custom_fields || [];
+        const customAnswers = req.customAnswers || {};
+
+        return (
+          <div className="invoice-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setSelectedDetailsRequest(null)}>
+            <div className="invoice-modal-card" style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+              <button style={{ position: 'absolute', right: '20px', top: '20px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b', fontWeight: '800' }} onClick={() => setSelectedDetailsRequest(null)}>×</button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '28px' }}>📋</span>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Service Request Details</h3>
+                  <span style={{ fontSize: '11px', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '800', padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', display: 'inline-block', marginTop: '4px' }}>
+                    {req.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', padding: '16px 0', marginBottom: '18px' }}>
+                
+                {/* Service Details */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Service Requested</span>
+                  <strong style={{ color: '#0f172a' }}>{req.vehicle?.name}</strong>
+                </div>
+                {req.vehicle?.categoryLabel && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Category</span>
+                    <strong style={{ color: '#475569' }}>{req.vehicle.categoryLabel}</strong>
+                  </div>
+                )}
+
+                {/* Pricing / Duration */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Duration / Scope</span>
+                  <strong style={{ color: '#0f172a' }}>{req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'Hours' : 'Trips'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '700' }}>Estimated Payout</span>
+                  <strong style={{ color: '#10b981', fontSize: '16px', fontWeight: '800' }}>₹{req.booking?.total?.toLocaleString()}</strong>
+                </div>
+
+                {/* Location / Distances */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600' }}>📍 Service Address</span>
+                  <strong style={{ color: '#0f172a', fontSize: '13.5px', lineHeight: '1.4' }}>{req.booking?.location}</strong>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    <span>📏 Distance: <strong>{formattedDistance}</strong></span>
+                    <span>🛵 Est. Drive: <strong>{estTravelMinutes} mins</strong></span>
+                  </div>
+                </div>
+
+                {/* Date & Time */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
+                  <strong style={{ color: '#0f172a' }}>{req.booking?.date} ({req.bookingType === 'instant' ? 'Instant Match' : 'Scheduled'})</strong>
+                </div>
+
+                {/* Customer Contact (Privacy Redacted) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Name</span>
+                  <strong style={{ color: '#0f172a' }}>{req.customer?.name || 'Customer'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', alignItems: 'center', background: '#fffbeb', border: '1px solid #fef3c7', padding: '6px 10px', borderRadius: '6px', color: '#b45309' }}>
+                  <span>Customer Phone</span>
+                  <strong style={{ fontSize: '11px', fontWeight: '700' }}>🔒 Hidden until accepted</strong>
+                </div>
+
+                {/* Dynamic Custom Fields */}
+                {customFields.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>
+                    <span style={{ color: '#1e293b', fontSize: '13px', fontWeight: '800' }}>🛠️ Customer Selections</span>
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {customFields.map(f => {
+                        const val = customAnswers[f.id];
+                        if (val && val.startsWith('data:image/')) {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <div style={{ maxWidth: '100px', cursor: 'pointer' }} onClick={() => window.open(val)}>
+                                <img src={val} alt="User Upload" style={{ maxWidth: '100%', maxHeight: '80px', borderRadius: '6px', border: '1.5px solid #ddd', objectFit: 'cover' }} />
+                              </div>
+                            </div>
+                          );
+                        } else if (val && val.startsWith('data:application/pdf')) {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                              <span style={{ color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <a href={val} download={`attachment_${f.name}.pdf`} style={{ color: 'var(--primary)', fontWeight: '800', textDecoration: 'underline' }}>
+                                📁 PDF Document
+                              </a>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                              <span style={{ color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {req.booking?.notes && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600' }}>📝 Instructions / Notes</span>
+                    <div style={{ padding: '10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12.5px', color: '#475569', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                      {req.booking.notes}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Accept & Reject Actions inside Modal */}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleRejectRequest(req.id);
+                    setSelectedDetailsRequest(null);
+                  }}
+                  style={{ flex: 1, padding: '12px', background: '#f8fafc', border: '1.5px solid #fca5a5', color: '#dc2626', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}
+                >
+                  Reject Request
+                </button>
+                <button
+                  type="button"
+                  disabled={!!activeJob}
+                  onClick={() => {
+                    handleAcceptRequest(req.id);
+                    setSelectedDetailsRequest(null);
+                  }}
+                  style={{ flex: 2, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', border: 'none', color: '#fff', borderRadius: '10px', fontWeight: '800', cursor: !!activeJob ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                >
+                  Accept Booking
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

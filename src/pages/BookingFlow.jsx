@@ -206,7 +206,8 @@ export default function BookingFlow() {
         bookingType,
         total,
         duration: finalDuration,
-        notes: finalNotes
+        notes: finalNotes,
+        customAnswers: customAnswers
       },
       customer
     ).then(order => {
@@ -230,7 +231,8 @@ export default function BookingFlow() {
       bookingType,
       total,
       duration: finalDuration,
-      notes: finalNotes
+      notes: finalNotes,
+      customAnswers: customAnswers
     });
     navigate('/cart');
   };

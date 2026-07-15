@@ -195,6 +195,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!bookingColNames.includes('otp_verified')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN otp_verified TINYINT DEFAULT 0');
     }
+    if (!bookingColNames.includes('custom_answers')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN custom_answers JSON NULL');
+    }
 
 
     // Ensure services columns exist
