@@ -22,7 +22,7 @@ export default function WorkerLayout() {
       {/* Sidebar for Desktop & Tablet view */}
       <aside className="worker-sidebar">
         <div className="ws-brand">
-          <MdConstruction className="ws-logo-icon" />
+          <img src="/logo.png" alt="Logo" style={{ height: '36px', width: 'auto', marginRight: '8px', objectFit: 'contain' }} />
           <span>Parrow <b>Skills</b></span>
           <span className="ws-badge">Worker</span>
         </div>
@@ -73,13 +73,13 @@ export default function WorkerLayout() {
           ))}
         </nav>
       </aside>
-
+ 
       {/* Main content wrapper */}
       <div className="worker-main">
         {/* Mobile View Top Header */}
         <header className="worker-top-header">
           <div className="wth-brand">
-            <MdConstruction className="wth-logo-icon" />
+            <img src="/logo.png" alt="Logo" style={{ height: '30px', width: 'auto', marginRight: '8px', objectFit: 'contain' }} />
             <span>Parrow <b>Skills</b></span>
             <span className="wth-badge">Worker</span>
           </div>
@@ -117,8 +117,37 @@ export default function WorkerLayout() {
         </header>
 
         {/* Dynamic content rendering */}
-        <main className="worker-content">
-          <Outlet />
+        <main className="worker-content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 70px)', paddingBottom: '0' }}>
+          <div style={{ flex: 1, padding: '20px' }}>
+            <Outlet />
+          </div>
+
+          <footer className="brand-footer" style={{
+            background: '#1e293b',
+            color: '#f8fafc',
+            padding: '24px 16px',
+            textAlign: 'center',
+            marginTop: 'auto',
+            borderTop: '4px solid var(--primary)',
+            fontSize: '13px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+              <img src="/logo.png" alt="Company Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+              <span style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '0.5px' }}>Parrow <b style={{ color: 'var(--primary)' }}>Skills</b></span>
+            </div>
+            <p style={{ margin: '4px 0', color: '#cbd5e1', maxWidth: '400px', fontSize: '12px', lineHeight: '1.4' }}>
+              Reliable on-demand professional labor and booking management platform.
+            </p>
+            <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '280px', margin: '4px auto 0' }}>
+              Developed by <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>Quotec IT Solutions</span>
+            </div>
+          </footer>
         </main>
       </div>
 

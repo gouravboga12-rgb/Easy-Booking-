@@ -71,6 +71,16 @@ export default function WorkerHome() {
   // Navigation Mode: 'google' | 'inapp'
   const [navMode, setNavMode] = useState('google');
 
+  // Cockpit navigation states
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navSteps, setNavSteps] = useState([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [mapViewState, setMapViewState] = useState({
+    latitude: 12.9716,
+    longitude: 77.5946,
+    zoom: 15
+  });
+
   // Availability Settings States
   const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
   const [vacation, setVacation] = useState(user.availability?.vacation || false);
@@ -207,7 +217,13 @@ export default function WorkerHome() {
         
         if (Math.abs(latDiff) < 0.0001 && Math.abs(lngDiff) < 0.0001) {
           setIsSimulating(false);
+          setIsNavigating(false);
           return prev;
+        }
+
+        // Advance turn-by-turn banner step index sequentially during drive
+        if (navSteps.length > 0) {
+          setCurrentStepIndex(idx => (idx + 1) % navSteps.length);
         }
 
         // Move 15% closer to destination
@@ -222,7 +238,7 @@ export default function WorkerHome() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isSimulating, customerCoords]);
+  }, [isSimulating, customerCoords, navSteps.length]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -267,14 +283,19 @@ export default function WorkerHome() {
 
     const fetchWorkerRoute = async () => {
       try {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${workerCoords.lng},${workerCoords.lat};${customerCoords.lng},${customerCoords.lat}?geometries=geojson&access_token=${token}`;
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${workerCoords.lng},${workerCoords.lat};${customerCoords.lng},${customerCoords.lat}?geometries=geojson&steps=true&access_token=${token}`;
         const res = await fetch(url);
         const json = await res.json();
         if (json.routes && json.routes.length > 0) {
-          setRouteGeojson(json.routes[0].geometry);
-          const durationMin = Math.round(json.routes[0].duration / 60);
-          const distanceKm = (json.routes[0].distance / 1000).toFixed(1);
+          const route = json.routes[0];
+          setRouteGeojson(route.geometry);
+          const durationMin = Math.round(route.duration / 60);
+          const distanceKm = (route.distance / 1000).toFixed(1);
           setEta(`${durationMin} mins (${distanceKm} km away)`);
+
+          if (route.legs && route.legs[0] && route.legs[0].steps) {
+            setNavSteps(route.legs[0].steps.map(s => s.maneuver.instruction));
+          }
         }
       } catch (e) {
         console.error("Failed to fetch route on worker side:", e);
@@ -283,6 +304,16 @@ export default function WorkerHome() {
     fetchWorkerRoute();
   }, [customerCoords, workerCoords]);
 
+
+  useEffect(() => {
+    if (workerCoords) {
+      setMapViewState(prev => ({
+        ...prev,
+        latitude: workerCoords.lat,
+        longitude: workerCoords.lng
+      }));
+    }
+  }, [workerCoords]);
 
   const handleAdvanceStage = () => {
     if (!activeJob) return;
@@ -552,6 +583,42 @@ export default function WorkerHome() {
                 )}
               </div>
             </div>
+
+            {/* Dynamic Specifications */}
+            {activeJob.vehicle?.custom_fields && activeJob.vehicle.custom_fields.length > 0 && (
+              <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Selected Specifications:</span>
+                {activeJob.vehicle.custom_fields.map(f => {
+                  const val = activeJob.customAnswers?.[f.id];
+                  if (val && val.startsWith('data:image/')) {
+                    return (
+                      <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                        <div style={{ maxWidth: '80px', cursor: 'pointer' }} onClick={() => window.open(val)}>
+                          <img src={val} alt="Spec Image" style={{ maxWidth: '100%', maxHeight: '60px', borderRadius: '6px', border: '1px solid #ddd', objectFit: 'cover' }} />
+                        </div>
+                      </div>
+                    );
+                  } else if (val && val.startsWith('data:application/pdf')) {
+                    return (
+                      <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                        <a href={val} download={`spec_${f.name}.pdf`} style={{ color: 'var(--primary)', fontWeight: '800', textDecoration: 'underline' }}>
+                          📁 PDF Document
+                        </a>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                        <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+            )}
           </div>
 
 
@@ -627,43 +694,119 @@ export default function WorkerHome() {
                       <span style={{ fontSize: '12px', fontWeight: '700', color: '#333' }}>Live Route (Mapbox)</span>
                       {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
                     </div>
-                    <div style={{ width: '100%', height: '280px', borderRadius: '12px', overflow: 'hidden', position: 'relative', border: '1.5px solid #eee' }}>
+                    <div style={{ width: '100%', height: '340px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
                       <Map
-                        initialViewState={{ longitude: workerCoords.lng, latitude: workerCoords.lat, zoom: 13 }}
+                        {...mapViewState}
+                        onMove={e => setMapViewState(e.viewState)}
                         onClick={handleMapClick}
                         style={{ width: '100%', height: '100%', cursor: 'pointer' }}
                         mapStyle="mapbox://styles/mapbox/streets-v12"
                         mapboxAccessToken={MAPBOX_TOKEN}
                       >
                         <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
-                          <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>📍</div>
+                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.45))' }}>📍</div>
                         </Marker>
                         <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
-                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🛵</div>
+                          <div style={{
+                            width: '32px', height: '32px', background: 'var(--primary)', color: '#fff', borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold'
+                          }}>🛵</div>
                         </Marker>
                         {routeGeojson && (
                           <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
-                            <Layer id="route-line" type="line" paint={{ 'line-color': '#4f46e5', 'line-width': 5, 'line-opacity': 0.8 }} />
+                            <Layer id="route-line" type="line" paint={{ 'line-color': '#3b82f6', 'line-width': 6, 'line-opacity': 0.85 }} />
                           </Source>
                         )}
                       </Map>
+
+                      {/* START NAVIGATION OVERLAY */}
+                      {!isNavigating && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(1px)' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNavigating(true);
+                              if (workerCoords) {
+                                setMapViewState(v => ({ ...v, latitude: workerCoords.lat, longitude: workerCoords.lng, zoom: 16 }));
+                              }
+                            }}
+                            style={{
+                              background: 'var(--primary)', color: '#fff', border: 'none', padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: '800', cursor: 'pointer',
+                              boxShadow: '0 8px 20px rgba(79,70,229,0.35)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'transform 0.15s ease'
+                            }}
+                          >
+                            <span>🚀 Start In-App Navigation</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* TOP TURN-BY-TURN HUD BANNER */}
+                      {isNavigating && (
+                        <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }}>
+                          <span style={{ fontSize: '24px' }}>
+                            {navSteps[currentStepIndex]?.toLowerCase().includes('left') ? '⬅️' :
+                             navSteps[currentStepIndex]?.toLowerCase().includes('right') ? '➡️' : '⬆️'}
+                          </span>
+                          <div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Next Maneuver:</div>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', marginTop: '1px' }}>
+                              {navSteps[currentStepIndex] || 'Continue on route to destination'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* BOTTOM INFORMATION HUD OVERLAY */}
+                      {isNavigating && (
+                        <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', background: 'rgba(255,255,255,0.96)', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0', backdropFilter: 'blur(4px)' }}>
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{eta || 'Computing...'}</div>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Estimated Travel Info</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setIsSimulating(!isSimulating)}
+                              style={{
+                                background: isSimulating ? '#ef4444' : '#10b981', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                              }}
+                            >
+                              {isSimulating ? '⏸️ Pause' : '🛵 Drive'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsNavigating(false);
+                                setIsSimulating(false);
+                              }}
+                              style={{
+                                background: '#64748b', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                              }}
+                            >
+                              Exit
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ padding: '6px 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                      💡 Tip: Click anywhere on the map to manually set your current location.
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setIsSimulating(!isSimulating)}
-                        style={{
-                          background: isSimulating ? '#ef4444' : 'var(--primary)', color: '#fff', border: 'none',
-                          padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
-                          display: 'inline-flex', alignItems: 'center', gap: '4px'
-                        }}
-                      >
-                        {isSimulating ? '⏹️ Stop Simulation' : '🛵 Simulate Drive'}
-                      </button>
-                    </div>
+                    
+                    {!isNavigating && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>
+                          💡 Tip: Click anywhere on the map to manually set your location.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsSimulating(!isSimulating)}
+                          style={{
+                            background: isSimulating ? '#ef4444' : 'var(--primary)', color: '#fff', border: 'none',
+                            padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                          }}
+                        >
+                          {isSimulating ? '⏹️ Stop Simulation' : '🛵 Test Ride'}
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
@@ -945,6 +1088,36 @@ export default function WorkerHome() {
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                           ⏰ Booked at: <strong>{bookingTimeStr}</strong>
                         </div>
+                        {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
+                          <div style={{ marginTop: '10px', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements:</span>
+                            {req.vehicle.custom_fields.map(f => {
+                              const val = req.customAnswers?.[f.id];
+                              if (val && val.startsWith('data:image/')) {
+                                return (
+                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                    <img src={val} alt="Spec" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #ddd' }} />
+                                  </div>
+                                );
+                              } else if (val && val.startsWith('data:application/pdf')) {
+                                return (
+                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                    <span style={{ color: 'var(--primary)', fontWeight: '700' }}>📁 PDF Attached</span>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                    <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                                  </div>
+                                );
+                              }
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 

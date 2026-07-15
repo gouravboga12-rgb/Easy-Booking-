@@ -303,6 +303,38 @@ export default function OrderTracking() {
               <div className="bs-row"><span>📍 Location</span><strong>{order.booking.location}</strong></div>
               <div className="bs-row"><span>📅 Date</span><strong>{order.booking.date}</strong></div>
               <div className="bs-row"><span>⏱ Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
+              {order.vehicle?.custom_fields && order.vehicle.custom_fields.length > 0 && (
+                <div style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Service Specifications</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                    {order.vehicle.custom_fields.map(f => {
+                      const val = order.customAnswers?.[f.id];
+                      if (val && val.startsWith('data:image/')) {
+                        return (
+                          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#64748b' }}>{f.name}</span>
+                            <img src={val} alt="Attached" style={{ width: '40px', height: '40px', borderRadius: '4px', border: '1px solid #eee', objectFit: 'cover' }} />
+                          </div>
+                        );
+                      } else if (val && val.startsWith('data:application/pdf')) {
+                        return (
+                          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#64748b' }}>{f.name}</span>
+                            <a href={val} download={`doc_${f.name}.pdf`} style={{ color: 'var(--primary)', fontWeight: 'bold' }}>📁 Attached PDF</a>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#64748b' }}>{f.name}</span>
+                            <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                          </div>
+                        );
+                      }
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="bs-row total"><span>💰 Total</span><strong>₹{order.booking.total?.toLocaleString()}</strong></div>
             </div>
           )}
@@ -317,6 +349,23 @@ export default function OrderTracking() {
               <div className="bs-row"><span>Service category</span><strong>{order.vehicle.name}</strong></div>
               <div className="bs-row"><span>Provider Name</span><strong>{order.operator?.name || 'Verified Professional'}</strong></div>
               <div className="bs-row"><span>Duration</span><strong>{order.booking.duration} {order.vehicle.unit === 'hr' ? 'hrs' : 'trips'}</strong></div>
+              {order.vehicle?.custom_fields && order.vehicle.custom_fields.length > 0 && (
+                <div style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Specifications</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                    {order.vehicle.custom_fields.map(f => {
+                      const val = order.customAnswers?.[f.id];
+                      if (val && val.startsWith('data:')) return null; // Skip file data url previews on invoice receipt for clean UI
+                      return (
+                        <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748b' }}>{f.name}</span>
+                          <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="bs-row" style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px' }}><span>Base Rate</span><strong>₹{(order.vehicle.rate || 0).toLocaleString()} / {order.vehicle.unit}</strong></div>
               <div className="bs-row total" style={{ fontSize: '18px', color: '#10b981', marginTop: '8px' }}>
                 <span>Total Amount</span>

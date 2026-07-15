@@ -9,6 +9,7 @@ export default function WorkerOrders() {
   const advanceStage = useStore(s => s.advanceStage);
 
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
+  const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
 
   const activeOrders = orders.filter(o =>
     o.operator?.id === user.id && ['assigned', 'active', 'pending', 'arrived'].includes(o.status)
@@ -108,11 +109,16 @@ export default function WorkerOrders() {
                   </div>
                   <div className="oc-footer">
                     <div className="oc-amount">₹{o.booking?.total?.toLocaleString()}</div>
-                    {o.stage < o.stages.length - 1 && (
-                      <button className="aj-advance" onClick={() => advanceStage(o.id)}>
-                        {o.stages[o.stage + 1]} <HiArrowRight style={{ width: 14, height: 14 }} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="aj-advance" style={{ background: '#f8fafc', color: '#475569', border: '1.5px solid #cbd5e1' }} onClick={() => setSelectedDetailsOrder(o)}>
+                        🔍 View Details
                       </button>
-                    )}
+                      {o.stage < o.stages.length - 1 && (
+                        <button className="aj-advance" onClick={() => advanceStage(o.id)}>
+                          {o.stages[o.stage + 1]} <HiArrowRight style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="oc-stage">
                     Stage: <strong>{o.stages[o.stage]}</strong>
@@ -161,8 +167,11 @@ export default function WorkerOrders() {
                       ⏱️ Finished: {o.completedAt ? new Date(o.completedAt).toLocaleString() : 'N/A'}
                     </div>
                   </div>
-                  <div className="oc-footer" style={{ borderBottom: o.completionImages && o.completionImages.length > 0 ? '1px solid #f5f5f5' : 'none', paddingBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0', marginBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0' }}>
+                  <div className="oc-footer" style={{ borderBottom: o.completionImages && o.completionImages.length > 0 ? '1px solid #f5f5f5' : 'none', paddingBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0', marginBottom: o.completionImages && o.completionImages.length > 0 ? '10px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="oc-amount" style={{ fontSize: '16px', fontWeight: '800', color: '#111827' }}>₹{o.booking?.total?.toLocaleString()}</div>
+                    <button className="aj-advance" style={{ background: '#f8fafc', color: '#475569', border: '1.5px solid #cbd5e1', padding: '6px 12px', fontSize: '12px' }} onClick={() => setSelectedDetailsOrder(o)}>
+                      🔍 View Details
+                    </button>
                   </div>
                   {o.completionImages && o.completionImages.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
@@ -186,6 +195,136 @@ export default function WorkerOrders() {
           )}
         </div>
       )}
+
+      {/* ── WORKER ORDER DETAILS POPUP MODAL ── */}
+      {selectedDetailsOrder && (() => {
+        const o = selectedDetailsOrder;
+        const customFields = o.vehicle?.custom_fields || [];
+        const customAnswers = o.customAnswers || {};
+
+        return (
+          <div className="invoice-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setSelectedDetailsOrder(null)}>
+            <div className="invoice-modal-card" style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+              <button style={{ position: 'absolute', right: '20px', top: '20px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748b', fontWeight: '800' }} onClick={() => setSelectedDetailsOrder(null)}>×</button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '28px' }}>📋</span>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Order Details</h3>
+                  <span style={{ fontSize: '11px', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '800', padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', display: 'inline-block', marginTop: '4px' }}>
+                    {o.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', padding: '16px 0', marginBottom: '18px' }}>
+                
+                {/* ID & Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Order ID</span>
+                  <strong style={{ color: '#0f172a' }}>#{o.id}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Service Requested</span>
+                  <strong style={{ color: '#0f172a' }}>{o.vehicle?.name}</strong>
+                </div>
+
+                {/* Pricing / Duration */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Duration / Scope</span>
+                  <strong style={{ color: '#0f172a' }}>{o.booking?.duration} {o.vehicle?.unit === 'hr' ? 'Hours' : 'Trips'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '700' }}>Estimated Payout</span>
+                  <strong style={{ color: '#10b981', fontSize: '16px', fontWeight: '800' }}>₹{o.booking?.total?.toLocaleString()}</strong>
+                </div>
+
+                {/* Location */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600' }}>📍 Service Address</span>
+                  <strong style={{ color: '#0f172a', fontSize: '13.5px', lineHeight: '1.4' }}>{o.booking?.location}</strong>
+                </div>
+
+                {/* Date & Time */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
+                  <strong style={{ color: '#0f172a' }}>{o.booking?.date} ({o.bookingType === 'instant' ? 'Instant Match' : 'Scheduled'})</strong>
+                </div>
+
+                {/* Customer Contact */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Name</span>
+                  <strong style={{ color: '#0f172a' }}>{o.customer?.name || 'Customer'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Phone</span>
+                  <strong style={{ color: '#0f172a' }}>{o.customer?.phone || '🔒 Redacted'}</strong>
+                </div>
+
+                {/* Dynamic Custom Fields */}
+                {customFields.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>
+                    <span style={{ color: '#1e293b', fontSize: '13px', fontWeight: '800' }}>🛠️ Customer Selections</span>
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {customFields.map(f => {
+                        const val = customAnswers[f.id];
+                        if (val && val.startsWith('data:image/')) {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <div style={{ maxWidth: '100px', cursor: 'pointer' }} onClick={() => window.open(val)}>
+                                <img src={val} alt="User Upload" style={{ maxWidth: '100%', maxHeight: '80px', borderRadius: '6px', border: '1.5px solid #ddd', objectFit: 'cover' }} />
+                              </div>
+                            </div>
+                          );
+                        } else if (val && val.startsWith('data:application/pdf')) {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                              <span style={{ color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <a href={val} download={`attachment_${f.name}.pdf`} style={{ color: 'var(--primary)', fontWeight: '800', textDecoration: 'underline' }}>
+                                📁 PDF Document
+                              </a>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                              <span style={{ color: '#64748b', fontWeight: '600' }}>{f.name}:</span>
+                              <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {o.booking?.notes && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px dashed #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600' }}>📝 Instructions / Notes</span>
+                    <div style={{ padding: '10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12.5px', color: '#475569', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                      {o.booking.notes}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetailsOrder(null)}
+                  style={{ padding: '10px 24px', background: 'var(--primary)', border: 'none', color: '#fff', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '13px' }}
+                >
+                  Close Details
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -61,7 +61,7 @@ export default function AdminLayout() {
       {/* Top Header */}
       <header className="admin-top-header">
         <div className="ath-brand">
-          <MdConstruction className="ath-logo-icon" />
+          <img src="/logo.png" alt="Logo" style={{ height: '32px', width: 'auto', marginRight: '8px', objectFit: 'contain' }} />
           <span>Parrow <b>Skills</b></span>
           <span className="ath-badge">Admin</span>
         </div>
@@ -102,8 +102,37 @@ export default function AdminLayout() {
       </div>
     </header>
 
-      <div className="admin-content">
-        <Outlet />
+      <div className="admin-content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 70px)', paddingBottom: '60px', boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, padding: '24px' }}>
+          <Outlet />
+        </div>
+
+        <footer className="brand-footer" style={{
+          background: '#1e293b',
+          color: '#f8fafc',
+          padding: '24px 16px',
+          textAlign: 'center',
+          marginTop: 'auto',
+          borderTop: '4px solid var(--primary)',
+          fontSize: '13px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+            <img src="/logo.png" alt="Company Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <span style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '0.5px' }}>Parrow <b style={{ color: 'var(--primary)' }}>Skills</b></span>
+          </div>
+          <p style={{ margin: '4px 0', color: '#cbd5e1', maxWidth: '400px', fontSize: '12px', lineHeight: '1.4' }}>
+            Reliable on-demand professional labor and booking management platform.
+          </p>
+          <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '280px', margin: '4px auto 0' }}>
+            Developed by <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>Quotec IT Solutions</span>
+          </div>
+        </footer>
       </div>
 
       <nav className="admin-bottom-nav">

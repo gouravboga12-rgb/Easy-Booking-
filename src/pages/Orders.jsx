@@ -201,6 +201,20 @@ export default function Orders() {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Service Date</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.date}</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Duration / Scope</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.booking?.duration} {selectedInvoiceOrder.vehicle?.unit === 'hr' ? 'Hours' : 'Trips'}</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}><span style={{ color: '#64748b' }}>Assigned Partner</span><strong style={{ color: '#0f172a' }}>{selectedInvoiceOrder.operator?.name || 'Verified Professional'}</strong></div>
+              {selectedInvoiceOrder.vehicle?.custom_fields && selectedInvoiceOrder.vehicle.custom_fields.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', borderTop: '1px dotted #e2e8f0', paddingTop: '8px', paddingBottom: '4px' }}>
+                  {selectedInvoiceOrder.vehicle.custom_fields.map(f => {
+                    const val = selectedInvoiceOrder.customAnswers?.[f.id];
+                    if (val && val.startsWith('data:')) return null; // Skip file URLs for print layout cleanliness
+                    return (
+                      <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748b' }}>{f.name}</span>
+                        <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {selectedInvoiceOrder.booking?.notes && (
                 <div style={{ fontSize: '12px', background: '#f8fafc', padding: '8px', borderRadius: '6px', marginTop: '4px', border: '1px solid #f1f5f9' }}>
                   <strong style={{ display: 'block', color: '#475569', marginBottom: '2px' }}>Order Notes/Instructions:</strong>
