@@ -109,6 +109,23 @@ export default function AdminProducts() {
     const catObj = categories.find(c => c.id === form.category);
     const categoryLabel = catObj ? catObj.label : 'Other';
 
+    // Auto-add any custom field that was typed in but not explicitly added via the "+ Add Field Option" button
+    let finalCustomFields = [...customFields];
+    if (newFieldName.trim()) {
+      const choices = newFieldType === 'select'
+        ? newFieldChoices.split(',').map(c => c.trim()).filter(Boolean)
+        : [];
+      
+      const newField = {
+        id: `field_${Date.now()}`,
+        name: newFieldName.trim(),
+        type: newFieldType,
+        choices,
+        required: true
+      };
+      finalCustomFields.push(newField);
+    }
+
     const serviceData = {
       name: form.name,
       desc: form.desc,
@@ -117,7 +134,7 @@ export default function AdminProducts() {
       rate: Number(form.rate),
       unit: form.unit,
       image: form.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80',
-      custom_fields: customFields
+      custom_fields: finalCustomFields
     };
 
     if (editingId) {
