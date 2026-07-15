@@ -352,7 +352,7 @@ export const useAuthStore = create((set, get) => ({
   resetUserPassword: async (userId, newPassword) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/auth/workers/${userId}/password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}/password`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -360,8 +360,50 @@ export const useAuthStore = create((set, get) => ({
         },
         body: JSON.stringify({ newPassword })
       });
+      return response.ok;
     } catch (err) {
-      console.error(err);
+      console.error('resetUserPassword error:', err);
+      return false;
+    }
+  },
+
+  toggleBlockUser: async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const users = get().users;
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      const nextBlocked = !user.blocked;
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}/block`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ blocked: nextBlocked })
+      });
+      if (response.ok) {
+        set(s => ({
+          users: s.users.map(u => u.id === userId ? { ...u, blocked: nextBlocked } : u)
+        }));
+      }
+    } catch (err) {
+      console.error('toggleBlockUser error:', err);
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        set(s => ({ users: s.users.filter(u => u.id !== userId) }));
+      }
+    } catch (err) {
+      console.error('deleteUser error:', err);
     }
   },
 

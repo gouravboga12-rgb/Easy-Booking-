@@ -59,6 +59,10 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('disabled')) {
       await pool.query('ALTER TABLE users ADD COLUMN disabled TINYINT(1) DEFAULT 0');
     }
+    if (!columnNames.includes('blocked')) {
+      await pool.query('ALTER TABLE users ADD COLUMN blocked TINYINT(1) DEFAULT 0');
+    }
+
 
     // Ensure subscription_plans table exists
     await pool.query(`
@@ -253,6 +257,9 @@ router.post('/google', async (req, res) => {
 
     if (existing.length > 0) {
       user = existing[0];
+      if (user.blocked || user.disabled) {
+        return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+      }
       if (!user.google_id) {
         await pool.query('UPDATE users SET google_id = ?, photo = COALESCE(photo, ?) WHERE id = ?', [googleId, picture || null, user.id]);
         user.google_id = googleId;
@@ -457,6 +464,9 @@ router.post('/login', async (req, res) => {
     }
 
     const user = users[0];
+    if (user.blocked || user.disabled) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    }
     if (!user.password_hash) {
       return res.status(401).json({ message: 'This account uses Google Login. Please sign in with Google.' });
     }
@@ -757,4 +767,47 @@ router.delete('/workers/:workerId', authenticateToken, async (req, res) => {
   }
 });
 
+// Admin: Block / Unblock any user (customer or worker)
+router.put('/users/:userId/block', authenticateToken, async (req, res) => {
+  const { userId } = req.params;
+  const { blocked } = req.body;
+  try {
+    await pool.query('UPDATE users SET blocked = ? WHERE id = ?', [blocked ? 1 : 0, userId]);
+    res.json({ success: true, blocked });
+  } catch (err) {
+    console.error('Block user error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Delete any user account permanently
+router.delete('/users/:userId', authenticateToken, async (req, res) => {
+  const { userId } = req.params;
+  try {
+    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Reset password for any user by userId
+router.put('/users/:userId/password', authenticateToken, async (req, res) => {
+  const { userId } = req.params;
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters' });
+  }
+  try {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Admin password reset error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;
+
