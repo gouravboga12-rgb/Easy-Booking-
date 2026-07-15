@@ -34,21 +34,29 @@ export default function AdminProducts() {
 
   // Pricing Mode States
   const [pricingType, setPricingType] = useState('direct'); // 'direct' or 'dynamic'
-  const [dynamicType, setDynamicType] = useState('person'); // 'person' or 'tier'
-  const [ratePerPerson, setRatePerPerson] = useState('300');
+  const [dynamicType, setDynamicType] = useState('person'); // 'person', 'tier', 'custom'
   const [tiers, setTiers] = useState([]);
-  const [newTierHours, setNewTierHours] = useState('');
+  const [newTierValue, setNewTierValue] = useState('');
   const [newTierPrice, setNewTierPrice] = useState('');
 
   const handleAddTier = () => {
-    const hoursVal = Number(newTierHours);
     const priceVal = Number(newTierPrice);
-    if (!hoursVal || !priceVal) return;
+    if (!newTierValue.trim() || !priceVal) return;
     
-    // Sort tiers by hours after adding
-    const updated = [...tiers, { hours: hoursVal, price: priceVal }].sort((a, b) => a.hours - b.hours);
+    let newTier = {};
+    if (dynamicType === 'custom') {
+      newTier = { label: newTierValue.trim(), price: priceVal };
+    } else {
+      newTier = { value: Number(newTierValue), price: priceVal };
+    }
+
+    // Sort numeric values, keep custom order
+    let updated = [...tiers, newTier];
+    if (dynamicType !== 'custom') {
+      updated.sort((a, b) => a.value - b.value);
+    }
     setTiers(updated);
-    setNewTierHours('');
+    setNewTierValue('');
     setNewTierPrice('');
   };
 
@@ -77,9 +85,8 @@ export default function AdminProducts() {
     setNewFieldType('text');
     setPricingType('direct');
     setDynamicType('person');
-    setRatePerPerson('300');
     setTiers([]);
-    setNewTierHours('');
+    setNewTierValue('');
     setNewTierPrice('');
     setShowModal(true);
   };
@@ -103,14 +110,12 @@ export default function AdminProducts() {
     setPricingType(prType);
     if (prType === 'dynamic' && v.pricing_rules) {
       setDynamicType(v.pricing_rules.type || 'person');
-      setRatePerPerson(String(v.pricing_rules.rate_per_person || '300'));
       setTiers(v.pricing_rules.tiers || []);
     } else {
       setDynamicType('person');
-      setRatePerPerson('300');
       setTiers([]);
     }
-    setNewTierHours('');
+    setNewTierValue('');
     setNewTierPrice('');
     setShowModal(true);
   };
@@ -172,8 +177,7 @@ export default function AdminProducts() {
 
     const pricingRules = pricingType === 'dynamic' ? {
       type: dynamicType,
-      rate_per_person: dynamicType === 'person' ? Number(ratePerPerson) : undefined,
-      tiers: dynamicType === 'tier' ? tiers : undefined
+      tiers: tiers
     } : null;
 
     const serviceData = {
@@ -279,9 +283,11 @@ export default function AdminProducts() {
                   <span className="pc-rate" style={{ fontSize: '15px', fontWeight: '800', color: 'var(--primary)' }}>
                     {v.pricing_type === 'dynamic' ? (
                       v.pricing_rules?.type === 'person' ? (
-                        <>₹{(v.pricing_rules.rate_per_person || 0).toLocaleString()}<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}>/worker</span></>
-                      ) : (
+                        <>Tiered<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}> (Workers)</span></>
+                      ) : v.pricing_rules?.type === 'tier' ? (
                         <>Tiered<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}> (Hourly)</span></>
+                      ) : (
+                        <>Tiered<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}> (Custom)</span></>
                       )
                     ) : (
                       <>₹{v.rate.toLocaleString()}<span className="pc-unit" style={{ fontSize: '11px', fontWeight: '400', color: '#888' }}>/{v.unit}</span></>
@@ -358,43 +364,55 @@ export default function AdminProducts() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
                     Dynamic Calculation Type
-                    <select value={dynamicType} onChange={e => setDynamicType(e.target.value)} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }}>
-                      <option value="person">Per Worker / Person (e.g. ₹300 per person)</option>
-                      <option value="tier">Hourly Tiers (e.g. 3 Hours = ₹500)</option>
+                    <select value={dynamicType} onChange={e => { setDynamicType(e.target.value); setTiers([]); }} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }}>
+                      <option value="person">Per Worker / Person Tiers (e.g. 1 Worker = ₹300, 2 Workers = ₹600)</option>
+                      <option value="tier">Hourly Tiers (e.g. 3 Hours = ₹500, 6 Hours = ₹1000)</option>
+                      <option value="custom">Custom Tiers (e.g. Half Day = ₹400, Full Day = ₹800)</option>
                     </select>
                   </label>
 
-                  {dynamicType === 'person' && (
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', fontWeight: '700' }}>
-                      Rate per Worker / Person (₹)
-                      <input type="text" value={ratePerPerson} onChange={e => setRatePerPerson(e.target.value.replace(/\D/g, ''))} style={{ padding: '10px', border: '1.5px solid #eee', borderRadius: '8px', fontSize: '13px' }} required />
-                    </label>
-                  )}
-
-                  {dynamicType === 'tier' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Hourly Price Tiers</span>
-                      
-                      {tiers.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {tiers.map((t, idx) => (
-                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
-                              <span><strong>{t.hours} Hours</strong>: ₹{t.price}</span>
-                              <button type="button" onClick={() => handleDeleteTier(idx)} style={{ border: 'none', background: 'none', color: '#ef4444', fontWeight: '700', cursor: 'pointer' }}>Remove</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input type="text" placeholder="Hours" value={newTierHours} onChange={e => setNewTierHours(e.target.value.replace(/\D/g, ''))} style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }} />
-                        <input type="text" placeholder="Price (₹)" value={newTierPrice} onChange={e => setNewTierPrice(e.target.value.replace(/\D/g, ''))} style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }} />
-                        <button type="button" onClick={handleAddTier} style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-                          + Add Tier
-                        </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>
+                      {dynamicType === 'person' ? 'Worker Count Tiers' : dynamicType === 'tier' ? 'Hourly Price Tiers' : 'Custom Pricing Tiers'}
+                    </span>
+                    
+                    {tiers.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {tiers.map((t, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
+                            <span>
+                              {dynamicType === 'custom' ? (
+                                <strong>{t.label}</strong>
+                              ) : (
+                                <strong>{t.value} {dynamicType === 'person' ? (t.value === 1 ? 'Worker' : 'Workers') : 'Hour(s)'}</strong>
+                              )}: ₹{t.price}
+                            </span>
+                            <button type="button" onClick={() => handleDeleteTier(idx)} style={{ border: 'none', background: 'none', color: '#ef4444', fontWeight: '700', cursor: 'pointer' }}>Remove</button>
+                          </div>
+                        ))}
                       </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        placeholder={dynamicType === 'person' ? "e.g. 1 (Workers)" : dynamicType === 'tier' ? "e.g. 3 (Hours)" : "e.g. Half Day (Option Name)"}
+                        value={newTierValue}
+                        onChange={e => setNewTierValue(dynamicType === 'custom' ? e.target.value : e.target.value.replace(/\D/g, ''))}
+                        style={{ flex: 1.5, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Price (₹)"
+                        value={newTierPrice}
+                        onChange={e => setNewTierPrice(e.target.value.replace(/\D/g, ''))}
+                        style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px' }}
+                      />
+                      <button type="button" onClick={handleAddTier} style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                        + Add Tier
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 

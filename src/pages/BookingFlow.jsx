@@ -49,17 +49,20 @@ export default function BookingFlow() {
   const [isMoving, setIsMoving] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
 
-  // Selected tier hours for tiered pricing
+  // Selected tier for tiered / custom pricing
   const [selectedTier, setSelectedTier] = useState(null);
-  // Workers count for per-person pricing
+  // Workers count for per-person tier pricing
   const [workersCount, setWorkersCount] = useState(1);
 
-  // Initialize selected tier on service load
+  // Initialize selected tier on service load (for tier and custom types)
   useEffect(() => {
-    if (vehicle && vehicle.pricing_type === 'dynamic' && vehicle.pricing_rules?.type === 'tier') {
-      const ts = vehicle.pricing_rules.tiers || [];
-      if (ts.length > 0) {
+    if (vehicle && vehicle.pricing_type === 'dynamic') {
+      const ts = vehicle.pricing_rules?.tiers || [];
+      if ((vehicle.pricing_rules?.type === 'tier' || vehicle.pricing_rules?.type === 'custom') && ts.length > 0) {
         setSelectedTier(ts[0]);
+      } else if (vehicle.pricing_rules?.type === 'person' && ts.length > 0) {
+        setSelectedTier(ts[0]);
+        setWorkersCount(ts[0].value || 1);
       }
     }
   }, [vehicle]);
@@ -72,11 +75,14 @@ export default function BookingFlow() {
 
   if (!vehicle) return <div className="not-found">Service not found.</div>;
 
+  const tiers = vehicle.pricing_rules?.tiers || [];
+
   let total = 0;
   if (vehicle.pricing_type === 'dynamic') {
     if (vehicle.pricing_rules?.type === 'person') {
-      total = (vehicle.pricing_rules.rate_per_person || 0) * workersCount;
-    } else if (vehicle.pricing_rules?.type === 'tier') {
+      // tiers are {value: workerCount, price: totalPrice}
+      total = selectedTier ? selectedTier.price : 0;
+    } else if (vehicle.pricing_rules?.type === 'tier' || vehicle.pricing_rules?.type === 'custom') {
       total = selectedTier ? selectedTier.price : 0;
     }
   } else {
@@ -133,12 +139,16 @@ export default function BookingFlow() {
 
   const compileNotesAndAnswers = () => {
     let compiled = form.notes || '';
-    if (vehicle.pricing_type === 'dynamic') {
+    if (vehicle.pricing_type === 'dynamic' && selectedTier) {
+      let pricingText = '';
       if (vehicle.pricing_rules?.type === 'person') {
-        const pricingText = `Requested Workers: ${workersCount} Worker(s) (at ₹${vehicle.pricing_rules.rate_per_person || 0}/worker)`;
-        compiled = compiled ? `${pricingText}\n\n${compiled}` : pricingText;
-      } else if (vehicle.pricing_rules?.type === 'tier' && selectedTier) {
-        const pricingText = `Selected Duration Tier: ${selectedTier.hours} hrs (for ₹${selectedTier.price})`;
+        pricingText = `Requested Workers: ${selectedTier.value} Worker(s) — Total: ₹${selectedTier.price}`;
+      } else if (vehicle.pricing_rules?.type === 'tier') {
+        pricingText = `Selected Duration: ${selectedTier.value} Hour(s) — Total: ₹${selectedTier.price}`;
+      } else if (vehicle.pricing_rules?.type === 'custom') {
+        pricingText = `Selected Option: ${selectedTier.label} — Total: ₹${selectedTier.price}`;
+      }
+      if (pricingText) {
         compiled = compiled ? `${pricingText}\n\n${compiled}` : pricingText;
       }
     }
@@ -413,38 +423,39 @@ export default function BookingFlow() {
               )}
 
               {vehicle.pricing_type === 'dynamic' ? (
-                vehicle.pricing_rules?.type === 'person' ? (
+                tiers.length > 0 ? (
                   <label style={{ marginTop: '10px' }}>
                     <span className="lbl-text">
-                      👥 Number of Workers
+                      {vehicle.pricing_rules?.type === 'person' ? '👥 Number of Workers' :
+                       vehicle.pricing_rules?.type === 'tier' ? <><HiClock className="lbl-icon" /> Select Duration (Hours)</> :
+                       '🎯 Select Option'}
                     </span>
-                    <div className="duration-ctrl" style={{ marginTop: '6px' }}>
-                      <button type="button" onClick={() => setWorkersCount(c => Math.max(1, c - 1))}>−</button>
-                      <span style={{ fontSize: '14px', fontWeight: '700', minWidth: '80px', textAlign: 'center' }}>
-                        {workersCount} {workersCount === 1 ? 'Worker' : 'Workers'}
-                      </span>
-                      <button type="button" onClick={() => setWorkersCount(c => c + 1)}>+</button>
-                    </div>
+                    <select
+                      value={selectedTier ? JSON.stringify(selectedTier) : ''}
+                      onChange={e => setSelectedTier(e.target.value ? JSON.parse(e.target.value) : null)}
+                      style={{ padding: '12px', border: '1.5px solid #eee', borderRadius: '8px', width: '100%', fontSize: '14px', marginTop: '6px', background: '#fff' }}
+                    >
+                      {tiers.map((t, idx) => (
+                        <option key={idx} value={JSON.stringify(t)}>
+                          {vehicle.pricing_rules?.type === 'person'
+                            ? `${t.value} ${t.value === 1 ? 'Worker' : 'Workers'} — ₹${t.price.toLocaleString()}`
+                            : vehicle.pricing_rules?.type === 'tier'
+                            ? `${t.value} Hour(s) — ₹${t.price.toLocaleString()}`
+                            : `${t.label} — ₹${t.price.toLocaleString()}`}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedTier && (
+                      <div style={{ marginTop: '8px', padding: '10px 14px', background: 'var(--primary-light, #eff6ff)', borderRadius: '8px', border: '1px solid var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600' }}>Estimated Total</span>
+                        <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)' }}>₹{total.toLocaleString()}</span>
+                      </div>
+                    )}
                   </label>
                 ) : (
-                  vehicle.pricing_rules?.type === 'tier' && (
-                    <label style={{ marginTop: '10px' }}>
-                      <span className="lbl-text">
-                        <HiClock className="lbl-icon" /> Select Duration (Hours)
-                      </span>
-                      <select
-                        value={selectedTier ? JSON.stringify(selectedTier) : ''}
-                        onChange={e => setSelectedTier(e.target.value ? JSON.parse(e.target.value) : null)}
-                        style={{ padding: '12px', border: '1.5px solid #eee', borderRadius: '8px', width: '100%', fontSize: '14px', marginTop: '6px', background: '#fff' }}
-                      >
-                        {(vehicle.pricing_rules.tiers || []).map((t, idx) => (
-                          <option key={idx} value={JSON.stringify(t)}>
-                            {t.hours} Hours — ₹{t.price.toLocaleString()}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )
+                  <div style={{ marginTop: '10px', padding: '12px', background: '#fef9c3', borderRadius: '8px', border: '1px solid #fde047', fontSize: '13px', color: '#854d0e' }}>
+                    ⚠️ No pricing tiers configured for this service yet. Please contact admin.
+                  </div>
                 )
               ) : (
                 vehicle.unit === 'hr' && (
@@ -568,17 +579,18 @@ export default function BookingFlow() {
                   <strong>{bookingType === 'instant' ? 'Will approach in 15 minutes' : `${form.date} @ ${timeSlot}`}</strong>
                 </div>
                 {vehicle.pricing_type === 'dynamic' ? (
-                  vehicle.pricing_rules?.type === 'person' ? (
+                  selectedTier ? (
                     <div className="cd-row">
-                      <span>👥 Workers</span>
-                      <strong>{workersCount} {workersCount === 1 ? 'Worker' : 'Workers'}</strong>
+                      <span>{vehicle.pricing_rules?.type === 'person' ? '👥 Workers' : vehicle.pricing_rules?.type === 'tier' ? <><HiClock className="cd-icon" /> Duration</> : '🎯 Option'}</span>
+                      <strong>
+                        {vehicle.pricing_rules?.type === 'person'
+                          ? `${selectedTier.value} ${selectedTier.value === 1 ? 'Worker' : 'Workers'}`
+                          : vehicle.pricing_rules?.type === 'tier'
+                          ? `${selectedTier.value} Hour(s)`
+                          : selectedTier.label}
+                      </strong>
                     </div>
-                  ) : (
-                    <div className="cd-row">
-                      <span><HiClock className="cd-icon" /> Selected Tier</span>
-                      <strong>{selectedTier ? `${selectedTier.hours} hrs` : '—'}</strong>
-                    </div>
-                  )
+                  ) : null
                 ) : (
                   vehicle.unit === 'hr' && (
                     <div className="cd-row">
@@ -614,14 +626,20 @@ export default function BookingFlow() {
               <div className="payment-info">
                 <h3><HiCurrencyRupee style={{ width: 16, height: 16, verticalAlign: 'middle' }} /> Payment Summary</h3>
                 {vehicle.pricing_type === 'dynamic' ? (
-                  vehicle.pricing_rules?.type === 'person' ? (
+                  selectedTier ? (
                     <>
-                      <div className="pay-row"><span>Rate per Worker</span><span>₹{(vehicle.pricing_rules.rate_per_person || 0).toLocaleString()}</span></div>
-                      <div className="pay-row"><span>Workers Count</span><span>× {workersCount}</span></div>
+                      <div className="pay-row">
+                        <span>{vehicle.pricing_rules?.type === 'person' ? 'Workers' : vehicle.pricing_rules?.type === 'tier' ? 'Duration' : 'Option'}</span>
+                        <span>
+                          {vehicle.pricing_rules?.type === 'person'
+                            ? `${selectedTier.value} ${selectedTier.value === 1 ? 'Worker' : 'Workers'}`
+                            : vehicle.pricing_rules?.type === 'tier'
+                            ? `${selectedTier.value} Hour(s)`
+                            : selectedTier.label}
+                        </span>
+                      </div>
                     </>
-                  ) : (
-                    <div className="pay-row"><span>Selected Tier Duration</span><span>{selectedTier ? `${selectedTier.hours} hrs` : '—'}</span></div>
-                  )
+                  ) : null
                 ) : (
                   <>
                     <div className="pay-row"><span>Rate</span><span>₹{vehicle.rate.toLocaleString()} / {vehicle.unit}</span></div>
@@ -664,9 +682,11 @@ export default function BookingFlow() {
             <div className="vs-rate">
               {vehicle.pricing_type === 'dynamic' ? (
                 vehicle.pricing_rules?.type === 'person' ? (
-                  <>₹{(vehicle.pricing_rules.rate_per_person || 0).toLocaleString()} <span>/ worker</span></>
-                ) : (
+                  <>Tiered <span>(Workers)</span></>
+                ) : vehicle.pricing_rules?.type === 'tier' ? (
                   <>Tiered <span>(Hourly)</span></>
+                ) : (
+                  <>Tiered <span>(Custom)</span></>
                 )
               ) : (
                 <>₹{vehicle.rate.toLocaleString()} <span>/ {vehicle.unit}</span></>
