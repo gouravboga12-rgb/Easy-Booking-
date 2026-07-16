@@ -634,6 +634,7 @@ export default function WorkerHome() {
 
 
 
+
           {/* ── NAVIGATION OPTIONS BAR ── */}
           <div style={{ marginBottom: '20px', background: '#f8fafc', borderRadius: '14px', padding: '16px', border: '1.5px solid #e2e8f0' }}>
             <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -697,127 +698,42 @@ export default function WorkerHome() {
                 )}
               </div>
             ) : (
-              /* In-App Mapbox Navigation */
+              /* In-App Navigation — preview card with Launch button */
               <div>
                 {MAPBOX_TOKEN && customerCoords ? (
                   <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#333' }}>Live Route (Mapbox)</span>
-                      {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
+                    {/* ETA Summary Row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>📍 Destination set</span>
+                      {eta && <span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: '800' }}>⏰ {eta}</span>}
                     </div>
-                    <div className="worker-map-container" style={{ width: '100%', height: '300px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
-                      <Map
-                        {...mapViewState}
-                        onMove={e => setMapViewState(e.viewState)}
-                        onClick={handleMapClick}
-                        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
-                        mapStyle="mapbox://styles/mapbox/streets-v12"
-                        mapboxAccessToken={MAPBOX_TOKEN}
-                      >
-                        <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
-                          <div style={{ fontSize: '28px', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.45))' }}>📍</div>
-                        </Marker>
-                        <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
-                          <div style={{
-                            width: '32px', height: '32px', background: 'var(--primary)', color: '#fff', borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold'
-                          }}>🛵</div>
-                        </Marker>
-                        {routeGeojson && (
-                          <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
-                            <Layer id="route-line" type="line" paint={{ 'line-color': '#3b82f6', 'line-width': 6, 'line-opacity': 0.85 }} />
-                          </Source>
-                        )}
-                      </Map>
 
-                      {/* START NAVIGATION OVERLAY */}
-                      {!isNavigating && (
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(1px)' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNavigating(true);
-                              if (workerCoords) {
-                                setMapViewState(v => ({ ...v, latitude: workerCoords.lat, longitude: workerCoords.lng, zoom: 16 }));
-                              }
-                            }}
-                            style={{
-                              background: 'var(--primary)', color: '#fff', border: 'none', padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: '800', cursor: 'pointer',
-                              boxShadow: '0 8px 20px rgba(79,70,229,0.35)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'transform 0.15s ease'
-                            }}
-                          >
-                            <span>🚀 Start In-App Navigation</span>
-                          </button>
-                        </div>
-                      )}
+                    {/* Launch Full-Screen Navigation Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNavigating(true);
+                        if (workerCoords) {
+                          setMapViewState(v => ({ ...v, latitude: workerCoords.lat, longitude: workerCoords.lng, zoom: 16 }));
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                        background: 'linear-gradient(135deg, var(--primary), #7c3aed)',
+                        color: '#fff', padding: '16px 20px', borderRadius: '14px',
+                        fontSize: '16px', fontWeight: '800', border: 'none', cursor: 'pointer',
+                        boxShadow: '0 6px 20px rgba(79,70,229,0.4)',
+                        letterSpacing: '0.3px', transition: 'transform 0.15s, box-shadow 0.15s'
+                      }}
+                    >
+                      <span style={{ fontSize: '22px' }}>🚀</span>
+                      <span>Start In-App Navigation</span>
+                    </button>
 
-                      {/* TOP TURN-BY-TURN HUD BANNER */}
-                      {isNavigating && (
-                        <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }}>
-                          <span style={{ fontSize: '24px' }}>
-                            {navSteps[currentStepIndex]?.toLowerCase().includes('left') ? '⬅️' :
-                             navSteps[currentStepIndex]?.toLowerCase().includes('right') ? '➡️' : '⬆️'}
-                          </span>
-                          <div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Next Maneuver:</div>
-                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', marginTop: '1px' }}>
-                              {navSteps[currentStepIndex] || 'Continue on route to destination'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* BOTTOM INFORMATION HUD OVERLAY */}
-                      {isNavigating && (
-                        <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', background: 'rgba(255,255,255,0.96)', padding: '12px 14px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0', backdropFilter: 'blur(4px)' }}>
-                          <div>
-                            <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{eta || 'Computing...'}</div>
-                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Estimated Travel Info</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              type="button"
-                              onClick={() => setIsSimulating(!isSimulating)}
-                              style={{
-                                background: isSimulating ? '#ef4444' : '#10b981', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
-                              }}
-                            >
-                              {isSimulating ? '⏸️ Pause' : '🛵 Drive'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsNavigating(false);
-                                setIsSimulating(false);
-                              }}
-                              style={{
-                                background: '#64748b', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
-                              }}
-                            >
-                              Exit
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {!isNavigating && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                        <span style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>
-                          💡 Tip: Click anywhere on the map to manually set your location.
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setIsSimulating(!isSimulating)}
-                          style={{
-                            background: isSimulating ? '#ef4444' : 'var(--primary)', color: '#fff', border: 'none',
-                            padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
-                          }}
-                        >
-                          {isSimulating ? '⏹️ Stop Simulation' : '🛵 Test Ride'}
-                        </button>
-                      </div>
-                    )}
+                    <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>
+                      Full-screen map with turn-by-turn directions
+                    </p>
                   </>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
@@ -827,6 +743,158 @@ export default function WorkerHome() {
               </div>
             )}
           </div>
+
+          {/* ── FULL-SCREEN NAVIGATION OVERLAY (like Google Maps) ── */}
+          {isNavigating && MAPBOX_TOKEN && customerCoords && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 9999,
+              background: '#000',
+              display: 'flex', flexDirection: 'column'
+            }}>
+              {/* Full-screen Map */}
+              <div style={{ flex: 1, position: 'relative' }}>
+                <Map
+                  {...mapViewState}
+                  onMove={e => setMapViewState(e.viewState)}
+                  onClick={handleMapClick}
+                  style={{ width: '100%', height: '100%' }}
+                  mapStyle="mapbox://styles/mapbox/streets-v12"
+                  mapboxAccessToken={MAPBOX_TOKEN}
+                >
+                  <Marker longitude={customerCoords.lng} latitude={customerCoords.lat} anchor="bottom">
+                    <div style={{ fontSize: '32px', filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.5))' }}>📍</div>
+                  </Marker>
+                  <Marker longitude={workerCoords.lng} latitude={workerCoords.lat} anchor="center">
+                    <div style={{
+                      width: '40px', height: '40px', background: 'var(--primary)', color: '#fff',
+                      borderRadius: '50%', border: '3px solid #fff',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '20px', fontWeight: 'bold'
+                    }}>🛵</div>
+                  </Marker>
+                  {routeGeojson && (
+                    <Source id="route-fs" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
+                      <Layer id="route-line-fs" type="line" paint={{ 'line-color': '#3b82f6', 'line-width': 7, 'line-opacity': 0.9 }} />
+                    </Source>
+                  )}
+                </Map>
+
+                {/* ── TOP HUD — Turn-by-Turn Direction Banner ── */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0,
+                  background: 'linear-gradient(180deg, rgba(15,23,42,0.97) 80%, transparent)',
+                  padding: '52px 20px 20px',
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                }}>
+                  {/* Direction Arrow Box */}
+                  <div style={{
+                    width: '54px', height: '54px', background: '#3b82f6', borderRadius: '14px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '28px', flexShrink: 0, boxShadow: '0 4px 12px rgba(59,130,246,0.5)'
+                  }}>
+                    {navSteps[currentStepIndex]?.toLowerCase().includes('left') ? '⬅️' :
+                     navSteps[currentStepIndex]?.toLowerCase().includes('right') ? '➡️' :
+                     navSteps[currentStepIndex]?.toLowerCase().includes('u-turn') ? '↩️' : '⬆️'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
+                      NEXT MANEUVER
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#f8fafc', lineHeight: 1.3, wordBreak: 'break-word' }}>
+                      {navSteps[currentStepIndex] || 'Continue on route to destination'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── CLOSE BUTTON (top-right) ── */}
+                <button
+                  type="button"
+                  onClick={() => { setIsNavigating(false); setIsSimulating(false); }}
+                  style={{
+                    position: 'absolute', top: '52px', right: '16px',
+                    width: '44px', height: '44px', borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+                    border: '1.5px solid rgba(255,255,255,0.3)',
+                    color: '#fff', fontSize: '22px', fontWeight: '700',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    zIndex: 10
+                  }}
+                >
+                  ✕
+                </button>
+
+                {/* ── BOTTOM HUD — ETA & Drive Controls ── */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'rgba(255,255,255,0.98)',
+                  backdropFilter: 'blur(12px)',
+                  borderTop: '1px solid #e2e8f0',
+                  padding: '18px 20px',
+                  paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))',
+                  boxShadow: '0 -8px 24px rgba(0,0,0,0.12)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* ETA Info */}
+                    <div>
+                      <div style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>
+                        {eta ? eta.split('(')[0].trim() : 'Computing…'}
+                      </div>
+                      {eta && (
+                        <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '3px' }}>
+                          {eta.match(/\(.*?\)/)?.[0]?.replace(/[()]/g,'') || ''} · via fastest route
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      {/* Drive / Pause simulation */}
+                      <button
+                        type="button"
+                        onClick={() => setIsSimulating(!isSimulating)}
+                        style={{
+                          background: isSimulating ? '#ef4444' : '#10b981',
+                          color: '#fff', border: 'none',
+                          padding: '12px 20px', borderRadius: '12px',
+                          fontSize: '14px', fontWeight: '800', cursor: 'pointer',
+                          boxShadow: isSimulating ? '0 4px 12px rgba(239,68,68,0.35)' : '0 4px 12px rgba(16,185,129,0.35)',
+                          display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                      >
+                        {isSimulating ? '⏸ Pause' : '🛵 Drive'}
+                      </button>
+
+                      {/* Close Navigation */}
+                      <button
+                        type="button"
+                        onClick={() => { setIsNavigating(false); setIsSimulating(false); }}
+                        style={{
+                          background: '#f1f5f9', color: '#475569',
+                          border: '1.5px solid #cbd5e1', padding: '12px 16px',
+                          borderRadius: '12px', fontSize: '14px', fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Route progress steps hint */}
+                  {navSteps.length > 0 && (
+                    <div style={{ marginTop: '12px', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Step {Math.min(currentStepIndex + 1, navSteps.length)} of {navSteps.length}</span>
+                      <span style={{ fontWeight: '700', color: '#3b82f6' }}>📍 {activeJob.booking.location?.split(',')[0]}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ background: '#fafafa', padding: '14px', borderRadius: '10px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: '#666' }}>Progress Status:</span>
