@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
-import { HiLocationMarker, HiCalendar, HiUser, HiArrowRight, HiClipboardList } from 'react-icons/hi';
+import { HiLocationMarker, HiCalendar, HiUser, HiArrowRight, HiClipboardList, HiPhone } from 'react-icons/hi';
 
 export default function WorkerOrders() {
   const user = useAuthStore(s => s.user);
@@ -257,10 +257,76 @@ export default function WorkerOrders() {
                   <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Name</span>
                   <strong style={{ color: '#0f172a' }}>{o.customer?.name || 'Customer'}</strong>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Phone</span>
-                  <strong style={{ color: '#0f172a' }}>{o.customer?.phone || '🔒 Redacted'}</strong>
-                </div>
+                {o.customer?.phone && o.customer.phone !== '🔒 Redacted' ? (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px',
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
+                      <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Phone</span>
+                      <strong style={{ color: '#0f172a' }}>{o.customer.phone}</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <a
+                        href={`tel:${o.customer.phone}`}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          background: '#3b82f6',
+                          color: '#fff',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          textDecoration: 'none',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <HiPhone style={{ width: 14, height: 14 }} />
+                        Call
+                      </a>
+                      <a
+                        href={`https://wa.me/${o.customer.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          background: '#22c55e',
+                          color: '#fff',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          textDecoration: 'none',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.59 2.019 14.12 1.01 11.493 1.01 6.059 1.01 1.637 5.377 1.633 10.806c-.001 1.674.452 3.3 1.311 4.733L1.925 20.35l5.02-1.316-.298.12z" />
+                        </svg>
+                        WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Phone</span>
+                    <strong style={{ color: '#0f172a' }}>🔒 Hidden until accepted</strong>
+                  </div>
+                )}
 
                 {/* Dynamic Custom Fields */}
                 {customFields.length > 0 && (

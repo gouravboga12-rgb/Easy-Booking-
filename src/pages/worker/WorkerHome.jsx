@@ -35,6 +35,18 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const calculateBearing = (lat1, lon1, lat2, lon2) => {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 0;
+  if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) return 0;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const lat1Rad = lat1 * Math.PI / 180;
+  const lat2Rad = lat2 * Math.PI / 180;
+  const y = Math.sin(dLon) * Math.cos(lat2Rad);
+  const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+  const brng = Math.atan2(y, x) * 180 / Math.PI;
+  return (brng + 360) % 360;
+};
+
 export default function WorkerHome() {
   const user = useAuthStore(s => s.user);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
@@ -78,8 +90,14 @@ export default function WorkerHome() {
   const [mapViewState, setMapViewState] = useState({
     latitude: 12.9716,
     longitude: 77.5946,
-    zoom: 15
+    zoom: 15,
+    bearing: 0,
+    pitch: 0
   });
+  const [autoFollow, setAutoFollow] = useState(true);
+  const [recalcTrigger, setRecalcTrigger] = useState(0);
+  const [lastRecalcCoords, setLastRecalcCoords] = useState(null);
+  const [prevCoords, setPrevCoords] = useState(null);
 
   // Availability Settings States
   const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
@@ -281,6 +299,15 @@ export default function WorkerHome() {
     const token = MAPBOX_TOKEN;
     if (!token) return;
 
+    // Recalculation logic: Check distance from last recalculation point to prevent spamming Mapbox API
+    if (lastRecalcCoords) {
+      const dist = calculateDistance(lastRecalcCoords.lat, lastRecalcCoords.lng, workerCoords.lat, workerCoords.lng);
+      // Recalculate route if the worker has moved more than 30 meters (0.03 km) and has a route
+      if (dist !== null && dist < 0.03 && routeGeojson) {
+        return;
+      }
+    }
+
     const fetchWorkerRoute = async () => {
       try {
         const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${workerCoords.lng},${workerCoords.lat};${customerCoords.lng},${customerCoords.lat}?geometries=geojson&steps=true&access_token=${token}`;
@@ -292,6 +319,7 @@ export default function WorkerHome() {
           const durationMin = Math.round(route.duration / 60);
           const distanceKm = (route.distance / 1000).toFixed(1);
           setEta(`${durationMin} mins (${distanceKm} km away)`);
+          setLastRecalcCoords(workerCoords);
 
           if (route.legs && route.legs[0] && route.legs[0].steps) {
             setNavSteps(route.legs[0].steps.map(s => s.maneuver.instruction));
@@ -302,18 +330,34 @@ export default function WorkerHome() {
       }
     };
     fetchWorkerRoute();
-  }, [customerCoords, workerCoords]);
+  }, [customerCoords, workerCoords, recalcTrigger]);
 
 
   useEffect(() => {
-    if (workerCoords) {
+    if (!workerCoords) return;
+
+    // Calculate heading/bearing between previous position and new position
+    let newBearing = mapViewState.bearing || 0;
+    if (prevCoords) {
+      const dist = calculateDistance(prevCoords.lat, prevCoords.lng, workerCoords.lat, workerCoords.lng);
+      // Only change bearing if the movement is significant (e.g. > 2 meters) to filter out jitter
+      if (dist !== null && dist > 0.002) {
+        newBearing = calculateBearing(prevCoords.lat, prevCoords.lng, workerCoords.lat, workerCoords.lng);
+      }
+    }
+    setPrevCoords(workerCoords);
+
+    if (autoFollow) {
       setMapViewState(prev => ({
         ...prev,
         latitude: workerCoords.lat,
-        longitude: workerCoords.lng
+        longitude: workerCoords.lng,
+        zoom: isNavigating ? 17 : 15,
+        bearing: isNavigating ? newBearing : 0,
+        pitch: isNavigating ? 45 : 0
       }));
     }
-  }, [workerCoords]);
+  }, [workerCoords, autoFollow, isNavigating]);
 
   const handleAdvanceStage = () => {
     if (!activeJob) return;
@@ -573,17 +617,84 @@ export default function WorkerHome() {
               </div>
             </div>
 
-            <div className="aj-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-              <HiUser style={{ color: '#bbb' }} />
+            {/* Customer Communication Section */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '14px',
+              padding: '16px',
+              marginTop: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
               <div>
-                <strong style={{ color: '#333' }}>Customer:</strong>
-                <span style={{ marginLeft: '6px', color: '#666' }}>{activeJob.customer?.name}</span>
-                {activeJob.customer?.phone && (
-                  <a href={`tel:${activeJob.customer.phone}`} style={{ marginLeft: '12px', color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>
-                    📞 Call Customer
-                  </a>
-                )}
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📞 Customer Contact details
+                </span>
+                <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>👤 {activeJob.customer?.name || 'Customer'}</span>
+                </div>
+                <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px', fontWeight: '700' }}>
+                  📞 {activeJob.customer?.phone || 'No phone number available'}
+                </div>
               </div>
+
+              {activeJob.customer?.phone && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {/* Native dialer Call button */}
+                  <a
+                    href={`tel:${activeJob.customer.phone}`}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      background: '#3b82f6',
+                      color: '#fff',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 6px rgba(59,130,246,0.2)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <HiPhone style={{ width: 16, height: 16 }} />
+                    Call Customer
+                  </a>
+
+                  {/* WhatsApp button */}
+                  <a
+                    href={`https://wa.me/${activeJob.customer.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      background: '#22c55e',
+                      color: '#fff',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 6px rgba(34,197,94,0.2)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.59 2.019 14.12 1.01 11.493 1.01 6.059 1.01 1.637 5.377 1.633 10.806c-.001 1.674.452 3.3 1.311 4.733L1.925 20.35l5.02-1.316-.298.12z" />
+                    </svg>
+                    WhatsApp
+                  </a>
+                </div>
+              )}
             </div>
 
             {activeJob.booking?.notes && (
@@ -671,12 +782,17 @@ export default function WorkerHome() {
             </div>
 
             {navMode === 'google' ? (
-              /* Google Maps Prominent Button */
+              /* Google Maps directions with origin and destination coordinates */
               <div>
                 <a
-                  href={activeJob.booking.lat && activeJob.booking.lng
-                    ? `https://www.google.com/maps/dir/?api=1&destination=${activeJob.booking.lat},${activeJob.booking.lng}`
-                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`}
+                  href={(() => {
+                    const destLat = activeJob.booking.lat || customerCoords?.lat;
+                    const destLng = activeJob.booking.lng || customerCoords?.lng;
+                    if (destLat && destLng) {
+                      return `https://www.google.com/maps/dir/?api=1&origin=${workerCoords.lat},${workerCoords.lng}&destination=${destLat},${destLng}&travelmode=driving`;
+                    }
+                    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeJob.booking.location)}`;
+                  })()}
                   target="_blank"
                   rel="noreferrer"
                   style={{
@@ -757,6 +873,7 @@ export default function WorkerHome() {
                 <Map
                   {...mapViewState}
                   onMove={e => setMapViewState(e.viewState)}
+                  onDragStart={() => setAutoFollow(false)}
                   onClick={handleMapClick}
                   style={{ width: '100%', height: '100%' }}
                   mapStyle="mapbox://styles/mapbox/streets-v12"
@@ -780,6 +897,76 @@ export default function WorkerHome() {
                     </Source>
                   )}
                 </Map>
+
+                {/* ── MAP INTERACTIVE CONTROLS (Floating Zoom and Re-center Buttons) ── */}
+                <div style={{
+                  position: 'absolute', right: '16px', bottom: '180px',
+                  display: 'flex', flexDirection: 'column', gap: '10px',
+                  zIndex: 10
+                }}>
+                  {/* Re-center Target Button */}
+                  {!autoFollow && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutoFollow(true);
+                        setMapViewState(prev => ({
+                          ...prev,
+                          latitude: workerCoords.lat,
+                          longitude: workerCoords.lng,
+                          zoom: 17,
+                          pitch: 45
+                        }));
+                        setRecalcTrigger(prev => prev + 1);
+                      }}
+                      style={{
+                        width: '46px', height: '46px', borderRadius: '50%',
+                        background: '#3b82f6', color: '#fff', border: 'none',
+                        fontSize: '20px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justify: 'center',
+                        boxShadow: '0 4px 12px rgba(59,130,246,0.4)',
+                        fontWeight: '800'
+                      }}
+                      title="Re-center Navigation"
+                    >
+                      🎯
+                    </button>
+                  )}
+
+                  {/* Zoom In Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMapViewState(prev => ({ ...prev, zoom: Math.min(prev.zoom + 1, 20) }));
+                    }}
+                    style={{
+                      width: '42px', height: '42px', borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.9)', color: '#333', border: '1px solid #ccc',
+                      fontSize: '20px', fontWeight: 'bold', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justify: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    +
+                  </button>
+
+                  {/* Zoom Out Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMapViewState(prev => ({ ...prev, zoom: Math.max(prev.zoom - 1, 1) }));
+                    }}
+                    style={{
+                      width: '42px', height: '42px', borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.9)', color: '#333', border: '1px solid #ccc',
+                      fontSize: '20px', fontWeight: 'bold', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justify: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    −
+                  </button>
+                </div>
 
                 {/* ── TOP HUD — Turn-by-Turn Direction Banner ── */}
                 <div style={{
