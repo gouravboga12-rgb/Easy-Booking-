@@ -523,31 +523,33 @@ export default function WorkerHome() {
       {/* ── ACTIVE PROJECT SECTION (En Route, On Site, etc.) ── */}
       {activeJob && (
         <div className="active-job-card" style={{ background: '#fff', borderRadius: '16px', borderLeft: '5px solid var(--primary)', padding: '24px', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', marginBottom: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span className="aj-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '700', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}>
-              🟢 ACTIVE ASSIGNMENT
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="aj-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '700', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}>
+                🟢 ACTIVE ASSIGNMENT
+              </span>
               <span style={{ fontSize: '12px', color: '#888' }}>
                 {activeJob.bookingType === 'instant' ? '⚡ Instant Dispatch' : '📅 Scheduled'}
               </span>
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-                style={{
-                  background: '#fee2e2',
-                  color: '#dc2626',
-                  border: '1px solid #fca5a5',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  cursor: 'pointer'
-                }}
-              >
-                ❌ Cancel Request
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowCancelModal(true)}
+              style={{
+                background: '#fee2e2',
+                color: '#dc2626',
+                border: '1px solid #fca5a5',
+                padding: '5px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
+            >
+              ❌ Cancel
+            </button>
           </div>
 
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a', marginBottom: '16px' }}>
@@ -703,7 +705,7 @@ export default function WorkerHome() {
                       <span style={{ fontSize: '12px', fontWeight: '700', color: '#333' }}>Live Route (Mapbox)</span>
                       {eta && <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>⏰ {eta}</span>}
                     </div>
-                    <div style={{ width: '100%', height: '340px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+                    <div className="worker-map-container" style={{ width: '100%', height: '300px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
                       <Map
                         {...mapViewState}
                         onMove={e => setMapViewState(e.viewState)}

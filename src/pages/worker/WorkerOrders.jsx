@@ -33,7 +33,8 @@ export default function WorkerOrders() {
         padding: '4px',
         borderRadius: '10px',
         marginBottom: '28px',
-        width: 'max-content',
+        width: '100%',
+        maxWidth: '420px',
         border: '1px solid #e2e8f0'
       }}>
         <button

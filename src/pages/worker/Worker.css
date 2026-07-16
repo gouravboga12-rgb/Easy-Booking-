@@ -1,4 +1,4 @@
-.worker-page { padding: 32px 40px; max-width: 900px; margin: 0 auto; }
+.worker-page { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
 
 .worker-header {
   display: flex;
@@ -144,9 +144,23 @@
 .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 15px; }
 
 @media (max-width: 768px) {
-  .worker-page { padding: 20px; }
-  .worker-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .worker-stats { grid-template-columns: repeat(2, 1fr); }
+  .worker-page { padding: 16px 12px; }
+  .worker-header { flex-direction: column; align-items: flex-start; gap: 14px; padding: 16px; }
+  .worker-stats { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .ws-card { padding: 12px 8px; }
+  .ws-card strong { font-size: 16px; }
+  .ws-card span { font-size: 11px; }
+  .ws-icon-wrap { width: 34px; height: 34px; }
+  .active-job-card { padding: 16px; }
+  .active-job-card h2 { font-size: 17px; }
+  .order-card { padding: 14px 12px; }
+  .oc-header { flex-wrap: wrap; gap: 8px; }
+  .oc-footer { flex-wrap: wrap; gap: 10px; }
+  .oc-footer > div:last-child { width: 100%; display: flex; gap: 8px; }
+  .oc-footer .aj-advance { flex: 1; justify-content: center; font-size: 13px; padding: 10px 12px; }
+  .history-summary { padding: 14px; gap: 0; }
+  .hs-item strong { font-size: 17px; }
+  .profile-hero { padding: 20px 16px; }
 }
 
 /* ── Worker Layout ── */
@@ -175,12 +189,13 @@
 .worker-bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 62px;
+  height: 66px;
   background: #fff;
   border-top: 1px solid #f0f0f0;
   display: flex;
   z-index: 300;
   box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .wbn-item {
   flex: 1;
@@ -188,15 +203,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   text-decoration: none;
   color: #aaa;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   transition: color 0.18s;
+  padding: 0 2px;
+  text-align: center;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+}
+.wbn-item span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .wbn-item.active { color: var(--primary); }
-.wbn-icon { width: 22px; height: 22px; }
+.wbn-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+@media (max-width: 380px) {
+  .wbn-item { font-size: 8px; }
+  .wbn-icon { width: 18px; height: 18px; }
+}
 
 /* Desktop & Tablet Sidebar Styles */
 @media (min-width: 768px) {
@@ -404,6 +436,14 @@
 
 /* ── Wallet ── */
 .wallet-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+
+@media (max-width: 520px) {
+  .wallet-cards { grid-template-columns: 1fr; gap: 10px; }
+  .wallet-card { padding: 14px; }
+  .wallet-card.primary strong { font-size: 20px; }
+  .txn-item { padding: 10px; gap: 10px; }
+  .txn-details strong { font-size: 13px; }
+}
 .wallet-card {
   background: #fff;
   border: 1.5px solid #eee;
@@ -538,9 +578,7 @@
   font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
 
-@media (max-width: 600px) {
-  .wallet-cards { grid-template-columns: 1fr; }
-}
+/* wallet-cards 1-column is now handled above at 520px */
 
 /* ── Worker Top Header ── */
 .worker-top-header {
@@ -590,7 +628,7 @@
 .wth-status.online { color: #16a34a; }
 .wth-status.offline { color: #aaa; }
 
-.worker-content { padding-bottom: 70px; }
+.worker-content { padding-bottom: 76px; }
 
 /* ── Payments & Subscription Tabbed Dashboard Styles ── */
 .wallet-tabs {
@@ -629,4 +667,29 @@
 .status-chip.arrived {
   background: #fef3c7;
   color: #d97706;
+}
+
+/* -- Worker Map Responsive -- */
+.worker-map-container {
+  height: 300px;
+}
+@media (max-width: 480px) {
+  .worker-map-container { height: 240px; }
+  .worker-page { padding: 12px 10px; }
+  .worker-header { padding: 14px 12px; }
+  .active-job-card { padding: 14px 12px; border-left-width: 4px; }
+  .active-job-card h2 { font-size: 16px; margin-bottom: 12px; }
+  .aj-details { gap: 10px; }
+  .aj-row { font-size: 13px; }
+  .order-card { padding: 12px 10px; }
+  .oc-vehicle { font-size: 14px; }
+  .oc-amount { font-size: 16px; }
+  .no-active-job { padding: 18px; font-size: 14px; }
+  .confirm-modal { padding: 20px; }
+  .profile-hero { padding: 18px 14px; }
+  .pi-row { padding: 10px 0; font-size: 13px; }
+  .logout-btn { padding: 12px; font-size: 14px; }
+  .wp-title h1 { font-size: 19px; }
+  .worker-top-header { padding: 0 12px; height: 54px; }
+  .wth-brand { font-size: 17px; }
 }
