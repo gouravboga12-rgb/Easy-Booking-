@@ -23,7 +23,13 @@ const formatDbOrder = (dbOrder, services) => {
   const vehicle = dbCustomFields
     ? { ...baseVehicle, custom_fields: dbCustomFields }
     : baseVehicle;
-  const customer = { id: dbOrder.customer_id, name: dbOrder.customer_name || 'Customer', phone: dbOrder.customer_phone || '' };
+  const customer = { 
+    id: dbOrder.customer_id, 
+    name: dbOrder.booking_name || dbOrder.customer_name || 'Customer', 
+    phone: dbOrder.booking_phone || dbOrder.customer_phone || '',
+    whatsapp: dbOrder.whatsapp_phone || '',
+    email: dbOrder.email || dbOrder.customer_email || ''
+  };
   const operator = dbOrder.worker_id ? { 
     id: dbOrder.worker_id, 
     name: dbOrder.worker_name || 'Operator', 
@@ -66,6 +72,7 @@ const formatDbOrder = (dbOrder, services) => {
     vehicle,
     booking: {
       location: dbOrder.location,
+      manualAddress: dbOrder.manual_address || '',
       lat: dbOrder.customer_lat ? parseFloat(dbOrder.customer_lat) : null,
       lng: dbOrder.customer_lng ? parseFloat(dbOrder.customer_lng) : null,
       date: dbOrder.booking_date,
@@ -282,7 +289,12 @@ export const useStore = create((set, get) => ({
       vehicleId: vehicle.id,
       bookingType: booking.bookingType || 'instant',
       notes: booking.notes || booking.instructions || null,
-      customAnswers: booking.customAnswers || null
+      customAnswers: booking.customAnswers || null,
+      bookingName: booking.bookingName || null,
+      bookingPhone: booking.bookingPhone || null,
+      whatsappPhone: booking.whatsappPhone || null,
+      email: booking.email || null,
+      manualAddress: booking.manualAddress || null
     };
     try {
       const response = await fetch(`${API_BASE_URL}/orders`, {

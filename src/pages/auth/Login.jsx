@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useGoogleLogin } from '@react-oauth/google';
 import { HiMail, HiLockClosed, HiArrowRight } from 'react-icons/hi';
@@ -13,6 +13,7 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { login, googleLogin } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +23,8 @@ export default function Login() {
     const result = await login(form.email, form.password, 'customer');
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    navigate('/');
+    const from = location.state?.from || '/';
+    navigate(from);
   };
 
   const handleGoogleLogin = useGoogleLogin({
@@ -32,7 +34,8 @@ export default function Login() {
       const result = await googleLogin(tokenResponse.access_token, 'access_token');
       setGoogleLoading(false);
       if (result.error) { setError(result.error); return; }
-      navigate('/');
+      const from = location.state?.from || '/';
+      navigate(from);
     },
     onError: () => {
       setError('Google login was cancelled or failed.');

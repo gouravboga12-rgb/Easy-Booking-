@@ -52,6 +52,7 @@ router.get('/order/:id', authenticateToken, async (req, res) => {
   try {
     const [orders] = await pool.query(
       `SELECT b.id, b.status, b.customer_lat, b.customer_lng, b.worker_id, b.worker_message,
+              b.booking_name, b.booking_phone, b.whatsapp_phone, b.email AS booking_email, b.manual_address,
               c.name AS customer_name, c.phone AS customer_phone,
               w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle, w.photo AS worker_photo, w.rating AS worker_rating
        FROM bookings b
@@ -74,6 +75,11 @@ router.get('/order/:id', authenticateToken, async (req, res) => {
         status: order.status,
         customerLat: order.customer_lat,
         customerLng: order.customer_lng,
+        bookingName: order.booking_name || order.customer_name,
+        bookingPhone: order.booking_phone || order.customer_phone,
+        whatsappPhone: order.whatsapp_phone || '',
+        email: order.booking_email || '',
+        manualAddress: order.manual_address || '',
         workerLocation: null
       });
     }
@@ -98,6 +104,11 @@ router.get('/order/:id', authenticateToken, async (req, res) => {
       status: order.status,
       customerLat: order.customer_lat ? parseFloat(order.customer_lat) : null,
       customerLng: order.customer_lng ? parseFloat(order.customer_lng) : null,
+      bookingName: order.booking_name || order.customer_name,
+      bookingPhone: order.booking_phone || order.customer_phone,
+      whatsappPhone: order.whatsapp_phone || '',
+      email: order.booking_email || '',
+      manualAddress: order.manual_address || '',
       workerId: order.worker_id,
       workerName: order.worker_name,
       workerPhone: order.worker_phone,

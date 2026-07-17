@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import {
@@ -50,6 +51,8 @@ const calculateBearing = (lat1, lon1, lat2, lon2) => {
 export default function WorkerHome() {
   const user = useAuthStore(s => s.user);
   const updateWorkerAvailability = useAuthStore(s => s.updateWorkerAvailability);
+  const updateWorkerProfile = useAuthStore(s => s.updateWorkerProfile);
+  const navigate = useNavigate();
   const addWorkerEarning = useAuthStore(s => s.addWorkerEarning);
   const orders = useStore(s => s.orders);
   const assignWorker = useStore(s => s.assignWorker);
@@ -68,6 +71,18 @@ export default function WorkerHome() {
   const [messageSentStatus, setMessageSentStatus] = useState('');
   const [currentLocInput, setCurrentLocInput] = useState('');
   const [locMessage, setLocMessage] = useState('');
+
+  // Manual city/state editing states
+  const [isEditingCity, setIsEditingCity] = useState(false);
+  const [cityInput, setCityInput] = useState(user.city || '');
+  const [stateInput, setStateInput] = useState(user.state || '');
+
+  useEffect(() => {
+    if (user) {
+      setCityInput(user.city || '');
+      setStateInput(user.state || '');
+    }
+  }, [user]);
 
   // Cancellation States
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -130,6 +145,83 @@ export default function WorkerHome() {
 
   const handleToggleOnline = () => {
     updateWorkerAvailability(user.id, { online: !user.available });
+  };
+
+  const [targetSearchQuery, setTargetSearchQuery] = useState('');
+  const [targetSuggestions, setTargetSuggestions] = useState([]);
+
+  const handleTargetSearchChange = async (e) => {
+    const val = e.target.value;
+    setTargetSearchQuery(val);
+    if (val.trim().length < 3) {
+      setTargetSuggestions([]);
+      return;
+    }
+    const token = MAPBOX_TOKEN;
+    try {
+      let suggestions = [];
+      
+      // Try Mapbox first
+      if (token) {
+        try {
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(val)}.json?access_token=${token}&country=in&types=place,locality,sublocality,address&limit=5`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+              suggestions = data.features.map(f => ({
+                id: f.id,
+                text: f.text,
+                place_name: f.place_name
+              }));
+            }
+          } else {
+            console.warn(`Mapbox Geocoding returned status: ${res.status}. Falling back to OpenStreetMap Nominatim.`);
+          }
+        } catch (mapboxErr) {
+          console.error("Mapbox search failed, falling back to OSM Nominatim:", mapboxErr);
+        }
+      }
+
+      // If Mapbox failed or returned no results, fallback to Nominatim
+      if (suggestions.length === 0) {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=5`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            suggestions = data.map(item => ({
+              id: (item.place_id || Math.random()).toString(),
+              text: item.name || item.display_name.split(',')[0],
+              place_name: item.display_name
+            }));
+          }
+        }
+      }
+
+      setTargetSuggestions(suggestions);
+    } catch (err) {
+      console.error("All geocoding suggestion attempts failed:", err);
+      setTargetSuggestions([]);
+    }
+  };
+
+  const handleAddTargetLoc = async (locName) => {
+    if (!locName) return;
+    const currentLocs = user.target_locations || [];
+    if (currentLocs.includes(locName)) {
+      setTargetSearchQuery('');
+      setTargetSuggestions([]);
+      return;
+    }
+    const updated = [...currentLocs, locName];
+    await updateWorkerProfile(user.id, { target_locations: updated });
+    setTargetSearchQuery('');
+    setTargetSuggestions([]);
+  };
+
+  const handleRemoveTargetLoc = async (locName) => {
+    const currentLocs = user.target_locations || [];
+    const updated = currentLocs.filter(l => l !== locName);
+    await updateWorkerProfile(user.id, { target_locations: updated });
   };
 
   const handleToggleVacation = () => {
@@ -223,7 +315,7 @@ export default function WorkerHome() {
     });
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [user.available, activeJob?.id, activeJob?.stage]);
+  }, [user.available, user.live_tracking, activeJob?.id, activeJob?.stage]);
 
   useEffect(() => {
     if (!isSimulating || !customerCoords) return;
@@ -425,10 +517,55 @@ export default function WorkerHome() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         setWorkerCoords({ lat: latitude, lng: longitude });
         updateWorkerLocation(latitude, longitude);
+
+        // Reverse geocode to update city & state dynamically
+        const token = MAPBOX_TOKEN;
+        let city = '';
+        let state = '';
+        try {
+          let resolved = false;
+          if (token) {
+            try {
+              const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.features && data.features.length > 0) {
+                  const feat = data.features[0];
+                  const context = feat.context || [];
+                  const placeContext = context.find(c => c.id.startsWith('place'));
+                  const regionContext = context.find(c => c.id.startsWith('region'));
+                  city = placeContext ? placeContext.text : feat.text;
+                  state = regionContext ? regionContext.text : '';
+                  resolved = true;
+                }
+              }
+            } catch (err) {
+              console.error("Mapbox reverse geocoding failed, trying OSM:", err);
+            }
+          }
+
+          if (!resolved) {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.address) {
+                city = data.address.city || data.address.town || data.address.village || data.address.suburb || '';
+                state = data.address.state || '';
+              }
+            }
+          }
+
+          if (city || state) {
+            await updateWorkerProfile(user.id, { city, state });
+          }
+        } catch (err) {
+          console.error("Error reverse geocoding:", err);
+        }
+
         setLocMessage("🟢 GPS location fetched and updated successfully!");
         setTimeout(() => setLocMessage(''), 5000);
       },
@@ -506,14 +643,60 @@ export default function WorkerHome() {
       
       {/* Subscription Alert Banner */}
       {!isSubscribed && (
-        <div className="sub-warning-banner" style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#b91c1c', padding: '14px', borderRadius: '12px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <strong style={{ fontSize: '15px' }}>⚠️ Inactive Subscription Plan</strong>
-          <p style={{ fontSize: '13px', lineHeight: '1.5', margin: 0 }}>
-            You must have an active subscription package to receive active dispatch requests, display your professional profile publicly, or accept bookings.
+        <div className="sub-warning-banner" style={{
+          background: '#fef2f2',
+          border: '1.5px solid #fecaca',
+          color: '#b91c1c',
+          padding: '20px',
+          borderRadius: '16px',
+          marginBottom: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxShadow: '0 4px 12px rgba(220,38,38,0.05)'
+        }}>
+          <strong style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            ⚠️ Subscription Plan Expired
+          </strong>
+          <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0, fontWeight: '500' }}>
+            Your activation plan has expired. Please renew your subscription to start receiving new service requests and continue growing your business with our platform.
           </p>
-          <span style={{ fontSize: '12px', fontWeight: '700', textDecoration: 'underline', marginTop: '4px', cursor: 'pointer' }}>
-            Go to Wallet Tab to purchase ₹99 Monthly Plan ➔
-          </span>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+            <Link
+              to="/worker/subscription"
+              style={{
+                background: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: '700',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              Renew Subscription
+            </Link>
+            <Link
+              to="/worker/subscription"
+              style={{
+                background: '#fff',
+                color: '#dc2626',
+                border: '1px solid #fca5a5',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: '700',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              View Plans
+            </Link>
+          </div>
         </div>
       )}
 
@@ -531,16 +714,42 @@ export default function WorkerHome() {
             </p>
           </div>
         </div>
-        <div className="avail-toggle">
-          <span>Duty Status:</span>
-          <button
-            className={`toggle-btn ${user.available ? 'on' : 'off'}`}
-            onClick={handleToggleOnline}
-            disabled={vacation}
-            style={{ opacity: vacation ? 0.6 : 1 }}
-          >
-            {user.available ? '● ONLINE' : '○ OFFLINE'}
-          </button>
+        <div className="avail-toggle" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontWeight: '700', fontSize: '14px', color: '#4b5563' }}>Duty Status:</span>
+          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+            <input 
+              type="checkbox" 
+              checked={!!user.available} 
+              onChange={handleToggleOnline} 
+              disabled={vacation}
+              style={{ 
+                position: 'absolute', 
+                opacity: 0, 
+                width: '100%', 
+                height: '100%', 
+                top: 0, 
+                left: 0, 
+                cursor: 'pointer', 
+                zIndex: 10,
+                margin: 0
+              }}
+            />
+            <span className="slider round" style={{
+              position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: user.available ? '#10b981' : '#cbd5e1',
+              transition: '.4s', borderRadius: '34px'
+            }}>
+              <span style={{
+                position: 'absolute', content: '""', height: '20px', width: '20px', 
+                left: user.available ? '27px' : '3px', bottom: '3px',
+                backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }} />
+            </span>
+          </label>
+          <span style={{ fontWeight: '800', fontSize: '12px', color: user.available ? '#10b981' : '#6b7280', width: '60px' }}>
+            {user.available ? 'ONLINE' : 'OFFLINE'}
+          </span>
         </div>
       </div>
 
@@ -668,7 +877,7 @@ export default function WorkerHome() {
 
                   {/* WhatsApp button */}
                   <a
-                    href={`https://wa.me/${activeJob.customer.phone.replace(/\D/g, '')}`}
+                    href={`https://wa.me/${(activeJob.customer.whatsapp || activeJob.customer.phone || '').replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noreferrer"
                     style={{
@@ -893,7 +1102,20 @@ export default function WorkerHome() {
                   </Marker>
                   {routeGeojson && (
                     <Source id="route-fs" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
-                      <Layer id="route-line-fs" type="line" paint={{ 'line-color': '#3b82f6', 'line-width': 7, 'line-opacity': 0.9 }} />
+                      {/* Premium casing line */}
+                      <Layer 
+                        id="route-casing-fs" 
+                        type="line" 
+                        layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                        paint={{ 'line-color': '#1d4ed8', 'line-width': 11, 'line-opacity': 0.55 }} 
+                      />
+                      {/* Inner bright driving route line */}
+                      <Layer 
+                        id="route-line-fs" 
+                        type="line" 
+                        layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                        paint={{ 'line-color': '#3b82f6', 'line-width': 6, 'line-opacity': 1.0 }} 
+                      />
                     </Source>
                   )}
                 </Map>
@@ -1291,67 +1513,147 @@ export default function WorkerHome() {
         </div>
       )}
 
-      {/* ── PENDING DISPATCHED REQUESTS POOL (RAPIDO-STYLE) ── */}
-      <div className="worker-section" style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <h2>Pending Dispatch Orders ({pendingRequests.length})</h2>
-          <span style={{ fontSize: '11px', color: '#888', background: '#f3f4f6', padding: '2px 8px', borderRadius: '10px' }}>
-            Matches your operational category
-          </span>
+      {/* ── LOCATION & DISPATCH SETTINGS CARD ── */}
+      <div className="worker-section" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+          <HiMap style={{ width: '24px', height: '24px', color: 'var(--primary)' }} />
+          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Location & Dispatch Settings</h2>
         </div>
 
-        {!user.available ? (
-          <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
-            <span style={{ fontSize: '32px' }}>💤</span>
-            <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
-              You are currently <strong>Offline</strong>. Set duty status to <strong>Online</strong> at the top to display and receive incoming booking requests.
-            </p>
-          </div>
-        ) : !isSubscribed ? (
-          <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
-            <span style={{ fontSize: '32px' }}>🔒</span>
-            <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
-              Active dispatch list is locked. Please navigate to the <strong>Wallet</strong> tab and purchase an active subscription package to unlock booking dispatch requests.
-            </p>
-          </div>
-        ) : pendingRequests.length === 0 ? (
-          <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
-            <span style={{ fontSize: '32px' }}>🛰️</span>
-            <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
-              Listening for dispatch requests... New jobs within your radius will appear here instantly.
-            </p>
-          </div>
-        ) : (
-          <div className="txn-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {pendingRequests.map(req => {
-              const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
-              const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
-              const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
-              const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '480px', margin: '0 auto' }}>
+          {/* GPS updates */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '13.5px', color: '#334155', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ marginBottom: '8px' }}>
+                📍 <strong>Operational City:</strong>{' '}
+                {isEditingCity ? (
+                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <input
+                      placeholder="City (e.g. Hyderabad)"
+                      value={cityInput}
+                      onChange={e => setCityInput(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
+                    />
+                    <input
+                      placeholder="State (e.g. Telangana)"
+                      value={stateInput}
+                      onChange={e => setStateInput(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await updateWorkerProfile(user.id, { city: cityInput.trim(), state: stateInput.trim() });
+                        setIsEditingCity(false);
+                      }}
+                      style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCityInput(user.city || '');
+                        setStateInput(user.state || '');
+                        setIsEditingCity(false);
+                      }}
+                      style={{ background: '#cbd5e1', color: '#475569', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span>{user.city || 'Not set'}, {user.state || 'Not set'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCity(true)}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', marginLeft: '8px', textDecoration: 'underline', padding: 0 }}
+                    >
+                      ✏️ Edit City
+                    </button>
+                  </>
+                )}
+              </div>
+              <div style={{ marginBottom: '8px', fontSize: '12px', color: '#64748b' }}>
+                📍 <strong>Last Coords:</strong> {workerCoords.lat.toFixed(6)}, {workerCoords.lng.toFixed(6)}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                🕒 <strong>Last Synced:</strong> {new Date().toLocaleTimeString()}
+              </div>
+            </div>
 
-              return (
-                <div key={req.id} className="txn-item" style={{ background: '#fff', padding: '18px', borderRadius: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                        <span style={{ background: req.bookingType === 'instant' ? '#eff6ff' : '#fef3c7', color: req.bookingType === 'instant' ? '#2563eb' : '#d97706', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px', textTransform: 'uppercase' }}>
-                          {req.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
-                        </span>
-                        {req.vehicle?.categoryLabel && (
-                          <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px' }}>
-                            🛠️ {req.vehicle.categoryLabel}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={handleFetchGpsLocation}
+                style={{
+                  background: 'var(--primary)', color: '#fff', border: 'none',
+                  padding: '12px 16px', borderRadius: '10px', fontSize: '13.5px',
+                  fontWeight: '700', cursor: 'pointer', flex: 1, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                🔄 Refresh GPS Location
+              </button>
+            </div>
+            
+            {locMessage && <div style={{ fontSize: '12.5px', color: '#10b981', fontWeight: '600', marginTop: '6px', textAlign: 'center' }}>{locMessage}</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── PENDING DISPATCHED REQUESTS POOL (RAPIDO-STYLE) ── */}
+      {!activeJob && (
+        <div className="worker-section" style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h2>Pending Dispatch Orders ({pendingRequests.length})</h2>
+            <span style={{ fontSize: '11px', color: '#888', background: '#f3f4f6', padding: '2px 8px', borderRadius: '10px' }}>
+              Matches your operational category
+            </span>
+          </div>
+
+          {!user.available ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
+              <span style={{ fontSize: '32px' }}>💤</span>
+              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+                You are currently <strong>Offline</strong>. Set duty status to <strong>Online</strong> at the top to display and receive incoming booking requests.
+              </p>
+            </div>
+          ) : !isSubscribed ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '32px' }}>🔒</span>
+              <p style={{ margin: '8px 0 0', color: '#dc2626', fontSize: '14px', fontWeight: '700' }}>
+                Your activation plan has expired. Please renew your subscription to start receiving new service requests and continue growing your business with our platform.
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Link to="/worker/subscription" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Renew Subscription</Link>
+                <Link to="/worker/subscription" style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>View Plans</Link>
+              </div>
+            </div>
+          ) : pendingRequests.length === 0 ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
+              <span style={{ fontSize: '32px' }}>🛰️</span>
+              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+                Listening for dispatch requests... New jobs within your radius will appear here instantly.
+              </p>
+            </div>
+          ) : (
+            <div className="txn-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {pendingRequests.map(req => {
+                const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
+                const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
+                const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
+                const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+
+                return (
+                  <div key={req.id} className="txn-item" style={{ background: '#fff', padding: '18px', borderRadius: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          <span style={{ background: req.bookingType === 'instant' ? '#eff6ff' : '#fef3c7', color: req.bookingType === 'instant' ? '#2563eb' : '#d97706', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px', textTransform: 'uppercase' }}>
+                            {req.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
                           </span>
-                        )}
-                      </div>
-                      <strong style={{ display: 'block', fontSize: '16.5px', color: '#0f172a', fontWeight: '800' }}>{req.vehicle?.name}</strong>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px', fontSize: '12.5px', color: '#475569' }}>
-                        <div>📍 <span style={{ fontWeight: '500' }}>Location:</span> {req.booking?.location}</div>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', color: '#64748b', fontSize: '12px', marginTop: '2px' }}>
-                          <span>📏 Straight Distance: <strong>{formattedDistance}</strong></span>
-                          <span>🛵 Est. Travel: <strong>{formattedTravel}</strong></span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                           ⏰ Booked at: <strong>{bookingTimeStr}</strong>
                         </div>
                         {req.booking?.notes && (
@@ -1401,9 +1703,8 @@ export default function WorkerHome() {
                         {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
                       </span>
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '4px' }}>
                     <button
                       onClick={() => handleRejectRequest(req.id)}
                       style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
@@ -1430,6 +1731,7 @@ export default function WorkerHome() {
           </div>
         )}
       </div>
+      )}
 
       {/* ── AVAILABILITY & DUTY SETTINGS ── */}
       <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>

@@ -295,7 +295,7 @@ export default function WorkerOrders() {
                         Call
                       </a>
                       <a
-                        href={`https://wa.me/${o.customer.phone.replace(/\D/g, '')}`}
+                        href={`https://wa.me/${(o.customer.whatsapp || o.customer.phone || '').replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
                         style={{

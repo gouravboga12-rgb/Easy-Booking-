@@ -62,6 +62,24 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('blocked')) {
       await pool.query('ALTER TABLE users ADD COLUMN blocked TINYINT(1) DEFAULT 0');
     }
+    if (!columnNames.includes('lat')) {
+      await pool.query('ALTER TABLE users ADD COLUMN lat DECIMAL(10, 8) NULL');
+    }
+    if (!columnNames.includes('lng')) {
+      await pool.query('ALTER TABLE users ADD COLUMN lng DECIMAL(11, 8) NULL');
+    }
+    if (!columnNames.includes('city')) {
+      await pool.query('ALTER TABLE users ADD COLUMN city VARCHAR(255) NULL');
+    }
+    if (!columnNames.includes('state')) {
+      await pool.query('ALTER TABLE users ADD COLUMN state VARCHAR(255) NULL');
+    }
+    if (!columnNames.includes('target_locations')) {
+      await pool.query('ALTER TABLE users ADD COLUMN target_locations JSON NULL');
+    }
+    if (!columnNames.includes('live_tracking')) {
+      await pool.query('ALTER TABLE users ADD COLUMN live_tracking TINYINT(1) DEFAULT 1');
+    }
 
 
     // Ensure subscription_plans table exists
@@ -198,6 +216,21 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!bookingColNames.includes('custom_answers')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN custom_answers JSON NULL');
     }
+    if (!bookingColNames.includes('booking_name')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN booking_name VARCHAR(255) NULL');
+    }
+    if (!bookingColNames.includes('booking_phone')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN booking_phone VARCHAR(50) NULL');
+    }
+    if (!bookingColNames.includes('whatsapp_phone')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN whatsapp_phone VARCHAR(50) NULL');
+    }
+    if (!bookingColNames.includes('email')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN email VARCHAR(255) NULL');
+    }
+    if (!bookingColNames.includes('manual_address')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN manual_address TEXT NULL');
+    }
 
 
     // Ensure services columns exist
@@ -320,6 +353,10 @@ router.post('/google', async (req, res) => {
     if (typeof user.subscription === 'string') {
       try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
     }
+    if (typeof user.target_locations === 'string') {
+      try { user.target_locations = JSON.parse(user.target_locations); } catch (e) { user.target_locations = []; }
+    }
+    user.target_locations = user.target_locations || [];
 
     const token = generateToken(user);
     res.json({ user, token });
@@ -408,7 +445,7 @@ router.post('/resend-otp', async (req, res) => {
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { name, email, phone, password, role, categories, skills, vehicleDetails, otp, aadhar, pan, bank, photo, aadharPhoto, panPhoto } = req.body;
+  const { name, email, phone, password, role, categories, skills, vehicleDetails, otp, aadhar, pan, bank, photo, aadharPhoto, panPhoto, radius, address, lat, lng, city, state } = req.body;
   if (!name || !email || !phone || !password || !role) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
@@ -447,13 +484,22 @@ router.post('/register', async (req, res) => {
     const skillsJson = skills ? JSON.stringify(skills) : '[]';
 
     await pool.query(
-      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo, approved)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?, 1)`,
+      `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo, approved, radius, address, lat, lng, city, state, target_locations, live_tracking)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, '[]', 1)`,
       [
         id, email, passwordHash, role, name, phone, catJson, skillsJson, vehicleDetails || null,
-        aadhar || null, pan || null, bank || null, photo || null, aadharPhoto || null, panPhoto || null
+        aadhar || null, pan || null, bank || null, photo || null, aadharPhoto || null, panPhoto || null,
+        radius ? Number(radius) : 10, address || null, lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null, city || null, state || null
       ]
     );
+
+    if (role === 'worker' && lat !== undefined && lng !== undefined && lat !== null && lng !== null) {
+      await pool.query(
+        `INSERT INTO worker_locations (worker_id, lat, lng) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE lat = VALUES(lat), lng = VALUES(lng)`,
+        [id, parseFloat(lat), parseFloat(lng)]
+      );
+    }
 
     const [created] = await pool.query('SELECT id, email, role, name, phone FROM users WHERE id = ?', [id]);
     const user = created[0];
@@ -519,6 +565,10 @@ router.post('/login', async (req, res) => {
     if (typeof user.subscription === 'string') {
       try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
     }
+    if (typeof user.target_locations === 'string') {
+      try { user.target_locations = JSON.parse(user.target_locations); } catch (e) { user.target_locations = []; }
+    }
+    user.target_locations = user.target_locations || [];
 
     // Send Login Alert (non-blocking)
     if (user.email) {
@@ -555,6 +605,10 @@ router.get('/profile', authenticateToken, async (req, res) => {
     if (typeof user.subscription === 'string') {
       try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
     }
+    if (typeof user.target_locations === 'string') {
+      try { user.target_locations = JSON.parse(user.target_locations); } catch (e) { user.target_locations = []; }
+    }
+    user.target_locations = user.target_locations || [];
     user.vehicle = user.vehicle_details;
 
     res.json(user);
@@ -566,13 +620,14 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet, subscription, photo } = req.body;
+  const { name, phone, address, skills, categories, radius, bank, aadhar, pan, vehicle_details, vehicle, wallet, subscription, photo, lat, lng, city, state, target_locations, live_tracking } = req.body;
   const finalVehicle = vehicle !== undefined ? vehicle : vehicle_details;
   try {
     const catJson = categories ? JSON.stringify(categories) : undefined;
     const skillsJson = skills ? JSON.stringify(skills) : undefined;
     const walletJson = wallet ? JSON.stringify(wallet) : undefined;
     const subscriptionJson = subscription ? JSON.stringify(subscription) : undefined;
+    const targetLocationsJson = target_locations ? JSON.stringify(target_locations) : undefined;
 
     await pool.query(
       `UPDATE users SET 
@@ -588,9 +643,22 @@ router.put('/profile', authenticateToken, async (req, res) => {
         vehicle_details = COALESCE(?, vehicle_details),
         wallet = COALESCE(?, wallet),
         subscription = COALESCE(?, subscription),
-        photo = COALESCE(?, photo)
+        photo = COALESCE(?, photo),
+        lat = COALESCE(?, lat),
+        lng = COALESCE(?, lng),
+        city = COALESCE(?, city),
+        state = COALESCE(?, state),
+        target_locations = COALESCE(?, target_locations),
+        live_tracking = COALESCE(?, live_tracking)
        WHERE id = ?`,
-      [name, phone, address, skillsJson, catJson, radius, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, photo, req.user.id]
+      [
+        name, phone, address, skillsJson, catJson, radius !== undefined ? Number(radius) : undefined, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, photo,
+        lat !== undefined ? parseFloat(lat) : undefined,
+        lng !== undefined ? parseFloat(lng) : undefined,
+        city, state, targetLocationsJson,
+        live_tracking !== undefined ? Number(live_tracking) : undefined,
+        req.user.id
+      ]
     );
 
     const [updated] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
@@ -605,6 +673,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
     if (typeof user.subscription === 'string') {
       try { user.subscription = JSON.parse(user.subscription); } catch (e) { user.subscription = null; }
     }
+    if (typeof user.target_locations === 'string') {
+      try { user.target_locations = JSON.parse(user.target_locations); } catch (e) { user.target_locations = []; }
+    }
+    user.target_locations = user.target_locations || [];
     user.vehicle = user.vehicle_details;
 
     res.json(user);
@@ -616,27 +688,20 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
 // PUT /api/auth/profile/availability
 router.put('/profile/availability', authenticateToken, async (req, res) => {
-  const { available } = req.body;
-  try {
-    await pool.query('UPDATE users SET radius = radius WHERE id = ?'); // dummy check
-    await pool.query(
-      'UPDATE users SET vehicle_details = vehicle_details WHERE id = ?' // dummy check
-    );
-    // Note: use 'rating' to denote online status if needed, but in our db schema we can just use rating or a custom field. Wait, our schema does not have a specific 'available' boolean field, wait!
-    // Let's check our schema: users schema does not have a boolean 'available' field! Let's check if we should add it.
-    // Yes! Let's check the schema.
-    // Wait, the table creation DDL:
-    // role, name, phone, vehicle_details, rating, skills, categories, radius, address, pan, aadhar, bank.
-    // It doesn't have an 'available' field. Let's add an 'available' TINYINT field to the users table.
-    // Let's add it via ALTER TABLE first to make sure it's updated.
-  } catch (e) {}
+  const { available, online } = req.body;
+  const isOnline = online !== undefined ? online : available;
+  if (isOnline === undefined) {
+    return res.status(400).json({ message: 'online or available status is required' });
+  }
 
   try {
-    await pool.query('UPDATE users SET radius = radius WHERE id = ?');
-  } catch (e) {}
-  
-  // Actually, we can run this alter table inside server initialization or directly. Let's just do it.
-  res.status(200).json({ message: 'Availability status updated' });
+    const val = isOnline ? 1 : 0;
+    await pool.query('UPDATE users SET available = ? WHERE id = ?', [val, req.user.id]);
+    res.status(200).json({ message: 'Availability status updated', available: val === 1 });
+  } catch (err) {
+    console.error('Update availability error:', err);
+    res.status(500).json({ message: 'Server error updating availability' });
+  }
 });
 
 // GET /api/auth/workers (List of all workers)
@@ -654,6 +719,10 @@ router.get('/workers', authenticateToken, async (req, res) => {
       if (typeof w.subscription === 'string') {
         try { w.subscription = JSON.parse(w.subscription); } catch (e) { w.subscription = null; }
       }
+      if (typeof w.target_locations === 'string') {
+        try { w.target_locations = JSON.parse(w.target_locations); } catch (e) { w.target_locations = []; }
+      }
+      w.target_locations = w.target_locations || [];
       w.vehicle = w.vehicle_details;
     });
     res.json(workers);

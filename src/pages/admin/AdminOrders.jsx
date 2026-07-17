@@ -149,9 +149,24 @@ export default function AdminOrders() {
                     <td style={{ fontSize: '11px' }}>
                       {o.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
                     </td>
-                    <td>{o.customer?.name || 'Guest'}</td>
+                    <td>
+                      <div><strong>{o.customer?.name || 'Guest'}</strong></div>
+                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>
+                        📞 {o.customer?.phone || 'No phone'}
+                      </div>
+                      {o.customer?.whatsapp && (
+                        <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>💬</span> WhatsApp: {o.customer.whatsapp}
+                        </div>
+                      )}
+                    </td>
                     <td className="truncate" title={o.booking?.location}>
                       <div>{o.booking?.location}</div>
+                      {o.booking?.manualAddress && (
+                        <div style={{ fontSize: '11px', color: '#475569', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', fontWeight: '500' }}>
+                          🏠 {o.booking.manualAddress}
+                        </div>
+                      )}
                       {o.booking?.lat && o.booking?.lng && (
                         <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>
                           🎯 Lat: {o.booking.lat.toFixed(5)}, Lng: {o.booking.lng.toFixed(5)}

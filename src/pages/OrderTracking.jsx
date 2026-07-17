@@ -42,7 +42,9 @@ export default function OrderTracking() {
   const [customCancelReason, setCustomCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
-  const isComplete = order ? (order.status === 'completed' || order.status === 'cancelled' || order.stage === order.stages.length - 1) : true;
+  const isCompleted = order ? (order.status === 'completed' || (order.stage === order.stages.length - 1 && order.status !== 'cancelled')) : false;
+  const isCancelled = order ? order.status === 'cancelled' : false;
+  const isComplete = order ? (isCompleted || isCancelled) : true;
 
   useEffect(() => {
     if (!order || isComplete) return;
@@ -269,13 +271,26 @@ export default function OrderTracking() {
 
                       {routeGeojson && (
                         <Source id="route" type="geojson" data={{ type: 'Feature', geometry: routeGeojson }}>
+                          {/* Premium casing line */}
+                          <Layer
+                            id="route-casing"
+                            type="line"
+                            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                            paint={{
+                              'line-color': '#7c3aed',
+                              'line-width': 10,
+                              'line-opacity': 0.5
+                            }}
+                          />
+                          {/* Inner purple line */}
                           <Layer
                             id="route-line"
                             type="line"
+                            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
                             paint={{
-                              'line-color': '#8b5cf6',
+                              'line-color': '#a78bfa',
                               'line-width': 5,
-                              'line-opacity': 0.8
+                              'line-opacity': 1.0
                             }}
                           />
                         </Source>
@@ -339,7 +354,7 @@ export default function OrderTracking() {
             </div>
           )}
           {/* Invoice / Bill Receipt Section */}
-          {isComplete && (
+          {isCompleted && (
             <div className="booking-summary" style={{ marginTop: '20px', border: '1.5px solid #ff8c00', background: '#fffbeb' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px dashed #ff8c00', paddingBottom: '10px', marginBottom: '14px' }}>
                 <h3 style={{ margin: 0, color: '#ff8c00', fontWeight: '800' }}>🧾 Service Invoice & Receipt</h3>
@@ -374,7 +389,7 @@ export default function OrderTracking() {
             </div>
           )}
           {/* Feedback/Review Submission */}
-          {isComplete && order.operator && (
+          {isCompleted && order.operator && (
             <div className="booking-summary" style={{ marginTop: '20px', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
               <h3 style={{ color: '#065f46', margin: 0 }}>Rate Your Experience</h3>
               <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 12px' }}>How was the service provided by {order.operator.name}?</p>

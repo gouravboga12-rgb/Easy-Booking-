@@ -10,6 +10,7 @@ import { MdConstruction } from 'react-icons/md';
 import './Auth.css';
 
 const EXPERIENCE_OPTIONS = ['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
 
 export default function WorkerRegister() {
   const categories = useStore(s => s.categories);
@@ -26,7 +27,11 @@ export default function WorkerRegister() {
     skillsInput: '',
     categories: [],
     radius: 10,
-    address: ''
+    address: '',
+    lat: '',
+    lng: '',
+    city: '',
+    state: ''
   });
   const [verificationForm, setVerificationForm] = useState({
     aadhar: '',
@@ -64,6 +69,70 @@ export default function WorkerRegister() {
   };
 
   useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+
+  const [addressLoading, setAddressLoading] = useState(false);
+
+  const handleGetGpsLocation = () => {
+    if (!navigator.geolocation) {
+      alert("GPS is not supported by your browser.");
+      return;
+    }
+    setAddressLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        reverseGeocode(latitude, longitude);
+      },
+      (err) => {
+        console.error(err);
+        setAddressLoading(false);
+        alert("Unable to fetch GPS location. Please check browser permissions and enter details manually.");
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  };
+
+  const reverseGeocode = async (lat, lng) => {
+    const token = MAPBOX_TOKEN;
+    if (token) {
+      setAddressLoading(true);
+      try {
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&limit=1`);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          const feature = data.features[0];
+          const fullAddress = feature.place_name;
+          let city = '';
+          let state = '';
+          
+          if (feature.context) {
+            feature.context.forEach(item => {
+              if (item.id.startsWith('place.')) {
+                city = item.text;
+              } else if (item.id.startsWith('region.')) {
+                state = item.text;
+              }
+            });
+          }
+          if (!city && feature.id.startsWith('place.')) city = feature.text;
+          if (!state && feature.id.startsWith('region.')) state = feature.text;
+
+          setProfessionalForm(p => ({
+            ...p,
+            lat: lat.toString(),
+            lng: lng.toString(),
+            city: city || '',
+            state: state || '',
+            address: fullAddress || ''
+          }));
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+      } finally {
+        setAddressLoading(false);
+      }
+    }
+  };
 
   // Change handlers
   const handleBasicChange = (key, value) => setForm(p => ({ ...p, [key]: value }));
@@ -148,6 +217,9 @@ export default function WorkerRegister() {
     if (professionalForm.categories.length === 0) { setError('Please select at least one work category'); return; }
     if (!professionalForm.experience) { setError('Please select your experience level'); return; }
     if (!professionalForm.address) { setError('Please enter your operational address'); return; }
+    if (!professionalForm.city) { setError('Please enter your operational city'); return; }
+    if (!professionalForm.state) { setError('Please enter your operational state'); return; }
+    if (!professionalForm.lat || !professionalForm.lng) { setError('Please click "Get GPS Location" to capture coordinates'); return; }
     setStep(3);
   };
 
@@ -200,6 +272,10 @@ export default function WorkerRegister() {
       categories: professionalForm.categories,
       radius: Number(professionalForm.radius),
       address: professionalForm.address,
+      lat: professionalForm.lat ? parseFloat(professionalForm.lat) : null,
+      lng: professionalForm.lng ? parseFloat(professionalForm.lng) : null,
+      city: professionalForm.city,
+      state: professionalForm.state,
       aadhar: verificationForm.aadhar,
       pan: verificationForm.pan.toUpperCase(),
       photo: verificationForm.profilePhoto || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80',
@@ -305,7 +381,7 @@ export default function WorkerRegister() {
               </label>
 
               <label>Work Categories (Select all that apply)
-                <div className="category-selection-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+                <div className="category-selection-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginTop: '6px' }}>
                   {categories.map(c => (
                     <button
                       key={c.id}
@@ -334,15 +410,100 @@ export default function WorkerRegister() {
                 <div className="input-wrap"><HiIdentification className="input-icon" /><input placeholder="Wiring, Pipe leak repair, Tile scrubbing" value={professionalForm.skillsInput} onChange={e => handleProfChange('skillsInput', e.target.value)} /></div>
               </label>
 
-              <label>Service Area Radius (Km)
-                <div className="range-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-                  <input type="range" min="2" max="30" step="1" value={professionalForm.radius} onChange={e => handleProfChange('radius', e.target.value)} style={{ flex: 1, accentColor: 'var(--primary)', padding: 0 }} />
-                  <strong style={{ fontSize: '15px', color: '#1a1a1a', width: '50px', textAlign: 'right' }}>{professionalForm.radius} Km</strong>
+              <label>Service Area Radius
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '10px' }}>
+                  {['5', '10', '20', '30', 'custom'].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => {
+                        if (r === 'custom') {
+                          handleProfChange('radius', 15);
+                        } else {
+                          handleProfChange('radius', Number(r));
+                        }
+                      }}
+                      className={`role-card ${((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'active' : ''}`}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1.5px solid',
+                        borderColor: ((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary)' : '#eee',
+                        borderRadius: '8px',
+                        background: ((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary-light)' : '#fff',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {r === 'custom' ? 'Custom Radius' : `${r} Km`}
+                    </button>
+                  ))}
+                </div>
+                {![5, 10, 20, 30].includes(professionalForm.radius) && (
+                  <div className="range-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+                    <input type="range" min="2" max="50" step="1" value={professionalForm.radius} onChange={e => handleProfChange('radius', Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--primary)', padding: 0 }} />
+                    <strong style={{ fontSize: '15px', color: '#1a1a1a', width: '50px', textAlign: 'right' }}>{professionalForm.radius} Km</strong>
+                  </div>
+                )}
+              </label>
+
+              <label>Current Location Coordinates
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleGetGpsLocation}
+                    className="auth-submit"
+                    disabled={addressLoading}
+                    style={{
+                      margin: 0,
+                      padding: '10px 14px',
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      fontSize: '12px',
+                      borderRadius: '8px',
+                      width: 'auto',
+                      flex: '1 1 auto',
+                      minWidth: '140px'
+                    }}
+                  >
+                    {addressLoading ? '🔄 Fetching...' : '📍 Get GPS Location'}
+                  </button>
+                  <div style={{ display: 'flex', gap: '6px', flex: '2 1 180px' }}>
+                    <input placeholder="Lat" value={professionalForm.lat} readOnly style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
+                    <input placeholder="Lng" value={professionalForm.lng} readOnly style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
+                  </div>
                 </div>
               </label>
 
-              <label>Operational Address (Current Location)
-                <div className="input-wrap"><HiMap className="input-icon" /><input placeholder="Apartment, Street, City, State" value={professionalForm.address} onChange={e => handleProfChange('address', e.target.value)} required /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                <label>City
+                  <div className="input-wrap"><HiMap className="input-icon" /><input placeholder="e.g. Hyderabad" value={professionalForm.city} onChange={e => handleProfChange('city', e.target.value)} required /></div>
+                </label>
+                <label>State
+                  <div className="input-wrap"><HiMap className="input-icon" /><input placeholder="e.g. Telangana" value={professionalForm.state} onChange={e => handleProfChange('state', e.target.value)} required /></div>
+                </label>
+              </div>
+
+              <label style={{ marginTop: '10px' }}>Operational Address (Full Address)
+                <div className="input-wrap">
+                  <HiMap className="input-icon" style={{ marginTop: '10px' }} />
+                  <textarea
+                    placeholder="Enter full operational address details"
+                    value={professionalForm.address}
+                    onChange={e => handleProfChange('address', e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      minHeight: '60px',
+                      padding: '10px 10px 10px 40px',
+                      border: '1.5px solid #eee',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </label>
 
               {error && <div className="auth-error">⚠️ {error}</div>}
@@ -370,7 +531,7 @@ export default function WorkerRegister() {
               </label>
 
               <label>Profile Photograph
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px solid #ddd', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {verificationForm.profilePhoto ? (
                       <img src={verificationForm.profilePhoto} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -378,7 +539,7 @@ export default function WorkerRegister() {
                       <span style={{ fontSize: '20px' }}>📷</span>
                     )}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: '160px' }}>
                     <input
                       type="file"
                       accept="image/*"
@@ -412,7 +573,7 @@ export default function WorkerRegister() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
                 <label>Aadhaar Card Copy (Upload Image/PDF)
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <input
                       type="file"
                       accept="image/*,.pdf"
@@ -432,7 +593,8 @@ export default function WorkerRegister() {
                         fontSize: '13px',
                         cursor: 'pointer',
                         border: '1.5px solid var(--primary)',
-                        margin: 0
+                        margin: 0,
+                        textAlign: 'center'
                       }}
                     >
                       {verificationForm.aadharCopy ? 'Change Aadhaar Copy' : 'Upload Aadhaar Copy'}
@@ -444,7 +606,7 @@ export default function WorkerRegister() {
                 </label>
 
                 <label>PAN Card Copy (Upload Image/PDF)
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <input
                       type="file"
                       accept="image/*,.pdf"
@@ -464,7 +626,8 @@ export default function WorkerRegister() {
                         fontSize: '13px',
                         cursor: 'pointer',
                         border: '1.5px solid var(--primary)',
-                        margin: 0
+                        margin: 0,
+                        textAlign: 'center'
                       }}
                     >
                       {verificationForm.panCopy ? 'Change PAN Copy' : 'Upload PAN Copy'}
@@ -481,7 +644,7 @@ export default function WorkerRegister() {
                 <label>Account Number
                   <div className="input-wrap"><HiCreditCard className="input-icon" /><input type="text" placeholder="1092837465" value={verificationForm.bankAccount} onChange={e => handleVerifChange('bankAccount', e.target.value.replace(/\D/g, ''))} /></div>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
                   <label>IFSC Code
                     <div className="input-wrap"><HiCreditCard className="input-icon" /><input placeholder="SBIN0001234" value={verificationForm.bankIfsc} onChange={e => handleVerifChange('bankIfsc', e.target.value.toUpperCase())} /></div>
                   </label>

@@ -7,7 +7,11 @@ const router = express.Router();
 
 // POST /api/orders (Place an order / create booking)
 router.post('/', authenticateToken, async (req, res) => {
-  const { customerId, workerId, location, customerLat, customerLng, date, duration, totalAmount, vehicleId, bookingType, notes, customAnswers } = req.body;
+  const { 
+    customerId, workerId, location, customerLat, customerLng, date, duration, 
+    totalAmount, vehicleId, bookingType, notes, customAnswers,
+    bookingName, bookingPhone, whatsappPhone, email, manualAddress
+  } = req.body;
   
   if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
     return res.status(400).json({ message: 'Missing required order fields' });
@@ -26,9 +30,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const customAnswersStr = customAnswers ? JSON.stringify(customAnswers) : null;
 
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
-      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp, customAnswersStr]
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers, booking_name, booking_phone, whatsapp_phone, email, manual_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp, customAnswersStr, bookingName || null, bookingPhone || null, whatsappPhone || null, email || null, manualAddress || null]
     );
 
 
@@ -87,24 +91,233 @@ router.get('/customer/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Haversine formula for distance calculation in kilometers
+function getHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) return Infinity;
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return Infinity;
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in km
+}
+
+// Active Subscription check helper
+function isSubscriptionActive(user) {
+  let sub = null;
+  if (user.subscription) {
+    try {
+      sub = typeof user.subscription === 'string' ? JSON.parse(user.subscription) : user.subscription;
+    } catch (e) {}
+  }
+  const todayStr = new Date().toISOString().split('T')[0];
+  return sub && sub.active && (!sub.expiresAt || sub.expiresAt >= todayStr);
+}
+
+// Worker service role matching helper
+function workerMatchesRole(worker, serviceId, serviceName) {
+  const designation = (worker.vehicle_details || worker.vehicle || '').toLowerCase();
+  const skills = Array.isArray(worker.skills) ? worker.skills.map(s => s.toLowerCase()) : [];
+  const sId = serviceId.toLowerCase();
+  const sName = serviceName.toLowerCase();
+  
+  if (sId.includes('electrician') || sName.includes('electrician') || sName.includes('electrical')) {
+    return designation.includes('electrician') || designation.includes('electrical') || skills.some(s => s.includes('wiring') || s.includes('circuit') || s.includes('electr'));
+  }
+  if (sId.includes('plumber') || sName.includes('plumber') || sName.includes('plumbing')) {
+    return designation.includes('plumber') || designation.includes('plumbing') || skills.some(s => s.includes('pipe') || s.includes('leak') || s.includes('tap') || s.includes('water tank') || s.includes('plumb'));
+  }
+  if (sId.includes('ac-technician') || sName.includes('ac') || sName.includes('air conditioner')) {
+    return designation.includes('ac') || designation.includes('air conditioner') || designation.includes('cooling') || skills.some(s => s.includes('ac') || s.includes('compressor') || s.includes('filter') || s.includes('gas charging'));
+  }
+  if (sId.includes('painter') || sName.includes('painter') || sName.includes('painting')) {
+    return designation.includes('painter') || designation.includes('painting') || skills.some(s => s.includes('paint') || s.includes('wall') || s.includes('putty') || s.includes('primer'));
+  }
+  if (sId.includes('carpenter') || sName.includes('carpenter') || sName.includes('carpentry')) {
+    return designation.includes('carpenter') || designation.includes('carpentry') || skills.some(s => s.includes('wood') || s.includes('furniture') || s.includes('hinge') || s.includes('lock'));
+  }
+  if (sId.includes('mason') || sName.includes('mason') || sName.includes('masonry')) {
+    return designation.includes('mason') || designation.includes('brick') || designation.includes('plaster') || skills.some(s => s.includes('cement') || s.includes('brick') || s.includes('plaster'));
+  }
+  
+  return true; 
+}
+
 // GET /api/orders/worker/:id (List orders for a worker)
 router.get('/worker/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const [orders] = await pool.query(`
-      SELECT b.*, 
-             c.name AS customer_name,
-             CASE WHEN b.status = 'pending' THEN NULL ELSE c.phone END AS customer_phone,
-             w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle,
-             s.custom_fields AS service_custom_fields
-      FROM bookings b
-      LEFT JOIN users c ON b.customer_id = c.id
-      LEFT JOIN users w ON b.worker_id = w.id
-      LEFT JOIN services s ON b.vehicle_id = s.id
-      WHERE b.worker_id = ? OR b.status = 'pending'
-      ORDER BY b.created_at DESC
-    `, [id]);
-    res.json(orders);
+    const [workers] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (workers.length === 0) {
+      return res.status(404).json({ message: 'Worker profile not found' });
+    }
+    const worker = workers[0];
+
+    try {
+      worker.skills = typeof worker.skills === 'string' ? JSON.parse(worker.skills) : (worker.skills || []);
+    } catch (e) { worker.skills = []; }
+    try {
+      worker.categories = typeof worker.categories === 'string' ? JSON.parse(worker.categories) : (worker.categories || []);
+    } catch (e) { worker.categories = []; }
+
+    const isOnline = worker.available === 1;
+    const isSubActive = isSubscriptionActive(worker);
+    
+    const [activeAssignments] = await pool.query(
+      "SELECT id FROM bookings WHERE worker_id = ? AND status IN ('assigned', 'active', 'arrived')",
+      [id]
+    );
+    const isBusy = activeAssignments.length > 0;
+
+    const canReceivePending = isOnline && isSubActive && !isBusy;
+
+    let sql = '';
+    let params = [];
+    if (canReceivePending) {
+      sql = `
+        SELECT b.*, 
+               c.name AS customer_name,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE c.phone END AS customer_phone,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE b.booking_phone END AS booking_phone,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE b.whatsapp_phone END AS whatsapp_phone,
+               w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle,
+               s.custom_fields AS service_custom_fields,
+               s.category AS service_category,
+               s.name AS service_name
+        FROM bookings b
+        LEFT JOIN users c ON b.customer_id = c.id
+        LEFT JOIN users w ON b.worker_id = w.id
+        LEFT JOIN services s ON b.vehicle_id = s.id
+        WHERE b.worker_id = ? OR b.status = 'pending'
+        ORDER BY b.created_at DESC
+      `;
+      params = [id];
+    } else {
+      sql = `
+        SELECT b.*, 
+               c.name AS customer_name,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE c.phone END AS customer_phone,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE b.booking_phone END AS booking_phone,
+               CASE WHEN b.status = 'pending' THEN NULL ELSE b.whatsapp_phone END AS whatsapp_phone,
+               w.name AS worker_name, w.phone AS worker_phone, w.vehicle_details AS worker_vehicle,
+               s.custom_fields AS service_custom_fields,
+               s.category AS service_category,
+               s.name AS service_name
+        FROM bookings b
+        LEFT JOIN users c ON b.customer_id = c.id
+        LEFT JOIN users w ON b.worker_id = w.id
+        LEFT JOIN services s ON b.vehicle_id = s.id
+        WHERE b.worker_id = ?
+        ORDER BY b.created_at DESC
+      `;
+      params = [id];
+    }
+
+    const [orders] = await pool.query(sql, params);
+
+    let activeJobs = [];
+    let pendingJobs = [];
+
+    for (const o of orders) {
+      if (o.status !== 'pending') {
+        activeJobs.push(o);
+        continue;
+      }
+
+      if (!worker.categories.includes(o.service_category)) {
+        continue;
+      }
+
+      if (!workerMatchesRole(worker, o.vehicle_id, o.service_name || '')) {
+        continue;
+      }
+
+      let wLat = worker.lat;
+      let wLng = worker.lng;
+
+      // Always try to fetch live coords from worker_locations first
+      const [liveCoords] = await pool.query(
+        'SELECT lat, lng FROM worker_locations WHERE worker_id = ? ORDER BY updated_at DESC LIMIT 1',
+        [id]
+      );
+      if (liveCoords.length > 0 && liveCoords[0].lat !== null && liveCoords[0].lng !== null) {
+        wLat = liveCoords[0].lat;
+        wLng = liveCoords[0].lng;
+      }
+
+      // Check operational city match (mandatory check)
+      if (!worker.city) {
+        continue;
+      }
+      const custLocLower = (o.location || '').toLowerCase();
+      const workerCityLower = worker.city.toLowerCase();
+      if (!custLocLower.includes(workerCityLower)) {
+        continue;
+      }
+
+      // 1. Check target locations matching
+      let targetLocs = [];
+      if (worker.target_locations) {
+        try {
+          targetLocs = typeof worker.target_locations === 'string' ? JSON.parse(worker.target_locations) : worker.target_locations;
+        } catch (e) {}
+      }
+
+      const custLocLower = (o.location || '').toLowerCase();
+      const matchesTarget = (targetLocs && targetLocs.length > 0) ? targetLocs.some(loc => custLocLower.includes(loc.toLowerCase())) : false;
+
+      // 2. Check radius matching
+      let distance = null;
+      if (wLat !== null && wLng !== null && o.customer_lat !== null && o.customer_lng !== null) {
+        distance = getHaversineDistance(
+          parseFloat(wLat),
+          parseFloat(wLng),
+          parseFloat(o.customer_lat),
+          parseFloat(o.customer_lng)
+        );
+      }
+
+      const radiusLimit = worker.radius || 10;
+      const matchesRadius = distance !== null ? distance <= radiusLimit : false;
+
+      // Eligible if matches target locations OR fits within nearby operational radius
+      if (!matchesTarget && !matchesRadius) {
+        continue;
+      }
+
+      // Set priority score: 2 for target match, 1 for nearby radius match
+      const priority = matchesTarget ? 2 : 1;
+
+      pendingJobs.push({
+        ...o,
+        _priority: priority,
+        _distance: distance !== null ? distance : Infinity
+      });
+    }
+
+    // Sort pending jobs by:
+    // 1. Highest Priority (Targeted locations first, then nearby radius matches)
+    // 2. Closest Distance
+    // 3. Newest created_at timestamp
+    pendingJobs.sort((a, b) => {
+      if (b._priority !== a._priority) {
+        return b._priority - a._priority;
+      }
+      if (a._distance !== b._distance) {
+        return a._distance - b._distance;
+      }
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    // Remove temp sorting properties before output
+    const cleanPending = pendingJobs.map(({ _priority, _distance, ...cleanJob }) => cleanJob);
+    const finalOrders = [...activeJobs, ...cleanPending];
+
+    res.json(finalOrders);
   } catch (err) {
     console.error('Fetch worker orders error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -166,6 +379,8 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
 
       // Accept the pending job
       await pool.query('UPDATE bookings SET status = ?, worker_id = ? WHERE id = ?', ['assigned', workerId, id]);
+      // Mark worker as busy (available = 0)
+      await pool.query('UPDATE users SET available = 0 WHERE id = ?', [workerId]);
     } else if (status === 'pending') {
       // Worker cancelling active job, set back to pending and append to rejected_workers list
       const [current] = await pool.query('SELECT rejected_workers FROM bookings WHERE id = ?', [id]);
@@ -191,6 +406,8 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         'UPDATE bookings SET status = ?, worker_id = NULL, rejected_workers = ?, notes = ?, cancel_reason = ?, cancel_details = ? WHERE id = ?',
         ['pending', JSON.stringify(list), updatedNotes, req.body.cancelReason || null, req.body.cancelDetails || null, id]
       );
+      // Set worker available status back to 1 (available)
+      await pool.query('UPDATE users SET available = 1 WHERE id = ?', [rejectWorkerId]);
     } else if (status === 'completed') {
       // 1. Check if completion OTP has been verified
       if (!order.otp_verified) {
@@ -208,11 +425,17 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         'UPDATE bookings SET status = ?, completion_photos = ?, payment_mode = ?, payment_status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
         ['completed', photos, paymentMode, 'paid', id]
       );
+      // Set worker available status back to 1
+      await pool.query('UPDATE users SET available = 1 WHERE id = ?', [order.worker_id]);
     } else if (status === 'cancelled') {
       await pool.query(
         'UPDATE bookings SET status = ?, cancel_reason = ?, cancel_details = ? WHERE id = ?',
         ['cancelled', req.body.cancelReason || null, req.body.cancelDetails || null, id]
       );
+      // Set worker available status back to 1
+      if (order.worker_id) {
+        await pool.query('UPDATE users SET available = 1 WHERE id = ?', [order.worker_id]);
+      }
     } else {
       // General status transition (active, arrived, completed, cancelled)
       await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);

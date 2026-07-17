@@ -24,6 +24,13 @@ export default function BookingFlow() {
   const user = useAuthStore(s => s.user);
   const allVehicles = useStore(s => s.services);
 
+  useEffect(() => {
+    if (!user) {
+      alert("Please login first to book a service.");
+      navigate('/login', { state: { from: `/book/${id}` } });
+    }
+  }, [user, id, navigate]);
+
   const vehicle = allVehicles.find(v => v.id === id);
   const [bookingType, setBookingType] = useState('instant');
   const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
@@ -32,8 +39,24 @@ export default function BookingFlow() {
     manualAddress: '',
     date: new Date().toISOString().split('T')[0],
     duration: 1,
-    notes: ''
+    notes: '',
+    bookingName: user?.name || '',
+    bookingPhone: user?.phone || '',
+    whatsappPhone: '',
+    email: user?.email || ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setForm(f => ({
+        ...f,
+        bookingName: f.bookingName || user.name || '',
+        bookingPhone: f.bookingPhone || user.phone || '',
+        email: f.email || user.email || ''
+      }));
+    }
+  }, [user]);
+
   const [step, setStep] = useState(1);
   const [coords, setCoords] = useState({ lat: 12.9716, lng: 77.5946 }); // Default: Bangalore
   const [locLoading, setLocLoading] = useState(false);
@@ -115,20 +138,41 @@ export default function BookingFlow() {
 
   const reverseGeocode = async (lat, lng) => {
     const token = MAPBOX_TOKEN;
+    setAddressLoading(true);
+    let resolvedAddress = '';
+    
+    // 1. Try Mapbox
     if (token) {
-      setAddressLoading(true);
       try {
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&limit=1`);
-        const data = await res.json();
-        if (data.features && data.features.length > 0) {
-          setForm(f => ({ ...f, location: data.features[0].place_name }));
+        if (res.ok) {
+          const data = await res.json();
+          if (data.features && data.features.length > 0) {
+            resolvedAddress = data.features[0].place_name;
+          }
         }
       } catch (err) {
-        console.error("Reverse geocoding error:", err);
-      } finally {
-        setAddressLoading(false);
+        console.error("Reverse geocoding Mapbox error:", err);
       }
     }
+
+    // 2. Try Nominatim fallback
+    if (!resolvedAddress) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        if (res.ok) {
+          const data = await res.json();
+          resolvedAddress = data.display_name || '';
+        }
+      } catch (err) {
+        console.error("Reverse geocoding Nominatim error:", err);
+      }
+    }
+
+    if (resolvedAddress) {
+      setForm(f => ({ ...f, location: resolvedAddress }));
+    }
+    setAddressLoading(false);
   };
 
   const handleMapMoveEnd = (e) => {
@@ -167,18 +211,68 @@ export default function BookingFlow() {
   };
 
   const handleContinue = async () => {
+    if (!form.location) {
+      alert("Please specify a service address or select it on the map.");
+      return;
+    }
+    if (!form.manualAddress?.trim()) {
+      alert("🏠 Manual Address Details is required.");
+      return;
+    }
+    if (!form.bookingName?.trim()) {
+      alert("👤 Customer Name is required.");
+      return;
+    }
+    if (!form.bookingPhone?.trim()) {
+      alert("📞 Contact Phone Number is required.");
+      return;
+    }
+    if (!form.whatsappPhone?.trim()) {
+      alert("💬 WhatsApp Phone Number is required.");
+      return;
+    }
+
     const token = MAPBOX_TOKEN;
-    if (token && form.location && !form.location.startsWith('📍 Coords:')) {
-      try {
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(form.location)}.json?access_token=${token}&limit=1`);
-        const data = await res.json();
-        if (data.features && data.features.length > 0) {
-          const [lng, lat] = data.features[0].center;
-          setCoords({ lat, lng });
-          setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
+    let lat = null;
+    let lng = null;
+
+    if (form.location && !form.location.startsWith('📍 Coords:')) {
+      // 1. Try Mapbox first
+      if (token) {
+        try {
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(form.location)}.json?access_token=${token}&limit=1`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+              const center = data.features[0].center;
+              lng = center[0];
+              lat = center[1];
+            }
+          }
+        } catch (e) {
+          console.error("Mapbox geocoding failed, trying OSM:", e);
         }
-      } catch (e) {
-        console.error("Geocoding failed, using defaults", e);
+      }
+
+      // 2. Try Nominatim fallback if Mapbox failed or didn't yield coords
+      if (lat === null || lng === null) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.location)}&format=json&limit=1`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              lat = parseFloat(data[0].lat);
+              lng = parseFloat(data[0].lon);
+            }
+          }
+        } catch (osmErr) {
+          console.error("OSM Nominatim geocoding failed:", osmErr);
+        }
+      }
+
+      if (lat !== null && lng !== null) {
+        setCoords({ lat, lng });
+        setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
       }
     }
     setStep(2);
@@ -207,7 +301,12 @@ export default function BookingFlow() {
         total,
         duration: finalDuration,
         notes: finalNotes,
-        customAnswers: customAnswers
+        customAnswers: customAnswers,
+        bookingName: form.bookingName,
+        bookingPhone: form.bookingPhone,
+        whatsappPhone: form.whatsappPhone,
+        email: form.email,
+        manualAddress: form.manualAddress
       },
       customer
     ).then(order => {
@@ -232,7 +331,12 @@ export default function BookingFlow() {
       total,
       duration: finalDuration,
       notes: finalNotes,
-      customAnswers: customAnswers
+      customAnswers: customAnswers,
+      bookingName: form.bookingName,
+      bookingPhone: form.bookingPhone,
+      whatsappPhone: form.whatsappPhone,
+      email: form.email,
+      manualAddress: form.manualAddress
     });
     navigate('/cart');
   };
@@ -383,14 +487,68 @@ export default function BookingFlow() {
 
               <label style={{ marginTop: '10px' }}>
                 <span className="lbl-text">
-                  🏠 Manual Address Details (Optional)
+                  🏠 Manual Address Details <span style={{ color: '#dc2626' }}>*</span>
                 </span>
                 <input
                   placeholder="Flat/House No, Building, Apartment, Detailed Landmark"
                   value={form.manualAddress}
                   onChange={e => setForm(f => ({ ...f, manualAddress: e.target.value }))}
+                  required
                 />
               </label>
+
+              {/* ── Customer Booking Contact Information ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                <label>
+                  <span className="lbl-text">
+                    👤 Customer Name <span style={{ color: '#dc2626' }}>*</span>
+                  </span>
+                  <input
+                    placeholder="Full name for service contact"
+                    value={form.bookingName}
+                    onChange={e => setForm(f => ({ ...f, bookingName: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span className="lbl-text">
+                    ✉️ Email ID
+                  </span>
+                  <input
+                    type="email"
+                    placeholder="Enter email address (optional)"
+                    value={form.email}
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                <label>
+                  <span className="lbl-text">
+                    📞 Contact Phone Number <span style={{ color: '#dc2626' }}>*</span>
+                  </span>
+                  <input
+                    placeholder="Active mobile/phone number"
+                    value={form.bookingPhone}
+                    onChange={e => setForm(f => ({ ...f, bookingPhone: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span className="lbl-text">
+                    💬 WhatsApp Phone Number <span style={{ color: '#dc2626' }}>*</span>
+                  </span>
+                  <input
+                    placeholder="WhatsApp contact number"
+                    value={form.whatsappPhone}
+                    onChange={e => setForm(f => ({ ...f, whatsappPhone: e.target.value }))}
+                    required
+                  />
+                </label>
+              </div>
 
               {bookingType === 'scheduled' && (
                 <>
@@ -574,6 +732,24 @@ export default function BookingFlow() {
                   <div className="cd-row">
                     <span>🏠 Manual Address Details</span>
                     <strong>{form.manualAddress}</strong>
+                  </div>
+                )}
+                <div className="cd-row">
+                  <span>👤 Contact Name</span>
+                  <strong>{form.bookingName}</strong>
+                </div>
+                <div className="cd-row">
+                  <span>📞 Contact Phone</span>
+                  <strong>{form.bookingPhone}</strong>
+                </div>
+                <div className="cd-row">
+                  <span>💬 WhatsApp</span>
+                  <strong>{form.whatsappPhone}</strong>
+                </div>
+                {form.email && (
+                  <div className="cd-row">
+                    <span>✉️ Email ID</span>
+                    <strong>{form.email}</strong>
                   </div>
                 )}
                 <div className="cd-row">

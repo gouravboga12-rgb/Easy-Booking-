@@ -22,6 +22,30 @@ async function migrate() {
       await pool.query("ALTER TABLE users ADD COLUMN wallet JSON NULL");
       console.log("Column 'wallet' added to users.");
     }
+    if (!colNamesUsers.includes('lat')) {
+      await pool.query("ALTER TABLE users ADD COLUMN lat DECIMAL(10, 8) NULL");
+      console.log("Column 'lat' added to users.");
+    }
+    if (!colNamesUsers.includes('lng')) {
+      await pool.query("ALTER TABLE users ADD COLUMN lng DECIMAL(11, 8) NULL");
+      console.log("Column 'lng' added to users.");
+    }
+    if (!colNamesUsers.includes('city')) {
+      await pool.query("ALTER TABLE users ADD COLUMN city VARCHAR(255) NULL");
+      console.log("Column 'city' added to users.");
+    }
+    if (!colNamesUsers.includes('state')) {
+      await pool.query("ALTER TABLE users ADD COLUMN state VARCHAR(255) NULL");
+      console.log("Column 'state' added to users.");
+    }
+    if (!colNamesUsers.includes('target_locations')) {
+      await pool.query("ALTER TABLE users ADD COLUMN target_locations JSON NULL");
+      console.log("Column 'target_locations' added to users.");
+    }
+    if (!colNamesUsers.includes('live_tracking')) {
+      await pool.query("ALTER TABLE users ADD COLUMN live_tracking TINYINT(1) DEFAULT 1");
+      console.log("Column 'live_tracking' added to users.");
+    }
 
     // Bookings table coordinates
     const [columnsBookings] = await pool.query("SHOW COLUMNS FROM bookings");
