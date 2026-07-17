@@ -11,18 +11,39 @@ export default function WorkerOrders() {
   const [activeTab, setActiveTab] = useState('active'); // 'active', 'scheduled', or 'completed'
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
 
-  // Ongoing orders are instant orders or scheduled orders that have already active/arrived stages
+  // Helper: check if a scheduled order's time slot has arrived (within 30-min window)
+  const isScheduledTimeArrived = (order) => {
+    if (order.bookingType !== 'scheduled') return true;
+    const today = new Date().toLocaleDateString('en-CA');
+    if (order.booking?.date !== today) return false;
+    if (!order.booking?.timeSlot) return true;
+    try {
+      const timePart = order.booking.timeSlot.split('-')[0].trim();
+      const parts = timePart.split(' ');
+      const time = parts[0];
+      const ampm = (parts[1] || '').toUpperCase();
+      let [hrs, mins] = time.split(':').map(Number);
+      if (ampm === 'PM' && hrs !== 12) hrs += 12;
+      if (ampm === 'AM' && hrs === 12) hrs = 0;
+      const slotMinutes = hrs * 60 + mins;
+      const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+      return nowMinutes >= slotMinutes - 30;
+    } catch (e) { return true; }
+  };
+
+  // Ongoing: instant orders + scheduled orders whose time has arrived
   const ongoingOrders = orders.filter(o =>
     o.operator?.id === user.id &&
     ['assigned', 'active', 'arrived'].includes(o.status) &&
-    (o.bookingType === 'instant' || ['active', 'arrived'].includes(o.status))
+    isScheduledTimeArrived(o)
   );
 
-  // Scheduled orders are accepted scheduled jobs that are not yet active
+  // Scheduled tab: accepted scheduled jobs NOT yet at their time
   const scheduledOrders = orders.filter(o =>
     o.operator?.id === user.id &&
     o.status === 'assigned' &&
-    o.bookingType === 'scheduled'
+    o.bookingType === 'scheduled' &&
+    !isScheduledTimeArrived(o)
   );
 
   // Completed/cancelled orders list
@@ -344,7 +365,15 @@ export default function WorkerOrders() {
                 {/* Date & Time */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
-                  <strong style={{ color: '#0f172a' }}>{o.booking?.date} ({o.bookingType === 'instant' ? 'Instant Match' : 'Scheduled'})</strong>
+                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                    {o.booking?.date}
+                    {o.bookingType === 'scheduled'
+                      ? o.booking?.timeSlot
+                        ? <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px', fontWeight: '700' }}>📅 {o.booking.timeSlot} (Scheduled)</span>
+                        : <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px' }}>(Scheduled)</span>
+                      : <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
+                    }
+                  </strong>
                 </div>
 
                 {/* Customer Contact */}

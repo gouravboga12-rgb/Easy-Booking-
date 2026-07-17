@@ -89,13 +89,27 @@ export default function WorkerHome() {
   const [cancelReason, setCancelReason] = useState('Unable to reach the location');
   const [customCancelReason, setCustomCancelReason] = useState('');
 
-  // Upcoming scheduled orders today filtering and notification reminder logic
-  const upcomingScheduled = orders.filter(o =>
-    o.operator?.id === user.id &&
-    o.status === 'assigned' &&
-    o.bookingType === 'scheduled' &&
-    o.booking?.date === new Date().toLocaleDateString('en-CA')
-  );
+  // Upcoming scheduled orders today for reminder banners and alert hooks (future only)
+  const upcomingScheduled = orders.filter(o => {
+    if (o.operator?.id !== user.id) return false;
+    if (o.status !== 'assigned' || o.bookingType !== 'scheduled') return false;
+    const today = new Date().toLocaleDateString('en-CA');
+    if (o.booking?.date !== today) return false;
+    // Only remind if we haven't reached the slot start yet
+    if (!o.booking?.timeSlot) return true;
+    try {
+      const timePart = o.booking.timeSlot.split('-')[0].trim();
+      const parts = timePart.split(' ');
+      const time = parts[0];
+      const ampm = (parts[1] || '').toUpperCase();
+      let [hrs, mins] = time.split(':').map(Number);
+      if (ampm === 'PM' && hrs !== 12) hrs += 12;
+      if (ampm === 'AM' && hrs === 12) hrs = 0;
+      const slotMinutes = hrs * 60 + mins;
+      const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+      return nowMinutes < slotMinutes + 30; // show until 30 min after slot start
+    } catch (e) { return true; }
+  });
 
   useEffect(() => {
     if (upcomingScheduled.length === 0) return;
@@ -188,18 +202,60 @@ export default function WorkerHome() {
   const [blockedDates, setBlockedDates] = useState(user.availability?.blockedDates || []);
 
   const myOrders = orders.filter(o => o.operator?.id === user.id);
-  const activeJob = myOrders.find(o => ['assigned', 'active', 'arrived'].includes(o.status));
+
+  // Helper: check if a scheduled order's time slot has arrived (within 30-min window)
+  const isScheduledTimeArrived = (order) => {
+    if (order.bookingType !== 'scheduled') return true; // instant orders always active
+    const today = new Date().toLocaleDateString('en-CA');
+    if (order.booking?.date !== today) return false;
+    if (!order.booking?.timeSlot) return true; // no time slot = treat as active
+    try {
+      const timePart = order.booking.timeSlot.split('-')[0].trim();
+      const parts = timePart.split(' ');
+      const time = parts[0];
+      const ampm = (parts[1] || '').toUpperCase();
+      let [hrs, mins] = time.split(':').map(Number);
+      if (ampm === 'PM' && hrs !== 12) hrs += 12;
+      if (ampm === 'AM' && hrs === 12) hrs = 0;
+      const slotMinutes = hrs * 60 + mins;
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      return nowMinutes >= slotMinutes - 30; // show 30 min before slot
+    } catch (e) { return true; }
+  };
+
+  // Active job: instant assigned/active/arrived OR scheduled that has reached its time
+  const activeJob = myOrders.find(o =>
+    ['assigned', 'active', 'arrived'].includes(o.status) && isScheduledTimeArrived(o)
+  );
   const completedJobs = myOrders.filter(o => o.status === 'completed');
   const earnings = user.wallet?.balance || 0;
+
+  // Accepted scheduled orders (future — not yet time to start)
+  const myAcceptedScheduled = myOrders.filter(o =>
+    o.status === 'assigned' && o.bookingType === 'scheduled' && !isScheduledTimeArrived(o)
+  );
+
+  // Helper: check if an incoming pending order collides with accepted scheduled slots
+  const collidesWithScheduled = (pendingOrder) => {
+    if (pendingOrder.bookingType !== 'scheduled') return false;
+    return myAcceptedScheduled.some(sch => {
+      if (sch.booking?.date !== pendingOrder.booking?.date) return false;
+      if (!sch.booking?.timeSlot || !pendingOrder.booking?.timeSlot) return true; // same date, no slots = collision
+      return sch.booking.timeSlot === pendingOrder.booking.timeSlot;
+    });
+  };
 
   // Filter requests that are:
   // 1. Pending assignment
   // 2. Matches category
   // 3. Worker has not rejected
+  // 4. Does NOT collide with an accepted scheduled slot
   const pendingRequests = orders.filter(o => 
     o.status === 'pending' &&
     (!o.rejectedWorkers || !o.rejectedWorkers.includes(user.id)) &&
-    (user.categories && user.categories.includes(o.vehicle.category))
+    (user.categories && user.categories.includes(o.vehicle.category)) &&
+    !collidesWithScheduled(o)
   );
 
   const isSubscribed = !!user.subscription?.active;
@@ -2129,7 +2185,15 @@ export default function WorkerHome() {
                 {/* Date & Time */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
-                  <strong style={{ color: '#0f172a' }}>{req.booking?.date} ({req.bookingType === 'instant' ? 'Instant Match' : 'Scheduled'})</strong>
+                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                    {req.booking?.date}
+                    {req.bookingType === 'scheduled'
+                      ? req.booking?.timeSlot
+                        ? <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px', fontWeight: '700' }}>📅 {req.booking.timeSlot} (Scheduled)</span>
+                        : <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px' }}>(Scheduled)</span>
+                      : <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
+                    }
+                  </strong>
                 </div>
 
                 {/* Customer Contact (Privacy Redacted) */}
