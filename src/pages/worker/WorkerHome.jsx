@@ -1826,90 +1826,180 @@ export default function WorkerHome() {
                 const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
                 return (
-                  <div key={req.id} className="txn-item" style={{ background: '#fff', padding: '18px', borderRadius: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          <span style={{ background: req.bookingType === 'instant' ? '#eff6ff' : '#fef3c7', color: req.bookingType === 'instant' ? '#2563eb' : '#d97706', fontSize: '10.5px', fontWeight: '800', padding: '3px 8px', borderRadius: '8px', textTransform: 'uppercase' }}>
-                            {req.bookingType === 'instant' ? '⚡ Instant' : '📅 Scheduled'}
-                          </span>
-                          ⏰ Booked at: <strong>{bookingTimeStr}</strong>
+                  <div key={req.id} style={{
+                    background: '#fff',
+                    borderRadius: '16px',
+                    boxShadow: isInstant ? '0 4px 20px rgba(59,130,246,0.15)' : '0 4px 20px rgba(245,158,11,0.15)',
+                    border: `2px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+
+                    {/* ── COLOUR BANNER HEADER ── */}
+                    <div style={{
+                      background: isInstant
+                        ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)'
+                        : 'linear-gradient(135deg, #92400e 0%, #d97706 100%)',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+                          {isInstant ? '⚡' : '📅'}
                         </div>
-                        {req.booking?.notes && (
-                          <div style={{ marginTop: '8px', background: '#fff9f0', border: '1px solid #ffe0b2', padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Booking Notes & Specifications:</span>
-                            <div style={{ fontSize: '12px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                              {req.booking.notes}
-                            </div>
+                        <div>
+                          <div style={{ color: '#fff', fontWeight: '900', fontSize: '13.5px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                            {isInstant ? 'Instant Service Order' : 'Scheduled Service Order'}
                           </div>
-                        )}
-                        {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
-                          <div style={{ marginTop: '10px', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements:</span>
-                            {req.vehicle.custom_fields.map(f => {
-                              const val = req.customAnswers?.[f.id];
-                              if (val && val.startsWith('data:image/')) {
-                                return (
-                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
-                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                    <img src={val} alt="Spec" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #ddd' }} />
-                                  </div>
-                                );
-                              } else if (val && val.startsWith('data:application/pdf')) {
-                                return (
-                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
-                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                    <span style={{ color: 'var(--primary)', fontWeight: '700' }}>📁 PDF Attached</span>
-                                  </div>
-                                );
-                              } else {
-                                return (
-                                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
-                                    <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                    <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
-                                  </div>
-                                );
-                              }
-                            })}
+                          <div style={{ color: 'rgba(255,255,255,0.88)', fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>
+                            {isInstant
+                              ? '⚡ Customer needs service RIGHT NOW — Act fast!'
+                              : `📅 Planned in advance · ${req.booking?.date || 'Date TBD'}${req.booking?.timeSlot ? ' at ' + req.booking.timeSlot : ''}`
+                            }
                           </div>
-                        )}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ color: '#fff', fontWeight: '900', fontSize: '22px', lineHeight: 1 }}>₹{req.booking?.total?.toLocaleString()}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '10.5px', fontWeight: '700', marginTop: '2px' }}>
+                          {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '900', color: '#4f46e5' }}>₹{req.booking?.total?.toLocaleString()}</div>
-                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>
-                        {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
-                      </span>
-                    </div>
+                    {/* ── BODY ── */}
+                    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-                    <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '4px' }}>
-                    <button
-                      onClick={() => handleRejectRequest(req.id)}
-                      style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
-                    >
-                      <HiX /> Reject
-                    </button>
-                    <button
-                      onClick={() => setSelectedDetailsRequest(req)}
-                      style={{ flex: 1.5, border: '1.5px solid #3b82f6', color: '#3b82f6', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
-                    >
-                      🔍 View Details
-                    </button>
-                    <button
-                      onClick={() => handleAcceptRequest(req.id)}
-                      disabled={!!activeJob}
-                      style={{ flex: 1.5, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px', cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px', boxShadow: !!activeJob ? 'none' : '0 4px 10px rgba(79,70,229,0.2)' }}
-                    >
-                      <HiCheck /> Accept
-                    </button>
+                      {/* Service name row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '20px' }}>🛠️</span>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a' }}>{req.vehicle?.name}</div>
+                          {req.vehicle?.categoryLabel && (
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{req.vehicle.categoryLabel}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Type callout box */}
+                      {isInstant ? (
+                        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>⚡</span>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '900', color: '#1d4ed8' }}>INSTANT — Report immediately</div>
+                            <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>Once accepted, navigate and reach the customer right away</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>📅</span>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e' }}>SCHEDULED — Planned booking</div>
+                            <div style={{ fontSize: '11px', color: '#b45309', fontWeight: '700' }}>
+                              Report Date: <strong>{req.booking?.date || 'TBD'}</strong>
+                              {req.booking?.timeSlot ? <span>&nbsp;· Time: <strong>{req.booking.timeSlot}</strong></span> : ''}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Info pills */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
+                          📍 {formattedDistance} away
+                        </span>
+                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
+                          🕐 Booked at {bookingTimeStr}
+                        </span>
+                      </div>
+
+                      {/* Address */}
+                      {req.booking?.location && (
+                        <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '8px 12px', fontSize: '12.5px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                          <span style={{ marginTop: '1px', flexShrink: 0 }}>📍</span>
+                          <span style={{ fontWeight: '600', lineHeight: 1.4 }}>{req.booking.location}</span>
+                        </div>
+                      )}
+
+                      {/* Booking Notes */}
+                      {req.booking?.notes && (
+                        <div style={{ background: '#fff9f0', border: '1px solid #ffe0b2', padding: '8px 12px', borderRadius: '10px' }}>
+                          <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>📋 Customer Notes</span>
+                          <div style={{ fontSize: '12px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{req.booking.notes}</div>
+                        </div>
+                      )}
+
+                      {/* Custom Fields */}
+                      {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
+                        <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements</span>
+                          {req.vehicle.custom_fields.map(f => {
+                            const val = req.customAnswers?.[f.id];
+                            if (val && val.startsWith('data:image/')) {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <img src={val} alt="Spec" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #ddd' }} />
+                                </div>
+                              );
+                            } else if (val && val.startsWith('data:application/pdf')) {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <span style={{ color: 'var(--primary)', fontWeight: '700' }}>📁 PDF Attached</span>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                                </div>
+                              );
+                            }
+                          })}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
+                        <button
+                          onClick={() => handleRejectRequest(req.id)}
+                          style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
+                        >
+                          <HiX /> Reject
+                        </button>
+                        <button
+                          onClick={() => setSelectedDetailsRequest(req)}
+                          style={{ flex: 1.5, border: `1.5px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`, color: isInstant ? '#1d4ed8' : '#92400e', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
+                        >
+                          🔍 View Details
+                        </button>
+                        <button
+                          onClick={() => handleAcceptRequest(req.id)}
+                          disabled={!!activeJob}
+                          style={{
+                            flex: 1.5,
+                            background: !!activeJob ? '#cbd5e1' : isInstant ? 'linear-gradient(135deg,#1d4ed8,#3b82f6)' : 'linear-gradient(135deg,#92400e,#d97706)',
+                            color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px',
+                            cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px',
+                            boxShadow: !!activeJob ? 'none' : `0 4px 12px ${isInstant ? 'rgba(59,130,246,0.35)' : 'rgba(217,119,6,0.35)'}`
+                          }}
+                        >
+                          <HiCheck /> Accept
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── AVAILABILITY & DUTY SETTINGS ── */}
