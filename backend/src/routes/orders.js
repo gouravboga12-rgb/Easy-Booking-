@@ -267,7 +267,6 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         } catch (e) {}
       }
 
-      const custLocLower = (o.location || '').toLowerCase();
       const matchesTarget = (targetLocs && targetLocs.length > 0) ? targetLocs.some(loc => custLocLower.includes(loc.toLowerCase())) : false;
 
       // 2. Check radius matching
