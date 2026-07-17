@@ -21,10 +21,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const id = `order-${Date.now()}`;
     const status = workerId ? 'assigned' : 'pending';
 
-    // Fetch customer's phone number to generate suffix-based completion OTP (prefer bookingPhone, fallback to account profile phone)
+    // Fetch customer's phone number to generate suffix-based completion OTP (universal customer OTP based on registration phone)
     const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [customerId]);
-    const accountPhone = custUsers.length > 0 ? custUsers[0].phone : '';
-    const phone = bookingPhone || accountPhone || '';
+    const phone = custUsers.length > 0 ? custUsers[0].phone : '';
     const digits = phone ? phone.replace(/\D/g, '') : '';
     const completionOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
 
@@ -579,18 +578,23 @@ router.post('/:id/verify-otp', authenticateToken, async (req, res) => {
 
     const order = bookings[0];
 
-    // Get expected completion OTP
-    let expectedOtp = order.completion_otp;
-    if (!expectedOtp) {
-      // Fallback: calculate if not stored (prefer booking_phone, fallback to customer account phone)
-      const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [order.customer_id]);
-      const accountPhone = custUsers.length > 0 ? custUsers[0].phone : '';
-      const phone = order.booking_phone || accountPhone || '';
-      const digits = phone ? phone.replace(/\D/g, '') : '';
-      expectedOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
-    }
+    // Calculate expected universal registration OTP (derived from users table)
+    const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [order.customer_id]);
+    const accountPhone = custUsers.length > 0 ? custUsers[0].phone : '';
+    const accountDigits = accountPhone ? accountPhone.replace(/\D/g, '') : '';
+    const universalOtp = accountDigits.length >= 4 ? accountDigits.slice(-4) : '4821';
 
-    if (otp.trim() === expectedOtp.trim()) {
+    // Fallback: calculate contact-specific phone suffix
+    const contactPhone = order.booking_phone || accountPhone || '';
+    const contactDigits = contactPhone ? contactPhone.replace(/\D/g, '') : '';
+    const contactOtp = contactDigits.length >= 4 ? contactDigits.slice(-4) : '4821';
+
+    const inputOtp = otp.trim();
+    const isMatched = (inputOtp === universalOtp) || 
+                      (inputOtp === contactOtp) || 
+                      (order.completion_otp && inputOtp === order.completion_otp.trim());
+
+    if (isMatched) {
       await pool.query('UPDATE bookings SET otp_verified = 1 WHERE id = ?', [id]);
       const [updated] = await pool.query(`
         SELECT b.*, s.custom_fields AS service_custom_fields

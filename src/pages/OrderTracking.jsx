@@ -11,7 +11,8 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5
 
 const getCustomerOtp = (customer) => {
   if (!customer) return '4821';
-  const digits = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+  const phone = customer.accountPhone || customer.phone || '';
+  const digits = phone ? phone.replace(/\D/g, '') : '';
   if (digits.length >= 4) return digits.slice(-4);
   return '4821';
 };

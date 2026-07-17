@@ -27,6 +27,7 @@ const formatDbOrder = (dbOrder, services) => {
     id: dbOrder.customer_id, 
     name: dbOrder.booking_name || dbOrder.customer_name || 'Customer', 
     phone: dbOrder.booking_phone || dbOrder.customer_phone || '',
+    accountPhone: dbOrder.customer_phone || '',
     whatsapp: dbOrder.whatsapp_phone || '',
     email: dbOrder.email || dbOrder.customer_email || ''
   };
