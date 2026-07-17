@@ -29,6 +29,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const completionOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
 
     const customAnswersStr = customAnswers ? JSON.stringify(customAnswers) : null;
+    console.log(`[ORDER CREATE] bookingType=${bookingType} timeSlot=${timeSlot} date=${date}`);
 
     await pool.query(
       `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers, booking_name, booking_phone, whatsapp_phone, email, manual_address, time_slot)

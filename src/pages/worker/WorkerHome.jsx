@@ -1859,7 +1859,7 @@ export default function WorkerHome() {
                           <div style={{ color: 'rgba(255,255,255,0.88)', fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>
                             {isInstant
                               ? '⚡ Customer needs service RIGHT NOW — Act fast!'
-                              : `📅 Planned in advance · ${req.booking?.date || 'Date TBD'}${req.booking?.timeSlot ? ' at ' + req.booking.timeSlot : ''}`
+                              : `📅 Planned for: ${req.booking?.date || 'Date TBD'}${req.booking?.timeSlot ? ' at ' + req.booking.timeSlot : ' — time TBD'}`
                             }
                           </div>
                         </div>
@@ -1902,7 +1902,10 @@ export default function WorkerHome() {
                             <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e' }}>SCHEDULED — Planned booking</div>
                             <div style={{ fontSize: '11px', color: '#b45309', fontWeight: '700' }}>
                               Report Date: <strong>{req.booking?.date || 'TBD'}</strong>
-                              {req.booking?.timeSlot ? <span>&nbsp;· Time: <strong>{req.booking.timeSlot}</strong></span> : ''}
+                              {req.booking?.timeSlot
+                                ? <span>&nbsp;· Time: <strong>{req.booking.timeSlot}</strong></span>
+                                : <span style={{ color: '#dc2626' }}>&nbsp;· ⚠️ Time slot not specified — confirm with customer</span>
+                              }
                             </div>
                           </div>
                         </div>
