@@ -86,6 +86,7 @@ export default function WorkerHome() {
 
   // Cancellation States
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState('Unable to reach the location');
   const [customCancelReason, setCustomCancelReason] = useState('');
 
@@ -1051,7 +1052,10 @@ export default function WorkerHome() {
             </div>
             <button
               type="button"
-              onClick={() => setShowCancelModal(true)}
+              onClick={() => {
+                setOrderToCancel(activeJob);
+                setShowCancelModal(true);
+              }}
               style={{
                 background: '#fee2e2',
                 color: '#dc2626',
@@ -2210,12 +2214,15 @@ export default function WorkerHome() {
             boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
             border: '1.5px solid #eee'
           }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ⚠️ Cancel Assignment Warning
+            <h3 style={{ margin: '0 0 10px', fontSize: '18px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800' }}>
+              ⚠️ Profile Rating Downgrade Warning
             </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
-              Cancelling active assignments impacts your driver score, service reliability rating, and search visibility.
-            </p>
+            
+            <div style={{ background: '#fef2f2', border: '1.5px solid #fee2e2', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+              <p style={{ margin: 0, fontSize: '13px', color: '#991b1b', fontWeight: '700', lineHeight: '1.5' }}>
+                WARNING: Cancelling this assignment will downgrade your profile rating, reduce search visibility, and may result in temporary account restrictions. Please limit rejections to maintain good standing!
+              </p>
+            </div>
             
             <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
               Reason for Cancellation:
@@ -2266,7 +2273,10 @@ export default function WorkerHome() {
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 type="button"
-                onClick={() => setShowCancelModal(false)}
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setOrderToCancel(null);
+                }}
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -2285,9 +2295,13 @@ export default function WorkerHome() {
                 type="button"
                 onClick={async () => {
                   const finalReason = cancelReason === 'Other' ? customCancelReason : cancelReason;
-                  await rejectActiveJob(activeJob.id, user.id, cancelReason, finalReason);
+                  const cancelId = orderToCancel?.id || activeJob?.id;
+                  if (cancelId) {
+                    await rejectActiveJob(cancelId, user.id, cancelReason, finalReason);
+                  }
                   setShowCancelModal(false);
-                  alert("Order has been cancelled and returned to pool. Your cancel reason: " + finalReason);
+                  setOrderToCancel(null);
+                  alert("Order has been successfully cancelled and returned to pending dispatch pool.");
                 }}
                 style={{
                   flex: 1,
@@ -2392,15 +2406,74 @@ export default function WorkerHome() {
                   </div>
                 )}
 
-                {/* Customer Contact (Privacy Redacted) */}
+                {/* Customer Contact (Privacy Redacted if pending, full details if accepted) */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
                   <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Name</span>
                   <strong style={{ color: '#0f172a' }}>{req.customer?.name || 'Customer'}</strong>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', alignItems: 'center', background: '#fffbeb', border: '1px solid #fef3c7', padding: '6px 10px', borderRadius: '6px', color: '#b45309' }}>
-                  <span>Customer Phone</span>
-                  <strong style={{ fontSize: '11px', fontWeight: '700' }}>🔒 Hidden until accepted</strong>
-                </div>
+
+                {req.status === 'assigned' || req.status === 'active' || req.status === 'arrived' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', border: '1.5px solid #e2e8f0', padding: '14px', borderRadius: '12px', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
+                      <span style={{ color: '#64748b', fontWeight: '600' }}>Customer Phone</span>
+                      <strong style={{ color: '#0f172a' }}>{req.customer?.phone || 'No number'}</strong>
+                    </div>
+                    {req.customer?.phone && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <a
+                          href={`tel:${req.customer.phone}`}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            background: '#3b82f6',
+                            color: '#fff',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '800',
+                            textDecoration: 'none',
+                            textAlign: 'center'
+                          }}
+                        >
+                          <HiPhone style={{ width: 14, height: 14 }} /> Call
+                        </a>
+                        <a
+                          href={`https://wa.me/${(req.customer.whatsapp || req.customer.phone || '').replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            background: '#22c55e',
+                            color: '#fff',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '800',
+                            textDecoration: 'none',
+                            textAlign: 'center'
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.59 2.019 14.12 1.01 11.493 1.01 6.059 1.01 1.637 5.377 1.633 10.806c-.001 1.674.452 3.3 1.311 4.733L1.925 20.35l5.02-1.316-.298.12z" />
+                          </svg>
+                          WhatsApp
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', alignItems: 'center', background: '#fffbeb', border: '1px solid #fef3c7', padding: '6px 10px', borderRadius: '6px', color: '#b45309' }}>
+                    <span>Customer Phone</span>
+                    <strong style={{ fontSize: '11px', fontWeight: '700' }}>🔒 Hidden until accepted</strong>
+                  </div>
+                )}
 
                 {/* Dynamic Custom Fields */}
                 {customFields.length > 0 && (
@@ -2453,29 +2526,55 @@ export default function WorkerHome() {
               </div>
 
               {/* Accept & Reject Actions inside Modal */}
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleRejectRequest(req.id);
-                    setSelectedDetailsRequest(null);
-                  }}
-                  style={{ flex: 1, padding: '12px', background: '#f8fafc', border: '1.5px solid #fca5a5', color: '#dc2626', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}
-                >
-                  Reject Request
-                </button>
-                <button
-                  type="button"
-                  disabled={!!activeJob}
-                  onClick={() => {
-                    handleAcceptRequest(req.id);
-                    setSelectedDetailsRequest(null);
-                  }}
-                  style={{ flex: 2, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', border: 'none', color: '#fff', borderRadius: '10px', fontWeight: '800', cursor: !!activeJob ? 'not-allowed' : 'pointer', fontSize: '13px' }}
-                >
-                  Accept Booking
-                </button>
-              </div>
+              {req.status === 'assigned' || req.status === 'active' || req.status === 'arrived' ? (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const warnMsg = "⚠️ WARNING: Cancelling this scheduled service will affect your profile rating and downgrade your operational ranking.\n\nAre you sure you want to proceed to cancellation?";
+                      if (window.confirm(warnMsg)) {
+                        setSelectedDetailsRequest(null);
+                        setOrderToCancel(req);
+                        setShowCancelModal(true);
+                      }
+                    }}
+                    style={{ flex: 1, padding: '12px', background: '#fef2f2', border: '1.5px solid #fca5a5', color: '#dc2626', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Cancel Service
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDetailsRequest(null)}
+                    style={{ flex: 1, padding: '12px', background: 'var(--primary)', border: 'none', color: '#fff', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleRejectRequest(req.id);
+                      setSelectedDetailsRequest(null);
+                    }}
+                    style={{ flex: 1, padding: '12px', background: '#f8fafc', border: '1.5px solid #fca5a5', color: '#dc2626', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Reject Request
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!activeJob}
+                    onClick={() => {
+                      handleAcceptRequest(req.id);
+                      setSelectedDetailsRequest(null);
+                    }}
+                    style={{ flex: 2, background: !!activeJob ? '#cbd5e1' : 'var(--primary)', border: 'none', color: '#fff', borderRadius: '10px', fontWeight: '800', cursor: !!activeJob ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                  >
+                    Accept Booking
+                  </button>
+                </div>
+              )}
 
             </div>
           </div>
