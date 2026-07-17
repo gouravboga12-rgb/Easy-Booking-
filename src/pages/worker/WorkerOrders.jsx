@@ -363,18 +363,30 @@ export default function WorkerOrders() {
                 </div>
 
                 {/* Date & Time */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
-                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
-                    {o.booking?.date}
-                    {o.bookingType === 'scheduled'
-                      ? o.booking?.timeSlot
-                        ? <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px', fontWeight: '700' }}>📅 {o.booking.timeSlot} (Scheduled)</span>
-                        : <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px' }}>(Scheduled)</span>
-                      : <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
-                    }
-                  </strong>
-                </div>
+                {o.bookingType === 'scheduled' ? (
+                  <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e' }}>📅 SCHEDULED ORDER</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: '#78350f', fontWeight: '700' }}>📆 Service Date:</span>
+                      <strong style={{ fontSize: '14px', color: '#92400e' }}>{o.booking?.date || 'TBD'}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: '#78350f', fontWeight: '700' }}>⏰ Service Start Time:</span>
+                      {o.booking?.timeSlot
+                        ? <strong style={{ fontSize: '14px', color: '#d97706', background: '#fef3c7', padding: '3px 10px', borderRadius: '8px' }}>{o.booking.timeSlot}</strong>
+                        : <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '700' }}>⚠️ Confirm with customer</span>
+                      }
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', width: '100%' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
+                    <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                      {o.booking?.date}
+                      <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
+                    </strong>
+                  </div>
+                )}
 
                 {/* Customer Contact */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
