@@ -1824,6 +1824,7 @@ export default function WorkerHome() {
                 const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
                 const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
                 const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                const isInstant = req.bookingType === 'instant';
 
                 return (
                   <div key={req.id} style={{
