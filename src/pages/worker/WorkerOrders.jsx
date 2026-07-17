@@ -8,15 +8,27 @@ export default function WorkerOrders() {
   const orders = useStore(s => s.orders);
   const advanceStage = useStore(s => s.advanceStage);
 
-  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
+  const [activeTab, setActiveTab] = useState('active'); // 'active', 'scheduled', or 'completed'
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
 
-  const activeOrders = orders.filter(o =>
-    o.operator?.id === user.id && ['assigned', 'active', 'pending', 'arrived'].includes(o.status)
+  // Ongoing orders are instant orders or scheduled orders that have already active/arrived stages
+  const ongoingOrders = orders.filter(o =>
+    o.operator?.id === user.id &&
+    ['assigned', 'active', 'arrived'].includes(o.status) &&
+    (o.bookingType === 'instant' || ['active', 'arrived'].includes(o.status))
   );
 
+  // Scheduled orders are accepted scheduled jobs that are not yet active
+  const scheduledOrders = orders.filter(o =>
+    o.operator?.id === user.id &&
+    o.status === 'assigned' &&
+    o.bookingType === 'scheduled'
+  );
+
+  // Completed/cancelled orders list
   const completedOrders = orders.filter(o =>
-    o.operator?.id === user.id && o.status === 'completed'
+    o.operator?.id === user.id &&
+    (o.status === 'completed' || o.status === 'cancelled')
   );
 
   return (
@@ -34,7 +46,7 @@ export default function WorkerOrders() {
         borderRadius: '10px',
         marginBottom: '28px',
         width: '100%',
-        maxWidth: '420px',
+        maxWidth: '560px',
         border: '1px solid #e2e8f0'
       }}>
         <button
@@ -42,9 +54,9 @@ export default function WorkerOrders() {
           style={{
             border: 'none',
             outline: 'none',
-            padding: '8px 20px',
+            padding: '8px 16px',
             borderRadius: '8px',
-            fontSize: '13.5px',
+            fontSize: '13px',
             fontWeight: '700',
             cursor: 'pointer',
             background: activeTab === 'active' ? '#fff' : 'transparent',
@@ -54,20 +66,49 @@ export default function WorkerOrders() {
             fontFamily: 'inherit',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            flex: 1,
+            justifyContent: 'center'
           }}
         >
           <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6' }}></span>
-          Active & Ongoing ({activeOrders.length})
+          Active & Ongoing ({ongoingOrders.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('scheduled')}
+          style={{
+            border: 'none',
+            outline: 'none',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            background: activeTab === 'scheduled' ? '#fff' : 'transparent',
+            color: activeTab === 'scheduled' ? '#8b5cf6' : '#64748b',
+            boxShadow: activeTab === 'scheduled' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+            transition: 'all 0.18s ease',
+            fontFamily: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flex: 1,
+            justifyContent: 'center'
+          }}
+        >
+          <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#8b5cf6' }}></span>
+          Scheduled ({scheduledOrders.length})
+        </button>
+
         <button
           onClick={() => setActiveTab('completed')}
           style={{
             border: 'none',
             outline: 'none',
-            padding: '8px 20px',
+            padding: '8px 16px',
             borderRadius: '8px',
-            fontSize: '13.5px',
+            fontSize: '13px',
             fontWeight: '700',
             cursor: 'pointer',
             background: activeTab === 'completed' ? '#fff' : 'transparent',
@@ -77,7 +118,9 @@ export default function WorkerOrders() {
             fontFamily: 'inherit',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            flex: 1,
+            justifyContent: 'center'
           }}
         >
           <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
@@ -85,16 +128,16 @@ export default function WorkerOrders() {
         </button>
       </div>
 
-      {activeTab === 'active' ? (
-        /* Section 1: Active, Pending & Ongoing Services */
+      {activeTab === 'active' && (
+        /* Section 1: Active & Ongoing Services */
         <div className="worker-section-container">
-          {activeOrders.length === 0 ? (
+          {ongoingOrders.length === 0 ? (
             <div className="empty-msg" style={{ background: '#fff', border: '1.5px dashed #eee', borderRadius: '14px', padding: '40px' }}>
-              No active or pending orders right now.
+              No active or ongoing orders right now.
             </div>
           ) : (
             <div className="order-cards">
-              {activeOrders.map(o => (
+              {ongoingOrders.map(o => (
                 <div key={o.id} className="order-card" style={{ borderLeft: '4px solid #3b82f6' }}>
                   <div className="oc-header">
                     <div>
@@ -129,12 +172,62 @@ export default function WorkerOrders() {
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'scheduled' && (
+        /* Section 3: Scheduled Service Orders */
+        <div className="worker-section-container">
+          {scheduledOrders.length === 0 ? (
+            <div className="empty-msg" style={{ background: '#fff', border: '1.5px dashed #eee', borderRadius: '14px', padding: '40px' }}>
+              No scheduled orders accepted yet.
+            </div>
+          ) : (
+            <div className="order-cards">
+              {scheduledOrders.map(o => (
+                <div key={o.id} className="order-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
+                  <div className="oc-header">
+                    <div>
+                      <div className="oc-id">#{o.id}</div>
+                      <div className="oc-vehicle">{o.vehicle?.name}</div>
+                    </div>
+                    <span className="status-chip assigned" style={{ background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' }}>
+                      📅 Scheduled
+                    </span>
+                  </div>
+                  <div className="oc-details">
+                    <div className="oc-row"><HiLocationMarker className="oc-icon" />{o.booking?.location}</div>
+                    <div className="oc-row" style={{ color: '#6d28d9', fontWeight: '600' }}><HiCalendar className="oc-icon" />{o.booking?.date} · {o.booking?.duration} {o.vehicle?.unit}</div>
+                    <div className="oc-row"><HiUser className="oc-icon" />{o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
+                  </div>
+                  <div className="oc-footer">
+                    <div className="oc-amount">₹{o.booking?.total?.toLocaleString()}</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="aj-advance" style={{ background: '#f8fafc', color: '#475569', border: '1.5px solid #cbd5e1' }} onClick={() => setSelectedDetailsOrder(o)}>
+                        🔍 View Details
+                      </button>
+                      {o.stage < o.stages.length - 1 && (
+                        <button className="aj-advance" onClick={() => advanceStage(o.id)} style={{ background: '#8b5cf6', color: '#fff', border: 'none' }}>
+                          Start Service <HiArrowRight style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="oc-stage">
+                    Stage: <strong>{o.stages[o.stage]} (Not started)</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'completed' && (
         /* Section 2: Completed Service Orders */
         <div className="worker-section-container">
           {completedOrders.length === 0 ? (
             <div className="empty-msg" style={{ background: '#fff', border: '1.5px dashed #eee', borderRadius: '14px', padding: '40px' }}>
-              No completed orders yet.
+              No completed or history orders yet.
             </div>
           ) : (
             <div className="order-cards">
@@ -146,11 +239,13 @@ export default function WorkerOrders() {
                       <div className="oc-vehicle">{o.vehicle?.name}</div>
                     </div>
                     <span style={{
-                      background: '#d1fae5', color: '#065f46', padding: '6px 12px', borderRadius: '20px',
+                      background: o.status === 'cancelled' ? '#fee2e2' : '#d1fae5', 
+                      color: o.status === 'cancelled' ? '#991b1b' : '#065f46', 
+                      padding: '6px 12px', borderRadius: '20px',
                       fontSize: '11.5px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      border: '1px solid #a7f3d0'
+                      border: o.status === 'cancelled' ? '1px solid #fecaca' : '1px solid #a7f3d0'
                     }}>
-                      ✨ Successfully Completed
+                      {o.status === 'cancelled' ? '❌ Cancelled' : '✨ Successfully Completed'}
                     </span>
                   </div>
                   <div className="oc-details" style={{ margin: '14px 0' }}>
@@ -162,7 +257,7 @@ export default function WorkerOrders() {
                     <div className="oc-row" style={{ color: '#0f766e', fontWeight: '600' }}>
                       💳 Payment: <span style={{ textTransform: 'capitalize' }}>{o.paymentStatus === 'paid' ? `Paid (${o.paymentMode || 'cash'})` : 'Pending'}</span>
                     </div>
-
+ 
                     {/* Completion Time */}
                     <div className="oc-row" style={{ color: '#4b5563', fontSize: '12px' }}>
                       ⏱️ Finished: {o.completedAt ? new Date(o.completedAt).toLocaleString() : 'N/A'}

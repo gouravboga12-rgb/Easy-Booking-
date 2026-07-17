@@ -10,7 +10,8 @@ router.post('/', authenticateToken, async (req, res) => {
   const { 
     customerId, workerId, location, customerLat, customerLng, date, duration, 
     totalAmount, vehicleId, bookingType, notes, customAnswers,
-    bookingName, bookingPhone, whatsappPhone, email, manualAddress
+    bookingName, bookingPhone, whatsappPhone, email, manualAddress,
+    timeSlot
   } = req.body;
   
   if (!customerId || !location || !date || !duration || !totalAmount || !vehicleId) {
@@ -30,9 +31,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const customAnswersStr = customAnswers ? JSON.stringify(customAnswers) : null;
 
     await pool.query(
-      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers, booking_name, booking_phone, whatsapp_phone, email, manual_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
-      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp, customAnswersStr, bookingName || null, bookingPhone || null, whatsappPhone || null, email || null, manualAddress || null]
+      `INSERT INTO bookings (id, customer_id, worker_id, status, location, customer_lat, customer_lng, booking_date, duration, total_amount, vehicle_id, booking_type, notes, completion_otp, otp_verified, custom_answers, booking_name, booking_phone, whatsapp_phone, email, manual_address, time_slot)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customerId, workerId || null, status, location, customerLat || null, customerLng || null, date, duration, totalAmount, vehicleId, bookingType || 'instant', notes || null, completionOtp, customAnswersStr, bookingName || null, bookingPhone || null, whatsappPhone || null, email || null, manualAddress || null, timeSlot || null]
     );
 
 
@@ -168,16 +169,27 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
     const isSubActive = isSubscriptionActive(worker);
     
     const [activeAssignments] = await pool.query(
-      "SELECT id FROM bookings WHERE worker_id = ? AND status IN ('assigned', 'active', 'arrived')",
+      "SELECT id FROM bookings WHERE worker_id = ? AND (status IN ('active', 'arrived') OR (status = 'assigned' AND booking_type != 'scheduled'))",
       [id]
     );
     const isBusy = activeAssignments.length > 0;
 
     const canReceivePending = isOnline && isSubActive && !isBusy;
 
+    const [workerScheduled] = await pool.query(
+      "SELECT booking_date FROM bookings WHERE worker_id = ? AND status = 'assigned' AND booking_type = 'scheduled'",
+      [id]
+    );
+    const scheduledDates = workerScheduled.map(w => w.booking_date);
+
     let sql = '';
     let params = [];
     if (canReceivePending) {
+      let dateFilter = '';
+      if (scheduledDates.length > 0) {
+        // Exclude pending scheduled orders on the same dates
+        dateFilter = `AND NOT (b.status = 'pending' AND b.booking_type = 'scheduled' AND b.booking_date IN (${scheduledDates.map(() => '?').join(', ')}))`;
+      }
       sql = `
         SELECT b.*, 
                c.name AS customer_name,
@@ -192,10 +204,10 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         LEFT JOIN users c ON b.customer_id = c.id
         LEFT JOIN users w ON b.worker_id = w.id
         LEFT JOIN services s ON b.vehicle_id = s.id
-        WHERE b.worker_id = ? OR b.status = 'pending'
+        WHERE (b.worker_id = ? OR b.status = 'pending') ${dateFilter}
         ORDER BY b.created_at DESC
       `;
-      params = [id];
+      params = [id, ...scheduledDates];
     } else {
       sql = `
         SELECT b.*, 
@@ -362,13 +374,26 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         return res.status(403).json({ message: 'Your subscription package is inactive or expired. Please purchase/renew a plan to accept orders.' });
       }
 
-      // 2. Single Active Service constraint
-      const [activeAssignments] = await pool.query(
-        "SELECT id FROM bookings WHERE worker_id = ? AND status IN ('assigned', 'active', 'arrived')",
-        [workerId]
-      );
-      if (activeAssignments.length > 0) {
-        return res.status(400).json({ message: 'You already have an active service order. Please complete your current order first.' });
+      // 2.5 Overlapping scheduled orders check
+      if (order.booking_type === 'scheduled') {
+        const [existingScheduled] = await pool.query(
+          "SELECT id FROM bookings WHERE worker_id = ? AND status = 'assigned' AND booking_type = 'scheduled' AND booking_date = ?",
+          [workerId, order.booking_date]
+        );
+        if (existingScheduled.length > 0) {
+          return res.status(400).json({ message: 'You have already accepted another scheduled order on this date. You cannot accept overlapping scheduled bookings.' });
+        }
+      }
+
+      // 2. Single Active Service constraint (only for instant orders)
+      if (order.booking_type !== 'scheduled') {
+        const [activeAssignments] = await pool.query(
+          "SELECT id FROM bookings WHERE worker_id = ? AND (status IN ('active', 'arrived') OR (status = 'assigned' AND booking_type != 'scheduled'))",
+          [workerId]
+        );
+        if (activeAssignments.length > 0) {
+          return res.status(400).json({ message: 'You already have an active service order. Please complete your current order first.' });
+        }
       }
 
       // 3. Prevent race conditions: Check if this order is already assigned
@@ -378,8 +403,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
 
       // Accept the pending job
       await pool.query('UPDATE bookings SET status = ?, worker_id = ? WHERE id = ?', ['assigned', workerId, id]);
-      // Mark worker as busy (available = 0)
-      await pool.query('UPDATE users SET available = 0 WHERE id = ?', [workerId]);
+      
+      // Only mark worker as unavailable if the accepted order is NOT a scheduled order
+      if (order.booking_type !== 'scheduled') {
+        await pool.query('UPDATE users SET available = 0 WHERE id = ?', [workerId]);
+      }
     } else if (status === 'pending') {
       // Worker cancelling active job, set back to pending and append to rejected_workers list
       const [current] = await pool.query('SELECT rejected_workers FROM bookings WHERE id = ?', [id]);

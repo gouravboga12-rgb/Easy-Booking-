@@ -80,7 +80,8 @@ const formatDbOrder = (dbOrder, services) => {
       duration: dbOrder.duration,
       total: parseFloat(dbOrder.total_amount),
       bookingType: dbOrder.booking_type,
-      notes: dbOrder.notes
+      notes: dbOrder.notes,
+      timeSlot: dbOrder.time_slot
     },
     customer,
     operator,
@@ -295,7 +296,8 @@ export const useStore = create((set, get) => ({
       bookingPhone: booking.bookingPhone || null,
       whatsappPhone: booking.whatsappPhone || null,
       email: booking.email || null,
-      manualAddress: booking.manualAddress || null
+      manualAddress: booking.manualAddress || null,
+      timeSlot: booking.timeSlot || null
     };
     try {
       const response = await fetch(`${API_BASE_URL}/orders`, {

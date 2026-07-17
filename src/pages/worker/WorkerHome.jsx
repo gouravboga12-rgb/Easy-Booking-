@@ -89,6 +89,73 @@ export default function WorkerHome() {
   const [cancelReason, setCancelReason] = useState('Unable to reach the location');
   const [customCancelReason, setCustomCancelReason] = useState('');
 
+  // Upcoming scheduled orders today filtering and notification reminder logic
+  const upcomingScheduled = orders.filter(o =>
+    o.operator?.id === user.id &&
+    o.status === 'assigned' &&
+    o.bookingType === 'scheduled' &&
+    o.booking?.date === new Date().toLocaleDateString('en-CA')
+  );
+
+  useEffect(() => {
+    if (upcomingScheduled.length === 0) return;
+
+    // Helper to parse time slot start: e.g. "05:30 PM" or "09:30 AM - 11:30 AM"
+    const parseTimeSlotStart = (timeSlotStr) => {
+      if (!timeSlotStr) return null;
+      try {
+        const timePart = timeSlotStr.split('-')[0].trim();
+        const parts = timePart.split(' ');
+        const time = parts[0];
+        const ampm = parts[1] ? parts[1].toUpperCase() : '';
+        let [hrs, mins] = time.split(':').map(Number);
+        if (ampm === 'PM' && hrs !== 12) hrs += 12;
+        if (ampm === 'AM' && hrs === 12) hrs = 0;
+        return { hrs, mins };
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // Track which reminders we have sent during this session
+    const notifiedMap = {};
+
+    const checkReminders = () => {
+      const now = new Date();
+      const currentHrs = now.getHours();
+      const currentMins = now.getMinutes();
+      const nowMinutes = currentHrs * 60 + currentMins;
+
+      upcomingScheduled.forEach(o => {
+        const timeSlotStr = o.booking?.timeSlot;
+        const start = parseTimeSlotStart(timeSlotStr);
+        if (!start) return;
+
+        const startMinutes = start.hrs * 60 + start.mins;
+        const diffMinutes = startMinutes - nowMinutes;
+
+        // Trigger reminders at 60, 30, and 15 minutes before slot start
+        const key = `${o.id}-${diffMinutes}`;
+        if ([60, 30, 15].includes(diffMinutes) && !notifiedMap[key]) {
+          notifiedMap[key] = true;
+          try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            osc.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.35);
+          } catch (e) {}
+
+          alert(`⏰ REMINDER: You have a scheduled service order today at ${timeSlotStr || '5:30 PM'} (${diffMinutes} minutes remaining). Please attend the customer on time.`);
+        }
+      });
+    };
+
+    const intervalId = setInterval(checkReminders, 45000); // check every 45s
+    checkReminders();
+    return () => clearInterval(intervalId);
+  }, [upcomingScheduled, user?.id]);
+
   // Payment Collection States
   const [paymentMode, setPaymentMode] = useState(null);
 
@@ -752,6 +819,62 @@ export default function WorkerHome() {
           </span>
         </div>
       </div>
+
+      {/* Scheduled Orders Reminder Banner */}
+      {upcomingScheduled.map(o => (
+        <div key={o.id} style={{
+          background: 'linear-gradient(135deg, #f3e8ff 0%, #fae8ff 100%)',
+          border: '1.5px solid #d8b4fe',
+          padding: '16px',
+          borderRadius: '16px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 12px rgba(139, 92, 246, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px'
+        }}>
+          <div style={{
+            background: '#8b5cf6',
+            color: '#fff',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            flexShrink: 0
+          }}>
+            📅
+          </div>
+          <div style={{ flex: 1 }}>
+            <h4 style={{ margin: 0, fontSize: '13.5px', color: '#581c87', fontWeight: '800' }}>
+              You have a scheduled order today at {o.booking?.timeSlot || '5:30 PM'}
+            </h4>
+            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6b21a8', fontWeight: '500' }}>
+              Service: <strong>{o.vehicle?.name}</strong> · Location: <strong>{o.booking?.location?.split(',')[0]}</strong>
+            </p>
+          </div>
+          <button 
+            onClick={() => {
+              navigate('/worker/orders');
+            }}
+            style={{
+              background: '#8b5cf6',
+              color: '#fff',
+              border: 'none',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)'
+            }}
+          >
+            Go to Orders
+          </button>
+        </div>
+      ))}
 
       {/* Stats Cockpit */}
       <div className="worker-stats">

@@ -183,6 +183,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!bookingColNames.includes('worker_message')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN worker_message VARCHAR(255) NULL');
     }
+    if (!bookingColNames.includes('time_slot')) {
+      await pool.query('ALTER TABLE bookings ADD COLUMN time_slot VARCHAR(100) NULL');
+    }
     if (!bookingColNames.includes('rejected_workers')) {
       await pool.query('ALTER TABLE bookings ADD COLUMN rejected_workers TEXT NULL');
     }
