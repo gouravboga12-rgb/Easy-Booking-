@@ -378,6 +378,9 @@ export default function WorkerHome() {
       alert("⚠️ Your subscription is inactive or expired. Please purchase or renew your subscription package to accept booking requests.");
       return;
     }
+    const targetReq = pendingRequests.find(r => r.id === orderId);
+    const isSched = targetReq?.bookingType === 'scheduled';
+
     const res = await assignWorker(orderId, {
       id: user.id,
       name: user.name,
@@ -386,7 +389,11 @@ export default function WorkerHome() {
       vehicle: user.vehicle,
       photo: user.photo
     });
-    if (res && res.error) {
+    if (res && res.success) {
+      if (isSched) {
+        alert("📅 Scheduled service successfully accepted and added to your Orders page 'Scheduled' section. You will be notified as the date and time approaches!");
+      }
+    } else if (res && res.error) {
       alert(res.error);
     }
   };
@@ -943,6 +950,84 @@ export default function WorkerHome() {
             <span style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{label}</span>
           </div>
         ))}
+      </div>
+
+      {/* ── UPCOMING ACCEPTED SCHEDULED SERVICES WIDGET ── */}
+      <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', color: '#1e293b' }}>
+              <span>📅</span> Upcoming Scheduled Tasks ({myAcceptedScheduled.length})
+            </h2>
+            <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', display: 'block' }}>
+              Accepted scheduled jobs waiting for start time
+            </span>
+          </div>
+          {myAcceptedScheduled.length > 0 && (
+            <Link to="/worker/orders" style={{ fontSize: '12px', fontWeight: '750', color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: '8px' }}>
+              View Schedule
+            </Link>
+          )}
+        </div>
+
+        {myAcceptedScheduled.length === 0 ? (
+          <div style={{ padding: '24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #e2e8f0' }}>
+            <span style={{ fontSize: '24px' }}>📆</span>
+            <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>
+              No upcoming scheduled tasks. Keep an eye out for scheduled dispatch requests!
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {myAcceptedScheduled.map(o => (
+              <div key={o.id} style={{
+                background: '#fffbeb',
+                border: '1.5px solid #fde68a',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.04)'
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#92400e' }}>{o.vehicle?.name}</span>
+                    <span style={{ fontSize: '10px', color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', textTransform: 'uppercase' }}>
+                      Accepted
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: '#78350f', fontWeight: '600' }}>
+                    <span>📆 <strong>{o.booking?.date}</strong></span>
+                    <span>⏰ <strong>{o.booking?.timeSlot || 'Confirm Time'}</strong></span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#b45309', marginTop: '4px', opacity: 0.8 }}>
+                    📍 {o.booking?.location?.split(',')[0]}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                  <span style={{ fontSize: '15px', fontWeight: '900', color: '#92400e' }}>₹{o.booking?.total?.toLocaleString()}</span>
+                  <button
+                    onClick={() => setSelectedDetailsRequest(o)}
+                    style={{
+                      background: '#fff',
+                      border: '1.5px solid #fde68a',
+                      color: '#b45309',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {completeSuccess && (
