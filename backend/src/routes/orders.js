@@ -21,9 +21,10 @@ router.post('/', authenticateToken, async (req, res) => {
     const id = `order-${Date.now()}`;
     const status = workerId ? 'assigned' : 'pending';
 
-    // Fetch customer's phone number to generate suffix-based completion OTP
+    // Fetch customer's phone number to generate suffix-based completion OTP (prefer bookingPhone, fallback to account profile phone)
     const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [customerId]);
-    const phone = custUsers.length > 0 ? custUsers[0].phone : '';
+    const accountPhone = custUsers.length > 0 ? custUsers[0].phone : '';
+    const phone = bookingPhone || accountPhone || '';
     const digits = phone ? phone.replace(/\D/g, '') : '';
     const completionOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
 
@@ -581,9 +582,10 @@ router.post('/:id/verify-otp', authenticateToken, async (req, res) => {
     // Get expected completion OTP
     let expectedOtp = order.completion_otp;
     if (!expectedOtp) {
-      // Fallback: calculate if not stored
+      // Fallback: calculate if not stored (prefer booking_phone, fallback to customer account phone)
       const [custUsers] = await pool.query('SELECT phone FROM users WHERE id = ?', [order.customer_id]);
-      const phone = custUsers.length > 0 ? custUsers[0].phone : '';
+      const accountPhone = custUsers.length > 0 ? custUsers[0].phone : '';
+      const phone = order.booking_phone || accountPhone || '';
       const digits = phone ? phone.replace(/\D/g, '') : '';
       expectedOtp = digits.length >= 4 ? digits.slice(-4) : '4821';
     }
