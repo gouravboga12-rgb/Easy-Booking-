@@ -1896,15 +1896,20 @@ export default function WorkerHome() {
                           </div>
                         </div>
                       ) : (
-                        <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '18px' }}>📅</span>
-                          <div>
-                            <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e' }}>SCHEDULED — Planned booking</div>
-                            <div style={{ fontSize: '11px', color: '#b45309', fontWeight: '700' }}>
-                              Report Date: <strong>{req.booking?.date || 'TBD'}</strong>
+                        <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📅</span> SCHEDULED — Planned Booking
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>📆 Service Date:</span>
+                              <strong style={{ fontSize: '13px', color: '#92400e' }}>{req.booking?.date || 'TBD'}</strong>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>⏰ Service Start Time:</span>
                               {req.booking?.timeSlot
-                                ? <span>&nbsp;· Time: <strong>{req.booking.timeSlot}</strong></span>
-                                : <span style={{ color: '#dc2626' }}>&nbsp;· ⚠️ Time slot not specified — confirm with customer</span>
+                                ? <strong style={{ fontSize: '13px', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px' }}>{req.booking.timeSlot}</strong>
+                                : <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '700' }}>⚠️ Confirm with customer</span>
                               }
                             </div>
                           </div>
@@ -2277,18 +2282,30 @@ export default function WorkerHome() {
                 </div>
 
                 {/* Date & Time */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
-                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
-                    {req.booking?.date}
-                    {req.bookingType === 'scheduled'
-                      ? req.booking?.timeSlot
-                        ? <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px', fontWeight: '700' }}>📅 {req.booking.timeSlot} (Scheduled)</span>
-                        : <span style={{ display: 'block', color: '#8b5cf6', fontSize: '12px' }}>(Scheduled)</span>
-                      : <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
-                    }
-                  </strong>
-                </div>
+                {req.bookingType === 'scheduled' ? (
+                  <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e' }}>📅 SCHEDULED ORDER</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: '#78350f', fontWeight: '700' }}>📆 Service Date:</span>
+                      <strong style={{ fontSize: '14px', color: '#92400e' }}>{req.booking?.date || 'TBD'}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: '#78350f', fontWeight: '700' }}>⏰ Service Start Time:</span>
+                      {req.booking?.timeSlot
+                        ? <strong style={{ fontSize: '14px', color: '#d97706', background: '#fef3c7', padding: '3px 10px', borderRadius: '8px' }}>{req.booking.timeSlot}</strong>
+                        : <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '700' }}>⚠️ Confirm with customer</span>
+                      }
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Preferred Date/Time</span>
+                    <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                      {req.booking?.date}
+                      <span style={{ display: 'block', color: '#3b82f6', fontSize: '12px' }}>⚡ Instant Match</span>
+                    </strong>
+                  </div>
+                )}
 
                 {/* Customer Contact (Privacy Redacted) */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>

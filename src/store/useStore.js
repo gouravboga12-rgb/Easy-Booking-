@@ -71,6 +71,7 @@ const formatDbOrder = (dbOrder, services) => {
   return {
     id: dbOrder.id,
     vehicle,
+    bookingType: dbOrder.booking_type || 'instant',
     booking: {
       location: dbOrder.location,
       manualAddress: dbOrder.manual_address || '',
