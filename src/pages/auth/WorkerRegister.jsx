@@ -412,7 +412,7 @@ export default function WorkerRegister() {
 
               <label>Service Area Radius
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '10px' }}>
-                  {['5', '10', '20', '30', 'custom'].map(r => (
+                  {['10', '25', '50', '70', 'custom'].map(r => (
                     <button
                       key={r}
                       type="button"
@@ -423,13 +423,13 @@ export default function WorkerRegister() {
                           handleProfChange('radius', Number(r));
                         }
                       }}
-                      className={`role-card ${((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'active' : ''}`}
+                      className={`role-card ${((r === 'custom' && ![10,25,50,70].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'active' : ''}`}
                       style={{
                         padding: '8px 12px',
                         border: '1.5px solid',
-                        borderColor: ((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary)' : '#eee',
+                        borderColor: ((r === 'custom' && ![10,25,50,70].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary)' : '#eee',
                         borderRadius: '8px',
-                        background: ((r === 'custom' && ![5,10,20,30].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary-light)' : '#fff',
+                        background: ((r === 'custom' && ![10,25,50,70].includes(professionalForm.radius)) || (r !== 'custom' && professionalForm.radius === Number(r))) ? 'var(--primary-light)' : '#fff',
                         cursor: 'pointer',
                         fontSize: '12px',
                         fontWeight: '600'
@@ -439,9 +439,9 @@ export default function WorkerRegister() {
                     </button>
                   ))}
                 </div>
-                {![5, 10, 20, 30].includes(professionalForm.radius) && (
+                {![10, 25, 50, 70].includes(professionalForm.radius) && (
                   <div className="range-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-                    <input type="range" min="2" max="50" step="1" value={professionalForm.radius} onChange={e => handleProfChange('radius', Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--primary)', padding: 0 }} />
+                    <input type="range" min="2" max="70" step="1" value={professionalForm.radius} onChange={e => handleProfChange('radius', Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--primary)', padding: 0 }} />
                     <strong style={{ fontSize: '15px', color: '#1a1a1a', width: '50px', textAlign: 'right' }}>{professionalForm.radius} Km</strong>
                   </div>
                 )}

@@ -218,7 +218,7 @@ export default function WorkerProfile() {
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '13px', fontWeight: '600' }}>Work Area Radius (Km)
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <input type="range" min="2" max="30" value={radius} onChange={e => setRadius(e.target.value)} style={{ flex: 1, accentColor: 'var(--primary)' }} />
+              <input type="range" min="2" max="70" value={radius} onChange={e => setRadius(e.target.value)} style={{ flex: 1, accentColor: 'var(--primary)' }} />
               <strong style={{ width: '50px', textAlign: 'right' }}>{radius} Km</strong>
             </div>
           </label>
