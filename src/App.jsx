@@ -172,6 +172,7 @@ function Layout() {
     if (!user) return;
 
     const refreshData = () => {
+      fetchServices();
       if (user.role === 'admin') {
         fetchWorkers();
         fetchOrdersForAdmin();
@@ -189,7 +190,7 @@ function Layout() {
     const interval = setInterval(refreshData, 3000);
 
     return () => clearInterval(interval);
-  }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin]);
+  }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin, fetchServices]);
 
   return (
     <>

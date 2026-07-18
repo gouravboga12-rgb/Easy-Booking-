@@ -530,3 +530,17 @@
   color: #4f46e5;
   font-weight: 600;
 }
+
+/* Navbar Refresh Button Animation */
+.spin-icon {
+  animation: spin-anim-nav 1s linear infinite;
+}
+@keyframes spin-anim-nav {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.navbar-refresh-btn:hover:not(:disabled) {
+  background: #e2e8f0 !important;
+  color: var(--primary) !important;
+  border-color: #cbd5e1 !important;
+}

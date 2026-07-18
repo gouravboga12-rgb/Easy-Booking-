@@ -6,7 +6,7 @@ import {
   HiChevronDown, HiChevronUp,
   HiClipboardList, HiCog, HiLogout,
   HiShoppingCart, HiLocationMarker, HiUser,
-  HiSearch, HiBell, HiX
+  HiSearch, HiBell, HiX, HiRefresh
 } from 'react-icons/hi';
 import './Navbar.css';
 
@@ -15,6 +15,7 @@ export default function Navbar() {
   const cartCount = useStore(s => s.cart.length);
   const notifications = useStore(s => s.notifications);
   const fetchNotifications = useStore(s => s.fetchNotifications);
+  const fetchServices = useStore(s => s.fetchServices);
   const markNotificationRead = useStore(s => s.markNotificationRead);
   const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
   const clearAllNotifications = useStore(s => s.clearAllNotifications);
@@ -23,6 +24,33 @@ export default function Navbar() {
   const [params] = useSearchParams();
   const [dropOpen, setDropOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchServices();
+      if (user) {
+        await fetchNotifications();
+        if (user.role === 'admin') {
+          const fetchWorkers = useStore.getState().fetchWorkers;
+          const fetchOrdersForAdmin = useStore.getState().fetchOrdersForAdmin;
+          if (fetchWorkers) await fetchWorkers();
+          if (fetchOrdersForAdmin) await fetchOrdersForAdmin();
+        } else if (user.role === 'customer') {
+          const fetchOrdersForCustomer = useStore.getState().fetchOrdersForCustomer;
+          if (fetchOrdersForCustomer) await fetchOrdersForCustomer(user.id);
+        } else if (user.role === 'worker') {
+          const fetchOrdersForWorker = useStore.getState().fetchOrdersForWorker;
+          if (fetchOrdersForWorker) await fetchOrdersForWorker(user.id);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 600);
+    }
+  };
   const [loc, setLoc] = useState('');
   const [navSearchVal, setNavSearchVal] = useState(params.get('q') || '');
   const dropRef = useRef();
@@ -329,6 +357,32 @@ export default function Navbar() {
               )}
             </div>
           )}
+
+          {/* Refresh Button */}
+          <button 
+            onClick={handleManualRefresh}
+            style={{ 
+              background: '#f8fafc', 
+              border: '1px solid #e2e8f0', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              color: '#64748b',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              marginRight: '8px',
+              transition: 'all 0.2s',
+              flexShrink: 0
+            }}
+            disabled={isRefreshing}
+            title="Refresh Page Data"
+            className="navbar-refresh-btn"
+          >
+            <HiRefresh className={isRefreshing ? 'spin-icon' : ''} style={{ fontSize: '18px' }} />
+          </button>
 
           {/* Cart Button */}
           <button className="cart-btn" onClick={() => navigate('/cart')}>
