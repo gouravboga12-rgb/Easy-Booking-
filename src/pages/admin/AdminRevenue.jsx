@@ -18,6 +18,7 @@ export default function AdminRevenue() {
 
   const workers = users.filter(u => u.role === 'worker');
   const subscribedWorkers = workers.filter(w => w.subscription?.active);
+  const subscribedUsers = users.filter(u => u.subscription?.active);
   const [period, setPeriod] = useState('monthly');
   const [revenuePeriod, setRevenuePeriod] = useState('all'); // 'today', 'week', 'month', 'year', 'all'
 
@@ -33,10 +34,19 @@ export default function AdminRevenue() {
     startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
   }
 
-  // Filter subscription workers based on period
+  // Filter subscription workers based on period (for display table)
   const filteredSubscribedWorkers = subscribedWorkers.filter(w => {
     if (!startDate) return true;
     const dateStr = w.subscription?.purchasedAt || w.created_at || w.createdAt;
+    if (!dateStr) return true;
+    const purchaseDate = new Date(dateStr);
+    return purchaseDate >= startDate;
+  });
+
+  // Filter subscription users based on period (for revenue metrics)
+  const filteredSubscribedUsers = subscribedUsers.filter(u => {
+    if (!startDate) return true;
+    const dateStr = u.subscription?.purchasedAt || u.created_at || u.createdAt;
     if (!dateStr) return true;
     const purchaseDate = new Date(dateStr);
     return purchaseDate >= startDate;
@@ -56,15 +66,67 @@ export default function AdminRevenue() {
   const pendingRevenue = filteredOrders.filter(o => o.status === 'pending').reduce((s, o) => s + (o.booking?.total || 0), 0);
   const gstOnBookings = Math.round(totalBookingRevenue * 0.18);
 
-  // Subscription Revenue — primary metric
-  const subscriptionRevenue = filteredSubscribedWorkers.reduce((sum, w) => {
-    if (!w.subscription?.active) return sum;
-    if (w.subscription.price !== undefined) return sum + (parseFloat(w.subscription.price) || 0);
-    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-    if (plan) return sum + (parseFloat(plan.price) || 0);
-    const fallbackPrice = w.subscription.plan?.match(/(\d+)/)?.[0];
-    return sum + (parseFloat(fallbackPrice || 0));
-  }, 0);
+  // Collect all unique plan names from both subscriptionPlans (DB) and active subscribers
+  const allPlansMap = {};
+
+  // 1. Initialize with database subscription plans (this handles plans with 0 subscribers)
+  subscriptionPlans.forEach(plan => {
+    allPlansMap[plan.name] = {
+      name: plan.name,
+      price: parseFloat(plan.price) || 0,
+      type: plan.type || 'worker',
+      active: !!plan.active,
+      isDbPlan: true
+    };
+  });
+
+  // 2. Add plans from active subscribers (handles deleted, modified, or custom plans)
+  filteredSubscribedUsers.forEach(u => {
+    const planName = u.subscription?.plan;
+    if (!planName) return;
+
+    if (!allPlansMap[planName]) {
+      // Resolve price
+      let price = 0;
+      if (u.subscription.price !== undefined) {
+        price = parseFloat(u.subscription.price) || 0;
+      } else {
+        const fallbackPrice = planName.match(/(\d+)/)?.[0];
+        price = parseFloat(fallbackPrice || 0);
+      }
+      allPlansMap[planName] = {
+        name: planName,
+        price: price,
+        type: u.role || 'worker',
+        active: true,
+        isDbPlan: false
+      };
+    }
+  });
+
+  // Convert map to array and calculate subscriber counts & revenues
+  const displayPlans = Object.values(allPlansMap).map(plan => {
+    const subscribers = filteredSubscribedUsers.filter(u => u.subscription?.active && u.subscription?.plan === plan.name);
+    const count = subscribers.length;
+    
+    // Sum the actual prices paid by the users, falling back to plan.price
+    const revenue = subscribers.reduce((sum, u) => {
+      if (u.subscription.price !== undefined) return sum + (parseFloat(u.subscription.price) || 0);
+      return sum + plan.price;
+    }, 0);
+
+    return {
+      ...plan,
+      count,
+      revenue
+    };
+  }).filter(plan => {
+    // Keep plan if it's in the database OR has active subscribers
+    return plan.isDbPlan || plan.count > 0;
+  });
+
+  // Subscription Revenue — primary metric (total of all plan revenues)
+  const subscriptionRevenue = displayPlans.reduce((sum, p) => sum + p.revenue, 0);
   const gstOnSubscriptions = Math.round(subscriptionRevenue * 0.18);
   const netPlatformRevenue = subscriptionRevenue + totalBookingRevenue - gstOnBookings;
 
@@ -137,7 +199,7 @@ export default function AdminRevenue() {
               ₹{subscriptionRevenue.toLocaleString()}
             </div>
             <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.85 }}>
-              Total Subscription Revenue ({filteredSubscribedWorkers.length} active subscribers)
+              Total Subscription Revenue ({filteredSubscribedUsers.length} active subscribers)
             </div>
             <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.7 }}>
               GST (18%): ₹{gstOnSubscriptions.toLocaleString()} | Net: ₹{(subscriptionRevenue - gstOnSubscriptions).toLocaleString()}
@@ -153,16 +215,14 @@ export default function AdminRevenue() {
         </div>
 
         {/* Subscription plan breakdown inside hero */}
-        {subscriptionPlans.length > 0 && (
+        {displayPlans.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px', flexWrap: 'wrap' }}>
-            {subscriptionPlans.map(plan => {
-              const count = filteredSubscribedWorkers.filter(w => w.subscription?.active && w.subscription?.plan === plan.name).length;
-              const price = parseFloat(plan.price) || 0;
+            {displayPlans.map(plan => {
               return (
-                <div key={plan.id || plan.name} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 16px', flex: 1, minWidth: '140px' }}>
+                <div key={plan.name} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 16px', flex: 1, minWidth: '140px' }}>
                   <div style={{ fontSize: '11px', opacity: 0.8 }}>{plan.name}</div>
-                  <div style={{ fontSize: '18px', fontWeight: '800' }}>₹{(count * price).toLocaleString()}</div>
-                  <div style={{ fontSize: '10px', opacity: 0.65 }}>{count} subscribers × ₹{price}</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800' }}>₹{plan.revenue.toLocaleString()}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.65 }}>{plan.count} subscribers × ₹{plan.price}</div>
                 </div>
               );
             })}
