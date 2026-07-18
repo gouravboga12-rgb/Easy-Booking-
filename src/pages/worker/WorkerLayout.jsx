@@ -1,6 +1,8 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser, HiLightningBolt } from 'react-icons/hi';
+import { useStore } from '../../store/useStore';
+import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser, HiLightningBolt, HiBell, HiX } from 'react-icons/hi';
 import { MdConstruction } from 'react-icons/md';
 import './Worker.css';
 
@@ -15,6 +17,22 @@ const NAV = [
 
 export default function WorkerLayout() {
   const user = useAuthStore(s => s.user);
+  const notifications = useStore(s => s.notifications);
+  const markNotificationRead = useStore(s => s.markNotificationRead);
+  const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (!notifRef.current?.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Filter notifications for workers
+  const myNotifs = notifications.filter(n => n.audience === 'all' || n.audience === 'workers');
+  const unreadCount = myNotifs.filter(n => !n.read).length;
+
   if (!user) return null;
 
   return (
@@ -34,10 +52,11 @@ export default function WorkerLayout() {
               {user.available ? '● Online' : '○ Offline'}
             </span>
           </div>
+          {/* LIVE badge */}
           <div style={{
             position: 'absolute',
             top: '10px',
-            right: '10px',
+            right: '42px',
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
@@ -57,6 +76,56 @@ export default function WorkerLayout() {
               animation: 'livePulse 1.5s infinite'
             }}></span>
             LIVE
+          </div>
+          {/* Notification Bell - Sidebar */}
+          <div ref={notifRef} style={{ position: 'absolute', top: '8px', right: '6px' }}>
+            <button
+              onClick={() => setNotifOpen(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '50%', color: '#555' }}
+              title="Notifications"
+            >
+              <HiBell style={{ fontSize: '18px' }} />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '0px', right: '0px', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            {notifOpen && (
+              <div style={{ position: 'absolute', left: '0', top: 'calc(100% + 6px)', width: '300px', background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #eee', zIndex: 9999, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #f3f4f6' }}>
+                  <strong style={{ fontSize: '13px', color: '#1a1a1a' }}>🔔 Notifications</strong>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllNotificationsRead} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#6366f1', cursor: 'pointer', fontWeight: '700' }}>Mark all read</button>
+                    )}
+                    <button onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center' }}><HiX /></button>
+                  </div>
+                </div>
+                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  {myNotifs.length === 0 ? (
+                    <div style={{ padding: '28px 14px', textAlign: 'center', color: '#aaa', fontSize: '12px' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '6px' }}>🔕</div>
+                      No notifications yet
+                    </div>
+                  ) : myNotifs.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => markNotificationRead(n.id)}
+                      style={{ padding: '10px 14px', borderBottom: '1px solid #f9fafb', display: 'flex', gap: '8px', alignItems: 'flex-start', cursor: 'pointer', background: n.read ? '#fff' : '#f5f3ff' }}
+                    >
+                      <span style={{ fontSize: '18px', marginTop: '1px' }}>{n.channel === 'email' ? '📧' : n.channel === 'sms' ? '📱' : '🔔'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', fontWeight: n.read ? '500' : '700', color: '#1a1a1a', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
+                        <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>{n.body}</div>
+                        <div style={{ fontSize: '10px', color: '#aaa', marginTop: '3px' }}>{n.sent}</div>
+                      </div>
+                      {!n.read && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#6366f1', flexShrink: 0, marginTop: '5px' }}></span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <nav className="ws-nav">
@@ -113,6 +182,19 @@ export default function WorkerLayout() {
               }}></span>
               LIVE
             </div>
+            {/* Notification Bell - Mobile Header */}
+            <button
+              onClick={() => setNotifOpen(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', borderRadius: '50%', color: '#555', marginLeft: '4px' }}
+              title="Notifications"
+            >
+              <HiBell style={{ fontSize: '20px' }} />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '1px', right: '1px', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
           </div>
         </header>
 
