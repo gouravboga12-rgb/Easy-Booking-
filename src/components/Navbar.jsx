@@ -30,12 +30,47 @@ export default function Navbar() {
   const isHome = location.pathname === '/';
   const prevNotifIdsRef = useRef(new Set());
   const isFirstLoadRef = useRef(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Browser Autoplay Policy Unlock
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+        }
+      } catch (e) {}
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
 
   const playNotificationSound = () => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       const ctx = new AudioContext();
+      
+      // Force resume context in case autoplay policy was not fully unlocked yet
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
       
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -232,7 +267,29 @@ export default function Navbar() {
                 )}
               </button>
               {notifOpen && (
-                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: '340px', background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.13)', border: '1px solid #eee', zIndex: 9999, overflow: 'hidden' }}>
+                <div style={isMobile ? {
+                  position: 'fixed',
+                  left: '12px',
+                  right: '12px',
+                  top: '64px',
+                  background: '#fff',
+                  borderRadius: '14px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                  border: '1px solid #eee',
+                  zIndex: 9999,
+                  overflow: 'hidden'
+                } : {
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '340px',
+                  background: '#fff',
+                  borderRadius: '14px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
+                  border: '1px solid #eee',
+                  zIndex: 9999,
+                  overflow: 'hidden'
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #f3f4f6' }}>
                     <strong style={{ fontSize: '14px', color: '#1a1a1a' }}>🔔 Notifications</strong>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
