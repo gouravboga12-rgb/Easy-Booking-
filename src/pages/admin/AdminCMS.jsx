@@ -40,6 +40,7 @@ export default function AdminCMS() {
   const [faqs, setFaqs] = useState(INIT_FAQS);
   const [editingFaq, setEditingFaq] = useState(null);
   const [editingBanner, setEditingBanner] = useState(null);
+  const [deletingBannerId, setDeletingBannerId] = useState(null);
   const [showAddAnn, setShowAddAnn] = useState(false);
   const [showAddFaq, setShowAddFaq] = useState(false);
   const [showAddBanner, setShowAddBanner] = useState(false);
@@ -108,13 +109,8 @@ export default function AdminCMS() {
     showSuccess('Banner updated successfully!');
   };
 
-  const handleDeleteBanner = async (id) => {
-    if (window.confirm('Are you sure you want to delete this banner?')) {
-      if (deleteBanner) {
-        await deleteBanner(id);
-      }
-      showSuccess('Banner deleted successfully!');
-    }
+  const handleDeleteBanner = (id) => {
+    setDeletingBannerId(id);
   };
 
   const handleToggleBannerActive = async (banner) => {
@@ -487,6 +483,37 @@ export default function AdminCMS() {
                 <button type="submit" className="cm-confirm">Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Banner Confirmation Modal */}
+      {deletingBannerId && (
+        <div className="modal-overlay" onClick={() => setDeletingBannerId(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', textAlign: 'center', padding: '24px' }}>
+            <div style={{ fontSize: '42px', marginBottom: '12px' }}>⚠️</div>
+            <h3 style={{ margin: '0 0 10px', fontSize: '16px', fontWeight: '800', color: '#111827' }}>Confirm Banner Deletion</h3>
+            <p style={{ fontSize: '13.5px', color: '#4b5563', lineHeight: '1.6', margin: '0 0 20px' }}>
+              Are you sure you want to permanently delete this banner from the homepage slide cycle? This action cannot be undone.
+            </p>
+            <div className="cm-actions" style={{ justifyContent: 'center', gap: '12px' }}>
+              <button type="button" className="cm-cancel" onClick={() => setDeletingBannerId(null)} style={{ padding: '9px 20px', borderRadius: '6px', fontSize: '13px', border: '1px solid #cbd5e1', fontWeight: '600' }}>Cancel</button>
+              <button 
+                type="button" 
+                className="cm-confirm" 
+                onClick={async () => {
+                  const idToDelete = deletingBannerId;
+                  setDeletingBannerId(null);
+                  if (deleteBanner) {
+                    await deleteBanner(idToDelete);
+                  }
+                  showSuccess('Banner deleted successfully!');
+                }}
+                style={{ padding: '9px 20px', borderRadius: '6px', fontSize: '13px', background: '#ef4444', borderColor: '#ef4444', color: '#fff', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Yes, Delete Banner
+              </button>
+            </div>
           </div>
         </div>
       )}
