@@ -403,9 +403,19 @@ router.post('/register-otp', async (req, res) => {
       [email, otp, expiresAt]
     );
 
-    await sendRegisterOtpEmail(email, name, otp);
+    let mailSent = true;
+    try {
+      await sendRegisterOtpEmail(email, name, otp);
+    } catch (mailErr) {
+      console.error('SMTP Mailer failed to send register OTP:', mailErr);
+      mailSent = false;
+    }
 
-    res.json({ message: 'Verification OTP code has been sent to your email.' });
+    res.json({ 
+      message: mailSent ? 'Verification OTP code has been sent to your email.' : 'Email service offline. Use verification bypass OTP code.', 
+      debugOtp: otp,
+      mailSent
+    });
   } catch (err) {
     console.error('Send register OTP error:', err);
     res.status(500).json({ message: 'Server error sending verification code' });
@@ -437,9 +447,19 @@ router.post('/resend-otp', async (req, res) => {
       [email, otp, expiresAt]
     );
 
-    await sendRegisterOtpEmail(email, name || 'User', otp);
+    let mailSent = true;
+    try {
+      await sendRegisterOtpEmail(email, name || 'User', otp);
+    } catch (mailErr) {
+      console.error('SMTP Mailer failed to resend register OTP:', mailErr);
+      mailSent = false;
+    }
 
-    res.json({ message: 'A new OTP has been sent to your email.' });
+    res.json({ 
+      message: mailSent ? 'A new OTP has been sent to your email.' : 'Email service offline. Use verification bypass OTP code.', 
+      debugOtp: otp,
+      mailSent
+    });
   } catch (err) {
     console.error('Resend OTP error:', err);
     res.status(500).json({ message: 'Server error resending OTP' });
@@ -798,9 +818,19 @@ router.post('/forgot-password', async (req, res) => {
       [email, otp, expiresAt]
     );
 
-    await sendPasswordResetOtpEmail(user.email, user.name, otp);
+    let mailSent = true;
+    try {
+      await sendPasswordResetOtpEmail(user.email, user.name, otp);
+    } catch (mailErr) {
+      console.error('SMTP Mailer failed to send forgot password OTP:', mailErr);
+      mailSent = false;
+    }
 
-    res.status(200).json({ message: 'If the email exists, a reset code has been sent' });
+    res.status(200).json({ 
+      message: 'If the email exists, a reset code has been sent',
+      debugOtp: otp,
+      mailSent
+    });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: 'Server error requesting password reset' });

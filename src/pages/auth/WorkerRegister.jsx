@@ -48,6 +48,7 @@ export default function WorkerRegister() {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [debugOtp, setDebugOtp] = useState('');
   const { register, sendRegisterOtp, resendRegisterOtp } = useAuthStore();
   const navigate = useNavigate();
 
@@ -243,6 +244,7 @@ export default function WorkerRegister() {
       setError(result.error);
       return;
     }
+    if (result.debugOtp) setDebugOtp(result.debugOtp);
     setStep(5); // Move to OTP verification step
     startCooldown(60);
   };
@@ -304,7 +306,8 @@ export default function WorkerRegister() {
     if (result.error) { setError(result.error); }
     else {
       setOtp('');
-      setSuccessMsg('New OTP sent! Check your email.');
+      setSuccessMsg(result.debugOtp ? 'New OTP generated (Bypass active)!' : 'New OTP sent! Check your email.');
+      if (result.debugOtp) setDebugOtp(result.debugOtp);
       startCooldown(60);
       setTimeout(() => setSuccessMsg(''), 4000);
     }
@@ -690,6 +693,13 @@ export default function WorkerRegister() {
                   <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#666' }}>Please enter the 6-digit code to complete registration.</p>
                 </div>
               </div>
+
+              {debugOtp && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', marginBottom: '14px', lineHeight: '1.4' }}>
+                  <strong>🔒 Debug Mode Bypass:</strong><br />
+                  Email service is down. Please enter this code: <strong style={{ fontSize: '15px', color: '#1d4ed8' }}>{debugOtp}</strong>
+                </div>
+              )}
 
               <label>Enter OTP
                 <div className="input-wrap">

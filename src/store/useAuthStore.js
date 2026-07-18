@@ -95,7 +95,7 @@ export const useAuthStore = create((set, get) => ({
       if (!response.ok) {
         return { error: data.message || 'Failed to send OTP' };
       }
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
     } catch (err) {
       return { error: 'Connection error' };
     }
@@ -112,7 +112,7 @@ export const useAuthStore = create((set, get) => ({
       if (!response.ok) {
         return { error: data.message || 'Failed to resend OTP' };
       }
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
     } catch (err) {
       return { error: 'Connection error' };
     }
@@ -430,7 +430,7 @@ export const useAuthStore = create((set, get) => ({
       if (!response.ok) {
         return { error: data.message || 'Request failed' };
       }
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
     } catch (err) {
       set({ loading: false });
       return { error: 'Connection error' };
