@@ -241,7 +241,6 @@ export default function AdminRevenue() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
         {[
           { label: 'Total Booking Sales', val: `₹${totalBookingRevenue.toLocaleString()}`, color: '#10b981', icon: '💰' },
-          { label: 'GST on Bookings (18%)', val: `₹${gstOnBookings.toLocaleString()}`, color: '#f59e0b', icon: '🧾' },
           { label: 'Pending Sales Pool', val: `₹${pendingRevenue.toLocaleString()}`, color: '#f97316', icon: '⏳' },
           { label: 'Cancelled Revenue Lost', val: `₹${orders.filter(o => o.status === 'cancelled').reduce((s, o) => s + (o.booking?.total || 0), 0).toLocaleString()}`, color: '#ef4444', icon: '❌' },
         ].map(({ label, val, color, icon }) => (

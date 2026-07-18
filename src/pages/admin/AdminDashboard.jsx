@@ -45,7 +45,7 @@ export default function AdminDashboard() {
     { label: 'Active Subscriptions',  val: activeSubWorkers,                              Icon: HiBadgeCheck,     color: '#6366f1', bg: '#eef2ff', path: '/admin/subscriptions' },
     { label: 'Total Customers',       val: customers.length,                              Icon: HiUsers,          color: '#8b5cf6', bg: '#f5f3ff', path: '/admin/customers' },
     { label: 'Cancelled Orders',      val: cancelled.length,                              Icon: HiX,              color: '#ef4444', bg: '#fef2f2', path: '/admin/orders' },
-    { label: 'Net Platform Earnings', val: `₹${(revenue + subscriptionRevenue).toLocaleString()}`, Icon: HiTrendingUp, color: '#10b981', bg: '#ecfdf5', path: '/admin/revenue' },
+    { label: 'Total Subscription Revenue', val: `₹${subscriptionRevenue.toLocaleString()}`, Icon: HiTrendingUp, color: '#10b981', bg: '#ecfdf5', path: '/admin/revenue' },
   ];
 
   const recent = [...orders].reverse().slice(0, 6);
@@ -80,8 +80,8 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 20px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
-            <div style={{ fontSize: '22px', fontWeight: '800' }}>₹{(revenue + subscriptionRevenue).toLocaleString()}</div>
-            <div style={{ fontSize: '11px', opacity: 0.75, marginTop: '2px' }}>Total Platform Revenue</div>
+            <div style={{ fontSize: '22px', fontWeight: '800' }}>₹{subscriptionRevenue.toLocaleString()}</div>
+            <div style={{ fontSize: '11px', opacity: 0.75, marginTop: '2px' }}>Total Subscription Revenue</div>
           </div>
           <div style={{ background: 'rgba(16,185,129,0.2)', borderRadius: '12px', padding: '14px 20px', textAlign: 'center', border: '1px solid rgba(16,185,129,0.3)' }}>
             <div style={{ fontSize: '22px', fontWeight: '800', color: '#34d399' }}>{orders.length}</div>
