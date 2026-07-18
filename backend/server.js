@@ -7,6 +7,7 @@ import serviceRoutes from './src/routes/services.js';
 import trackingRoutes from './src/routes/tracking.js';
 import subscriptionRoutes from './src/routes/subscriptions.js';
 import categoryRoutes from './src/routes/categories.js';
+import notificationRoutes from './src/routes/notifications.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Health Check

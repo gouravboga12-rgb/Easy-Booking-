@@ -109,10 +109,28 @@ export const useStore = create((set, get) => ({
   cart: [],
   liveTracking: {},
 
-  // Global notifications broadcast by admin
+  // Global notifications — fetched from backend API (persisted, cross-session)
   notifications: [],
   broadcastNotification: (notif) => {
     set(state => ({ notifications: [notif, ...state.notifications] }));
+  },
+  fetchNotifications: async (role) => {
+    try {
+      const url = role
+        ? `${API_BASE_URL}/notifications/for/${role}`
+        : `${API_BASE_URL}/notifications`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        // Preserve local read state by merging with existing notifications
+        const existing = get().notifications;
+        const readIds = new Set(existing.filter(n => n.read).map(n => String(n.id)));
+        const merged = data.map(n => ({ ...n, read: readIds.has(String(n.id)) }));
+        set({ notifications: merged });
+      }
+    } catch (err) {
+      console.error('Fetch notifications error:', err);
+    }
   },
   markNotificationRead: (id) => {
     set(state => ({

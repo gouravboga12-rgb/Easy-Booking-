@@ -18,6 +18,7 @@ const NAV = [
 export default function WorkerLayout() {
   const user = useAuthStore(s => s.user);
   const notifications = useStore(s => s.notifications);
+  const fetchNotifications = useStore(s => s.fetchNotifications);
   const markNotificationRead = useStore(s => s.markNotificationRead);
   const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -28,6 +29,16 @@ export default function WorkerLayout() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications('worker');
+      const interval = setInterval(() => {
+        fetchNotifications('worker');
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchNotifications]);
 
   // Filter notifications for workers
   const myNotifs = notifications.filter(n => n.audience === 'all' || n.audience === 'workers');

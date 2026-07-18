@@ -1,23 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import { HiBell, HiMail, HiPhone, HiSpeakerphone, HiCheckCircle, HiUsers } from 'react-icons/hi';
+import { API_BASE_URL } from '../../config';
 import './Admin.css';
 
 const NOTIFICATION_HISTORY = [
-  { id: 'n1', title: 'Welcome to Parrow Skills!', body: 'Start browsing verified professionals near you.', channel: 'push', audience: 'customers', sent: '2026-06-28 10:00', status: 'delivered' },
-  { id: 'n2', title: 'Worker Subscription Reminder', body: 'Renew your subscription to keep receiving dispatch requests.', channel: 'sms', audience: 'workers', sent: '2026-06-27 15:30', status: 'delivered' },
-  { id: 'n3', title: 'New Promo Code: SAVE100', body: 'Get ₹100 off on your next booking. Valid this week only!', channel: 'email', audience: 'all', sent: '2026-06-25 09:00', status: 'delivered' },
+  { id: 'n1', title: 'Welcome to Parrow Skills!', body: 'Start browsing verified professionals near you.', channel: 'push', audience: 'customers', sent_at: '2026-06-28 10:00:00', status: 'delivered' },
+  { id: 'n2', title: 'Worker Subscription Reminder', body: 'Renew your subscription to keep receiving dispatch requests.', channel: 'sms', audience: 'workers', sent_at: '2026-06-27 15:30:00', status: 'delivered' },
+  { id: 'n3', title: 'New Promo Code: SAVE100', body: 'Get ₹100 off on your next booking. Valid this week only!', channel: 'email', audience: 'all', sent_at: '2026-06-25 09:00:00', status: 'delivered' },
 ];
 
 export default function AdminNotifications() {
   const users = useAuthStore(s => s.users);
   const workers = users.filter(u => u.role === 'worker');
   const customers = users.filter(u => u.role === 'customer');
-  const broadcastNotification = useStore(s => s.broadcastNotification);
+  const notifications = useStore(s => s.notifications);
+  const fetchNotifications = useStore(s => s.fetchNotifications);
 
   const [tab, setTab] = useState('compose');
-  const [history, setHistory] = useState(NOTIFICATION_HISTORY);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const history = notifications && notifications.length > 0 ? notifications : NOTIFICATION_HISTORY;
 
   const [form, setForm] = useState({
     title: '',
@@ -27,29 +34,43 @@ export default function AdminNotifications() {
   });
   const [sent, setSent] = useState(false);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
     const recipientCount = form.audience === 'all'
       ? workers.length + customers.length
       : form.audience === 'workers' ? workers.length : customers.length;
 
-    const newNotif = {
-      id: `n${Date.now()}`,
-      title: form.title,
-      body: form.body,
-      channel: form.channel,
-      audience: form.audience,
-      sent: new Date().toLocaleString(),
-      status: 'delivered',
-      recipients: recipientCount,
-      read: false,
-    };
-    setHistory(prev => [newNotif, ...prev]);
-    // Broadcast to global store so customer/worker notification bell picks it up
-    broadcastNotification(newNotif);
-    setSent(true);
-    setForm({ title: '', body: '', channel: 'push', audience: 'all' });
-    setTimeout(() => setSent(false), 4000);
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: form.title,
+          body: form.body,
+          channel: form.channel,
+          audience: form.audience,
+          recipients: recipientCount
+        })
+      });
+
+      if (response.ok) {
+        // Refresh notifications list from DB
+        fetchNotifications();
+        setSent(true);
+        setForm({ title: '', body: '', channel: 'push', audience: 'all' });
+        setTimeout(() => setSent(false), 4000);
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || 'Failed to send notification'}`);
+      }
+    } catch (err) {
+      console.error('Send notification error:', err);
+      alert('Connection error sending notification');
+    }
   };
 
   const channelIcon = (ch) => ({ push: '🔔', sms: '📱', email: '📧' }[ch] || '📢');
@@ -168,8 +189,8 @@ export default function AdminNotifications() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '11px', background: '#f3f4f6', color: '#555', padding: '2px 8px', borderRadius: '10px' }}>{n.channel.toUpperCase()}</span>
                     <span style={{ fontSize: '11px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px' }}>{n.audience}</span>
-                    <span style={{ fontSize: '11px', color: '#aaa' }}>{n.sent}</span>
-                    {n.recipients && <span style={{ fontSize: '11px', color: '#888' }}>{n.recipients} recipients</span>}
+                    <span style={{ fontSize: '11px', color: '#aaa' }}>{n.sent_at ? new Date(n.sent_at).toLocaleString() : (n.sent || '')}</span>
+                    {n.recipients !== undefined && <span style={{ fontSize: '11px', color: '#888' }}>{n.recipients} recipients</span>}
                   </div>
                 </div>
               </div>

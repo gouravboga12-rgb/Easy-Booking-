@@ -14,6 +14,7 @@ export default function Navbar() {
   const { user, logout } = useAuthStore();
   const cartCount = useStore(s => s.cart.length);
   const notifications = useStore(s => s.notifications);
+  const fetchNotifications = useStore(s => s.fetchNotifications);
   const markNotificationRead = useStore(s => s.markNotificationRead);
   const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
   const navigate = useNavigate();
@@ -36,6 +37,16 @@ export default function Navbar() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications(user.role);
+      const interval = setInterval(() => {
+        fetchNotifications(user.role);
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchNotifications]);
 
   // Filter notifications relevant to current user's role
   const myNotifs = user ? notifications.filter(n => {
