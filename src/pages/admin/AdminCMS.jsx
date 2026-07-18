@@ -26,13 +26,41 @@ export default function AdminCMS() {
   const [announcements, setAnnouncements] = useState(INIT_ANNOUNCEMENTS);
   const [faqs, setFaqs] = useState(INIT_FAQS);
   const [editingFaq, setEditingFaq] = useState(null);
+  const [editingBanner, setEditingBanner] = useState(null);
   const [showAddAnn, setShowAddAnn] = useState(false);
   const [showAddFaq, setShowAddFaq] = useState(false);
+  const [showAddBanner, setShowAddBanner] = useState(false);
   const [newAnn, setNewAnn] = useState({ title: '', message: '', audience: 'all' });
   const [newFaq, setNewFaq] = useState({ q: '', a: '' });
+  const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true });
   const [successMsg, setSuccessMsg] = useState('');
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
+
+  const handleAddBanner = (e) => {
+    e.preventDefault();
+    setBanners(prev => [...prev, {
+      id: `b${Date.now()}`,
+      ...newBanner
+    }]);
+    setNewBanner({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true });
+    setShowAddBanner(false);
+    showSuccess('Banner added successfully!');
+  };
+
+  const handleSaveBanner = (e) => {
+    e.preventDefault();
+    setBanners(prev => prev.map(b => b.id === editingBanner.id ? editingBanner : b));
+    setEditingBanner(null);
+    showSuccess('Banner updated successfully!');
+  };
+
+  const handleDeleteBanner = (id) => {
+    if (window.confirm('Are you sure you want to delete this banner?')) {
+      setBanners(prev => prev.filter(b => b.id !== id));
+      showSuccess('Banner deleted successfully!');
+    }
+  };
 
   const handleAddAnnouncement = (e) => {
     e.preventDefault();
@@ -96,6 +124,59 @@ export default function AdminCMS() {
       {/* HOME BANNERS */}
       {tab === 'banners' && (
         <div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <button onClick={() => setShowAddBanner(!showAddBanner)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <HiPlus /> Add Banner
+            </button>
+          </div>
+
+          {showAddBanner && (
+            <div style={{ background: '#fff', padding: '20px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '20px', border: '1px solid #ede9fe' }}>
+              <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: '700', color: '#6d28d9' }}>Create Home Banner</h3>
+              <form onSubmit={handleAddBanner} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
+                    <input value={newBanner.title} onChange={e => setNewBanner(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Electricians & Plumbers" required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Subtitle</label>
+                    <input value={newBanner.subtitle} onChange={e => setNewBanner(p => ({ ...p, subtitle: e.target.value }))} placeholder="e.g. Verified professionals at your doorstep" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Image URL</label>
+                    <input value={newBanner.image} onChange={e => setNewBanner(p => ({ ...p, image: e.target.value }))} placeholder="https://images.unsplash.com/..." required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>CTA Button Text</label>
+                    <input value={newBanner.cta} onChange={e => setNewBanner(p => ({ ...p, cta: e.target.value }))} placeholder="e.g. Book Electrician" required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Page Placement / Index</label>
+                    <select value={newBanner.page} onChange={e => setNewBanner(p => ({ ...p, page: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', minWidth: '150px' }}>
+                      <option value="Home Slide 1">Home Slide 1</option>
+                      <option value="Home Slide 2">Home Slide 2</option>
+                      <option value="Home Slide 3">Home Slide 3</option>
+                      <option value="Home Slide 4">Home Slide 4</option>
+                      <option value="Home Slide 5">Home Slide 5</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                    <input type="checkbox" id="addActive" checked={newBanner.active} onChange={e => setNewBanner(p => ({ ...p, active: e.target.checked }))} />
+                    <label htmlFor="addActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
+                  </div>
+                  <button type="submit" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>Create Banner</button>
+                </div>
+              </form>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {banners.map(b => (
               <div key={b.id} style={{ background: '#fff', border: '1px solid #eee', borderRadius: '14px', overflow: 'hidden', display: 'flex', gap: 0 }}>
@@ -115,6 +196,12 @@ export default function AdminCMS() {
                     </span>
                     <button onClick={() => setBanners(prev => prev.map(bn => bn.id === b.id ? { ...bn, active: !bn.active } : bn))} style={{ background: b.active ? '#fee2e2' : '#dcfce7', color: b.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: b.active ? '#fca5a5' : '#bbf7d0', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
                       {b.active ? 'Disable' : 'Enable'}
+                    </button>
+                    <button onClick={() => setEditingBanner({ ...b })} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleDeleteBanner(b.id)} style={{ background: 'none', border: '1px solid #fca5a5', color: '#ef4444', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -243,6 +330,53 @@ export default function AdminCMS() {
               <div className="cm-actions">
                 <button type="button" className="cm-cancel" onClick={() => setEditingFaq(null)}>Cancel</button>
                 <button type="submit" className="cm-confirm">Save FAQ</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Banner Modal */}
+      {editingBanner && (
+        <div className="modal-overlay" onClick={() => setEditingBanner(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '100%' }}>
+            <h3 style={{ color: '#6d28d9', fontWeight: '800' }}>Edit Home Banner</h3>
+            <form onSubmit={handleSaveBanner} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
+                <input value={editingBanner.title} onChange={e => setEditingBanner(p => ({ ...p, title: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Subtitle</label>
+                <input value={editingBanner.subtitle || ''} onChange={e => setEditingBanner(p => ({ ...p, subtitle: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Image URL</label>
+                <input value={editingBanner.image} onChange={e => setEditingBanner(p => ({ ...p, image: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>CTA Button Text</label>
+                <input value={editingBanner.cta} onChange={e => setEditingBanner(p => ({ ...p, cta: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+              </div>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Page Placement / Index</label>
+                  <select value={editingBanner.page} onChange={e => setEditingBanner(p => ({ ...p, page: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', minWidth: '150px' }}>
+                    <option value="Home Slide 1">Home Slide 1</option>
+                    <option value="Home Slide 2">Home Slide 2</option>
+                    <option value="Home Slide 3">Home Slide 3</option>
+                    <option value="Home Slide 4">Home Slide 4</option>
+                    <option value="Home Slide 5">Home Slide 5</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                  <input type="checkbox" id="editActive" checked={editingBanner.active} onChange={e => setEditingBanner(p => ({ ...p, active: e.target.checked }))} />
+                  <label htmlFor="editActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
+                </div>
+              </div>
+              <div className="cm-actions" style={{ marginTop: '16px' }}>
+                <button type="button" className="cm-cancel" onClick={() => setEditingBanner(null)}>Cancel</button>
+                <button type="submit" className="cm-confirm">Save Changes</button>
               </div>
             </form>
           </div>
