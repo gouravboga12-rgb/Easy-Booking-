@@ -61,12 +61,6 @@ export default function AdminRevenue() {
           <h1>Revenue Management</h1>
           <p>Subscription income, booking sales, GST audit trail — all in one view</p>
         </div>
-        <button
-          onClick={() => alert('Exporting detailed revenue report... Check downloads folder.')}
-          style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <HiDownload /> Export Report
-        </button>
       </div>
 
       {/* ═══ SUBSCRIPTION REVENUE — HERO SECTION ═══ */}
