@@ -245,7 +245,8 @@ export const useStore = create((set, get) => ({
           image: s.image,
           custom_fields: s.custom_fields ? (typeof s.custom_fields === 'string' ? JSON.parse(s.custom_fields) : s.custom_fields) : [],
           pricing_type: s.pricing_type || 'direct',
-          pricing_rules: s.pricing_rules ? (typeof s.pricing_rules === 'string' ? JSON.parse(s.pricing_rules) : s.pricing_rules) : null
+          pricing_rules: s.pricing_rules ? (typeof s.pricing_rules === 'string' ? JSON.parse(s.pricing_rules) : s.pricing_rules) : null,
+          available: s.available !== 0 && s.available !== false
         }));
         set({ services: normalized });
       }
@@ -275,7 +276,8 @@ export const useStore = create((set, get) => ({
           image: data.image,
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : [],
           pricing_type: data.pricing_type || 'direct',
-          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null
+          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null,
+          available: data.available !== 0 && data.available !== false
         };
         set(s => ({ services: [...s.services, normalized] }));
         return true;
@@ -308,7 +310,8 @@ export const useStore = create((set, get) => ({
           image: data.image,
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : [],
           pricing_type: data.pricing_type || 'direct',
-          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null
+          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null,
+          available: data.available !== 0 && data.available !== false
         };
         set(s => ({ services: s.services.map(v => v.id === id ? normalized : v) }));
         return true;

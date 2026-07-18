@@ -19,6 +19,21 @@ const ensureImageLongText = async () => {
 };
 ensureImageLongText().catch(err => console.error('ensureImageLongText error:', err));
 
+// Ensure services.available column exists
+const ensureAvailableColumn = async () => {
+  try {
+    const [cols] = await pool.query('SHOW COLUMNS FROM services');
+    const hasAvail = cols.some(c => c.Field === 'available');
+    if (!hasAvail) {
+      await pool.query('ALTER TABLE services ADD COLUMN available TINYINT(1) DEFAULT 1');
+      console.log("Column 'available' added to services table.");
+    }
+  } catch (err) {
+    console.warn("Adding services available column failed/skipped:", err.message);
+  }
+};
+ensureAvailableColumn().catch(err => console.error('ensureAvailableColumn error:', err));
+
 // GET /api/services — Public: fetch all services
 router.get('/', async (req, res) => {
   try {
@@ -56,7 +71,7 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ message: 'Forbidden. Admin access required' });
   }
 
-  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules } = req.body;
+  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available } = req.body;
   if (!id || !name || !category || !rate || !unit) {
     return res.status(400).json({ message: 'Missing required fields: id, name, category, rate, unit' });
   }
@@ -65,11 +80,12 @@ router.post('/', authenticateToken, async (req, res) => {
     const customFieldsJson = custom_fields ? JSON.stringify(custom_fields) : '[]';
     const pricingRulesJson = pricing_rules ? JSON.stringify(pricing_rules) : null;
     const finalPricingType = pricing_type || 'direct';
+    const finalAvailable = available !== undefined ? (available ? 1 : 0) : 1;
 
     await pool.query(
-      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
-      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson]
+      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
+      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable]
     );
     const [created] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = created[0];
@@ -93,7 +109,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules } = req.body;
+  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available } = req.body;
 
   try {
     const [existing] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
@@ -110,6 +126,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const finalRate = rate !== undefined ? Number(rate) : Number(currentService.rate);
     const finalUnit = unit !== undefined ? unit : currentService.unit;
     const finalImage = image !== undefined ? image : currentService.image;
+    const finalAvailable = available !== undefined ? (available ? 1 : 0) : (currentService.available !== 0 ? 1 : 0);
 
     let finalCustomFields = custom_fields !== undefined ? custom_fields : currentService.custom_fields;
     if (typeof finalCustomFields === 'string') {
@@ -143,9 +160,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
         image = ?,
         custom_fields = ?,
         pricing_type = ?,
-        pricing_rules = ?
+        pricing_rules = ?,
+        available = ?
        WHERE id = ?`,
-      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, finalPricingType, pricingRulesJson, id]
+      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, id]
     );
 
     const [updated] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);

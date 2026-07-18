@@ -32,6 +32,13 @@ export default function BookingFlow() {
   }, [user, id, navigate]);
 
   const vehicle = allVehicles.find(v => v.id === id);
+
+  useEffect(() => {
+    if (vehicle && vehicle.available === false) {
+      alert("This service is currently unavailable for booking. Please select another service.");
+      navigate('/browse');
+    }
+  }, [vehicle, navigate]);
   const [bookingType, setBookingType] = useState('instant');
   const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
   const [form, setForm] = useState({

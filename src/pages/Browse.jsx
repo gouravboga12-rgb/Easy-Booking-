@@ -113,9 +113,15 @@ export default function Browse() {
                 className="vc-img"
                 onError={e => { e.target.src = FALLBACK; }}
               />
-              <span className="vc-avail">
-                <HiCheckCircle style={{ width: 11, height: 11 }} /> Available
-              </span>
+              {v.available !== false ? (
+                <span className="vc-avail">
+                  <HiCheckCircle style={{ width: 11, height: 11 }} /> Available
+                </span>
+              ) : (
+                <span className="vc-avail" style={{ background: '#f3f4f6', color: '#9ca3af', border: '1px solid #cbd5e1' }}>
+                  ● Unavailable
+                </span>
+              )}
             </div>
             <div className="vc-body">
               <h3>{v.name}</h3>
@@ -134,10 +140,16 @@ export default function Browse() {
                   <span>/{v.unit}</span>
                 </div>
                 <div className="vc-actions">
-                  <button className="vc-cart-btn" onClick={e => openCartModal(e, v)}>
-                    <HiShoppingCart style={{ width: 15, height: 15 }} />
-                  </button>
-                  <button className="vc-book-btn" onClick={e => { e.stopPropagation(); navigate(`/book/${v.id}`); }}>Book Now</button>
+                  {v.available !== false ? (
+                    <>
+                      <button className="vc-cart-btn" onClick={e => openCartModal(e, v)}>
+                        <HiShoppingCart style={{ width: 15, height: 15 }} />
+                      </button>
+                      <button className="vc-book-btn" onClick={e => { e.stopPropagation(); navigate(`/book/${v.id}`); }}>Book Now</button>
+                    </>
+                  ) : (
+                    <button className="vc-book-btn" disabled style={{ background: '#e2e8f0', cursor: 'not-allowed', color: '#94a3b8', border: '1px solid #cbd5e1' }}>Unavailable</button>
+                  )}
                 </div>
               </div>
             </div>

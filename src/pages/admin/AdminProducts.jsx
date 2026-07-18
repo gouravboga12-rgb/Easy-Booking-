@@ -78,6 +78,7 @@ export default function AdminProducts() {
       rate: '500',
       unit: 'day',
       image: '',
+      available: true,
     });
     setCustomFields([]);
     setNewFieldName('');
@@ -100,6 +101,7 @@ export default function AdminProducts() {
       rate: String(v.rate),
       unit: v.unit,
       image: v.image || '',
+      available: v.available !== false,
     });
     setCustomFields(v.custom_fields || []);
     setNewFieldName('');
@@ -190,7 +192,8 @@ export default function AdminProducts() {
       image: form.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80',
       custom_fields: finalCustomFields,
       pricing_type: pricingType,
-      pricing_rules: pricingRules
+      pricing_rules: pricingRules,
+      available: form.available !== false
     };
 
     if (editingId) {
@@ -427,6 +430,20 @@ export default function AdminProducts() {
                     <img src={form.image} alt="Preview" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #ddd' }} />
                   )}
                 </div>
+              </div>
+
+              {/* Service Availability Option */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
+                <input 
+                  type="checkbox" 
+                  id="serviceAvailable" 
+                  checked={form.available !== false} 
+                  onChange={e => setForm(p => ({ ...p, available: e.target.checked }))} 
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <label htmlFor="serviceAvailable" style={{ fontSize: '13px', fontWeight: '700', color: form.available !== false ? '#059669' : '#4b5563', cursor: 'pointer' }}>
+                  {form.available !== false ? '🟢 Service Available for Booking' : '🔴 Service Currently Unavailable'}
+                </label>
               </div>
 
               {/* Dynamic Option Fields Builder */}
