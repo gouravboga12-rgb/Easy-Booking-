@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { HiChartBar, HiTrendingUp, HiCheckCircle, HiX, HiCurrencyRupee, HiUsers, HiDownload } from 'react-icons/hi';
-import { MdEngineering } from 'react-icons/md';
 import './Admin.css';
 
 export default function AdminReports() {
