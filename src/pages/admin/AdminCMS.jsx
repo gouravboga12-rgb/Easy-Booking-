@@ -24,13 +24,18 @@ const BANNERS = [
 export default function AdminCMS() {
   const services = useStore(s => s.services) || [];
   const fetchServices = useStore(s => s.fetchServices);
+  const banners = useStore(s => s.banners) || [];
+  const fetchBanners = useStore(s => s.fetchBanners);
+  const addBanner = useStore(s => s.addBanner);
+  const updateBanner = useStore(s => s.updateBanner);
+  const deleteBanner = useStore(s => s.deleteBanner);
 
   useEffect(() => {
     if (fetchServices) fetchServices();
-  }, [fetchServices]);
+    if (fetchBanners) fetchBanners();
+  }, [fetchServices, fetchBanners]);
 
   const [tab, setTab] = useState('banners');
-  const [banners, setBanners] = useState(BANNERS);
   const [announcements, setAnnouncements] = useState(INIT_ANNOUNCEMENTS);
   const [faqs, setFaqs] = useState(INIT_FAQS);
   const [editingFaq, setEditingFaq] = useState(null);
@@ -84,28 +89,37 @@ export default function AdminCMS() {
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
 
-  const handleAddBanner = (e) => {
+  const handleAddBanner = async (e) => {
     e.preventDefault();
-    setBanners(prev => [...prev, {
-      id: `b${Date.now()}`,
-      ...newBanner
-    }]);
-    setNewBanner({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true });
+    if (addBanner) {
+      await addBanner(newBanner);
+    }
+    setNewBanner({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '' });
     setShowAddBanner(false);
     showSuccess('Banner added successfully!');
   };
 
-  const handleSaveBanner = (e) => {
+  const handleSaveBanner = async (e) => {
     e.preventDefault();
-    setBanners(prev => prev.map(b => b.id === editingBanner.id ? editingBanner : b));
+    if (updateBanner) {
+      await updateBanner(editingBanner.id, editingBanner);
+    }
     setEditingBanner(null);
     showSuccess('Banner updated successfully!');
   };
 
-  const handleDeleteBanner = (id) => {
+  const handleDeleteBanner = async (id) => {
     if (window.confirm('Are you sure you want to delete this banner?')) {
-      setBanners(prev => prev.filter(b => b.id !== id));
+      if (deleteBanner) {
+        await deleteBanner(id);
+      }
       showSuccess('Banner deleted successfully!');
+    }
+  };
+
+  const handleToggleBannerActive = async (banner) => {
+    if (updateBanner) {
+      await updateBanner(banner.id, { active: !banner.active });
     }
   };
 
@@ -266,7 +280,7 @@ export default function AdminCMS() {
                     <span style={{ fontSize: '11px', background: b.active ? '#dcfce7' : '#f3f4f6', color: b.active ? '#15803d' : '#9ca3af', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
                       {b.active ? 'Active' : 'Inactive'}
                     </span>
-                    <button onClick={() => setBanners(prev => prev.map(bn => bn.id === b.id ? { ...bn, active: !bn.active } : bn))} style={{ background: b.active ? '#fee2e2' : '#dcfce7', color: b.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: b.active ? '#fca5a5' : '#bbf7d0', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                    <button onClick={() => handleToggleBannerActive(b)} style={{ background: b.active ? '#fee2e2' : '#dcfce7', color: b.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: b.active ? '#fca5a5' : '#bbf7d0', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
                       {b.active ? 'Disable' : 'Enable'}
                     </button>
                     <button onClick={() => setEditingBanner({ ...b })} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>

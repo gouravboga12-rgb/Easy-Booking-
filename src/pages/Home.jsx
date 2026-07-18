@@ -101,11 +101,14 @@ export default function Home() {
   const fetchCategories = useStore(s => s.fetchCategories);
   const fetchServices = useStore(s => s.fetchServices);
   const services = useStore(s => s.services);
+  const banners = useStore(s => s.banners) || [];
+  const fetchBanners = useStore(s => s.fetchBanners);
 
   useEffect(() => {
     fetchCategories();
     fetchServices();
-  }, [fetchCategories, fetchServices]);
+    if (fetchBanners) fetchBanners();
+  }, [fetchCategories, fetchServices, fetchBanners]);
 
   const handleCopyCode = (code) => {
     alert("Thank you for your interest! The promo code system is planned for a future release. We will update you soon!");
@@ -129,10 +132,11 @@ export default function Home() {
   };
 
   const getBannerStyle = (b) => {
+    if (!b) return {};
     // Neutral dark gradient for readability, no colored effect (no blue/red/green tint)
     const grad = 'linear-gradient(to right, rgba(0, 0, 0, 0.8) 35%, rgba(0, 0, 0, 0.1) 100%)';
     return {
-      backgroundImage: `${grad}, url(${b.img})`,
+      backgroundImage: `${grad}, url(${b.image || b.img || ''})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
@@ -145,13 +149,16 @@ export default function Home() {
       rating: s.id === 'ac-technicians' ? 4.8 : s.id === 'electricians' ? 4.8 : s.id === 'plumbers' ? 4.7 : s.id === 'carpenters' ? 4.7 : s.id === 'cleaning-staff' ? 4.6 : 4.5
     }));
 
-  useEffect(() => {
-    const t = setInterval(() => setBannerIdx(i => (i + 1) % BANNERS.length), 4500);
-    return () => clearInterval(t);
-  }, []);
+  const activeBanners = banners.filter(b => b.active);
+  const displayBanners = activeBanners.length > 0 ? activeBanners : BANNERS;
 
-  const banner = BANNERS[bannerIdx];
-  const isDark = banner.accent === '#fbbf24' || banner.accent === '#34d399';
+  useEffect(() => {
+    const t = setInterval(() => setBannerIdx(i => (i + 1) % displayBanners.length), 4500);
+    return () => clearInterval(t);
+  }, [displayBanners.length]);
+
+  const banner = displayBanners[bannerIdx] || displayBanners[0] || {};
+  const isDark = (banner.accent || '#fbbf24') === '#fbbf24' || banner.accent === '#34d399';
 
   return (
     <div className="home">
@@ -189,14 +196,14 @@ export default function Home() {
       <section className="hero-banner" style={getBannerStyle(banner)}>
         <div className="hb-content">
           <span className="hb-tag">
-            <HiLightningBolt style={{ width: 12, height: 12 }} /> {banner.tag}
+            <HiLightningBolt style={{ width: 12, height: 12 }} /> {banner.tag || banner.page || 'Featured'}
           </span>
           <h1>{banner.title}</h1>
-          <p>{banner.sub}</p>
+          <p>{banner.sub || banner.subtitle}</p>
           <div className="hb-actions">
             <button
               className="hb-cta"
-              style={{ background: banner.accent, color: isDark ? '#1a1a1a' : '#fff' }}
+              style={{ background: banner.accent || 'var(--primary)', color: isDark ? '#1a1a1a' : '#fff' }}
               onClick={() => navigate(`/book/${banner.vehicleId}`)}
             >
               {banner.cta} <HiArrowRight style={{ width: 16, height: 16 }} />
@@ -205,7 +212,7 @@ export default function Home() {
           </div>
         </div>
         <div className="hb-dots">
-          {BANNERS.map((_, i) => (
+          {displayBanners.map((_, i) => (
             <button key={i} className={`dot ${i === bannerIdx ? 'active' : ''}`} onClick={() => setBannerIdx(i)} />
           ))}
         </div>

@@ -157,6 +157,76 @@ export const useStore = create((set, get) => ({
     });
   },
 
+  banners: [],
+  fetchBanners: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/banners`);
+      if (response.ok) {
+        const data = await response.json();
+        set({ banners: data });
+      }
+    } catch (err) {
+      console.error('Fetch banners error:', err);
+    }
+  },
+  addBanner: async (newBanner) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/banners`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newBanner)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        set(state => ({ banners: [...state.banners, data] }));
+        return data;
+      }
+    } catch (err) {
+      console.error('Add banner error:', err);
+    }
+  },
+  updateBanner: async (id, updates) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/banners/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(updates)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        set(state => ({
+          banners: state.banners.map(b => b.id === id ? data : b)
+        }));
+        return data;
+      }
+    } catch (err) {
+      console.error('Update banner error:', err);
+    }
+  },
+  deleteBanner: async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/banners/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        set(state => ({
+          banners: state.banners.filter(b => b.id !== id)
+        }));
+      }
+    } catch (err) {
+      console.error('Delete banner error:', err);
+    }
+  },
+
   services: [],
 
   fetchServices: async () => {
