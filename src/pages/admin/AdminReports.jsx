@@ -27,14 +27,64 @@ export default function AdminReports() {
   const revenue    = completed.reduce((s, o) => s + (o.booking?.total || 0), 0);
   const avgOrder   = completed.length ? Math.round(revenue / completed.length) : 0;
 
-  // Subscription Revenue calculated dynamically from DB plans or fallback regex
-  const subscriptionRevenue = workers.reduce((sum, w) => {
-    if (!w.subscription?.active) return sum;
-    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-    if (plan) return sum + (parseFloat(plan.price) || 0);
-    const fallbackPrice = w.subscription.plan?.match(/₹\s*(\d+)/)?.[1];
-    return sum + (parseFloat(fallbackPrice || 0));
-  }, 0);
+  // Subscription Revenue calculated dynamically (aggregating all subscriber plans)
+  const allPlansMap = {};
+
+  // 1. Initialize with database subscription plans (this handles plans with 0 subscribers)
+  subscriptionPlans.forEach(plan => {
+    allPlansMap[plan.name] = {
+      name: plan.name,
+      price: parseFloat(plan.price) || 0,
+      type: plan.type || 'worker',
+      active: !!plan.active,
+      isDbPlan: true
+    };
+  });
+
+  // 2. Add plans from active subscribers (handles deleted, modified, or custom plans)
+  const subscribedUsers = users.filter(u => u.subscription?.active);
+  subscribedUsers.forEach(u => {
+    const planName = u.subscription?.plan;
+    if (!planName) return;
+
+    if (!allPlansMap[planName]) {
+      // Resolve price
+      let price = 0;
+      if (u.subscription.price !== undefined) {
+        price = parseFloat(u.subscription.price) || 0;
+      } else {
+        const fallbackPrice = planName.match(/(\d+)/)?.[0];
+        price = parseFloat(fallbackPrice || 0);
+      }
+      allPlansMap[planName] = {
+        name: planName,
+        price: price,
+        type: u.role || 'worker',
+        active: true,
+        isDbPlan: false
+      };
+    }
+  });
+
+  // Convert map to array and calculate subscriber counts & revenues
+  const displayPlans = Object.values(allPlansMap).map(plan => {
+    const subscribers = subscribedUsers.filter(u => u.subscription?.active && u.subscription?.plan === plan.name);
+    const count = subscribers.length;
+    
+    // Sum the actual prices paid by the users, falling back to plan.price
+    const revenueVal = subscribers.reduce((sum, u) => {
+      if (u.subscription.price !== undefined) return sum + (parseFloat(u.subscription.price) || 0);
+      return sum + plan.price;
+    }, 0);
+
+    return {
+      ...plan,
+      count,
+      revenue: revenueVal
+    };
+  });
+
+  const subscriptionRevenue = displayPlans.reduce((sum, p) => sum + p.revenue, 0);
   const totalPlatformRevenue = revenue + subscriptionRevenue;
 
   // Top services booked
@@ -80,7 +130,7 @@ export default function AdminReports() {
     { label: 'Total Platform Rev.',val: `₹${totalPlatformRevenue.toLocaleString()}`, color: '#10b981', icon: '📈' },
     { label: 'Avg Order Value',    val: `₹${avgOrder.toLocaleString()}`,             color: '#f97316', icon: '🧾' },
     { label: 'Total Workers',      val: workers.length,         color: '#a78bfa', icon: '👷' },
-    { label: 'Active Subscriptions', val: workers.filter(w => w.subscription?.active).length, color: '#7c3aed', icon: '🔐' },
+    { label: 'Active Subscriptions', val: subscribedUsers.length, color: '#7c3aed', icon: '🔐' },
     { label: 'Total Customers',    val: customers.length,       color: '#2563eb', icon: '👤' },
     { label: 'Completion Rate',    val: orders.length ? `${Math.round(completed.length / orders.length * 100)}%` : '0%', color: '#14b8a6', icon: '🎯' },
   ];
