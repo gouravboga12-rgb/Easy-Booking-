@@ -307,7 +307,7 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  buySubscription: async (userId, planName, duration, durationUnit = 'month') => {
+  buySubscription: async (userId, planName, duration, durationUnit = 'month', price = 0) => {
     const user = get().user;
     if (!user) return;
 
@@ -326,6 +326,8 @@ export const useAuthStore = create((set, get) => ({
     const subscription = {
       active: true,
       plan: planName,
+      price: Number(price),
+      purchasedAt: new Date().toISOString().split('T')[0],
       expiresAt: expiresAt.toISOString().split('T')[0]
     };
 

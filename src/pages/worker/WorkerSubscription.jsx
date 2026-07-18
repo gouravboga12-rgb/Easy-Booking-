@@ -37,7 +37,7 @@ export default function WorkerSubscription() {
   };
 
   const handlePurchaseSubscription = async (plan) => {
-    await buySubscription(user.id, plan.name, plan.duration, plan.duration_unit || 'month');
+    await buySubscription(user.id, plan.name, plan.duration, plan.duration_unit || 'month', plan.price);
     setPurchaseSuccess(true);
     setSelectedPlan(null);
     setTimeout(() => setPurchaseSuccess(false), 4000);

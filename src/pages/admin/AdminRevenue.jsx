@@ -19,18 +19,50 @@ export default function AdminRevenue() {
   const workers = users.filter(u => u.role === 'worker');
   const subscribedWorkers = workers.filter(w => w.subscription?.active);
   const [period, setPeriod] = useState('monthly');
+  const [revenuePeriod, setRevenuePeriod] = useState('all'); // 'today', 'week', 'month', 'year', 'all'
 
-  const completed = orders.filter(o => o.status === 'completed');
+  const now = new Date();
+  let startDate = null;
+  if (revenuePeriod === 'today') {
+    startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  } else if (revenuePeriod === 'week') {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (revenuePeriod === 'month') {
+    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else if (revenuePeriod === 'year') {
+    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+  }
+
+  // Filter subscription workers based on period
+  const filteredSubscribedWorkers = subscribedWorkers.filter(w => {
+    if (!startDate) return true;
+    const dateStr = w.subscription?.purchasedAt || w.created_at || w.createdAt;
+    if (!dateStr) return true;
+    const purchaseDate = new Date(dateStr);
+    return purchaseDate >= startDate;
+  });
+
+  // Filter orders based on period
+  const filteredOrders = orders.filter(o => {
+    if (!startDate) return true;
+    const dateStr = o.createdAt || o.booking?.date;
+    if (!dateStr) return true;
+    const orderDate = new Date(dateStr);
+    return orderDate >= startDate;
+  });
+
+  const completed = filteredOrders.filter(o => o.status === 'completed');
   const totalBookingRevenue = completed.reduce((s, o) => s + (o.booking?.total || 0), 0);
-  const pendingRevenue = orders.filter(o => o.status === 'pending').reduce((s, o) => s + (o.booking?.total || 0), 0);
+  const pendingRevenue = filteredOrders.filter(o => o.status === 'pending').reduce((s, o) => s + (o.booking?.total || 0), 0);
   const gstOnBookings = Math.round(totalBookingRevenue * 0.18);
 
   // Subscription Revenue — primary metric
-  const subscriptionRevenue = workers.reduce((sum, w) => {
+  const subscriptionRevenue = filteredSubscribedWorkers.reduce((sum, w) => {
     if (!w.subscription?.active) return sum;
+    if (w.subscription.price !== undefined) return sum + (parseFloat(w.subscription.price) || 0);
     const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
     if (plan) return sum + (parseFloat(plan.price) || 0);
-    const fallbackPrice = w.subscription.plan?.match(/₹\s*(\d+)/)?.[1];
+    const fallbackPrice = w.subscription.plan?.match(/(\d+)/)?.[0];
     return sum + (parseFloat(fallbackPrice || 0));
   }, 0);
   const gstOnSubscriptions = Math.round(subscriptionRevenue * 0.18);
@@ -53,13 +85,44 @@ export default function AdminRevenue() {
     categoryRevenue[cat] = (categoryRevenue[cat] || 0) + (o.booking?.total || 0);
   });
   const topCategories = Object.entries(categoryRevenue).sort((a, b) => b[1] - a[1]);
-
   return (
     <div className="admin-page" style={{ paddingBottom: '32px' }}>
-      <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
           <h1>Revenue Management</h1>
           <p>Subscription income, booking sales, GST audit trail — all in one view</p>
+        </div>
+      </div>
+
+      {/* Date Filter Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', border: '1px solid #ede9fe', flexWrap: 'wrap', gap: '12px' }}>
+        <span style={{ color: '#6d28d9', fontWeight: '800', fontSize: '13px' }}>📅 Filter Revenue by Date Range:</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {[
+            { id: 'all', label: 'All Time' },
+            { id: 'today', label: 'Today (24h)' },
+            { id: 'week', label: 'Weekly (7d)' },
+            { id: 'month', label: 'Monthly (30d)' },
+            { id: 'year', label: 'Yearly (365d)' }
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setRevenuePeriod(f.id)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: revenuePeriod === f.id ? 'var(--primary)' : '#f1f5f9',
+                color: revenuePeriod === f.id ? '#fff' : '#475569',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -74,7 +137,7 @@ export default function AdminRevenue() {
               ₹{subscriptionRevenue.toLocaleString()}
             </div>
             <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.85 }}>
-              Total Subscription Revenue ({subscribedWorkers.length} active subscribers)
+              Total Subscription Revenue ({filteredSubscribedWorkers.length} active subscribers)
             </div>
             <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.7 }}>
               GST (18%): ₹{gstOnSubscriptions.toLocaleString()} | Net: ₹{(subscriptionRevenue - gstOnSubscriptions).toLocaleString()}
@@ -93,7 +156,7 @@ export default function AdminRevenue() {
         {subscriptionPlans.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px', flexWrap: 'wrap' }}>
             {subscriptionPlans.map(plan => {
-              const count = workers.filter(w => w.subscription?.active && w.subscription?.plan === plan.name).length;
+              const count = filteredSubscribedWorkers.filter(w => w.subscription?.active && w.subscription?.plan === plan.name).length;
               const price = parseFloat(plan.price) || 0;
               return (
                 <div key={plan.id || plan.name} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 16px', flex: 1, minWidth: '140px' }}>
@@ -110,9 +173,9 @@ export default function AdminRevenue() {
       {/* ═══ SUBSCRIBED WORKERS TABLE ═══ */}
       <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #ede9fe' }}>
         <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px', color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #ede9fe', paddingBottom: '12px' }}>
-          <HiBadgeCheck /> Active Subscribed Professionals ({subscribedWorkers.length})
+          <HiBadgeCheck /> Active Subscribed Professionals ({filteredSubscribedWorkers.length})
         </h2>
-        {subscribedWorkers.length === 0 ? (
+        {filteredSubscribedWorkers.length === 0 ? (
           <p style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px', margin: 0, textAlign: 'center', padding: '20px 0' }}>No operators currently subscribed to any plan.</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -129,9 +192,18 @@ export default function AdminRevenue() {
                 </tr>
               </thead>
               <tbody>
-                {subscribedWorkers.map((w, idx) => {
+                {filteredSubscribedWorkers.map((w, idx) => {
                   const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-                  const planPrice = plan ? parseFloat(plan.price) || 0 : 0;
+                  let planPrice = 0;
+                  if (w.subscription?.price !== undefined) {
+                    planPrice = parseFloat(w.subscription.price) || 0;
+                  } else if (plan) {
+                    planPrice = parseFloat(plan.price) || 0;
+                  } else {
+                    const fallbackPrice = w.subscription?.plan?.match(/(\d+)/)?.[0];
+                    planPrice = parseFloat(fallbackPrice || 0);
+                  }
+                  const isKycDone = !!(w.aadhar && w.pan && w.phone && w.address && w.aadhar_photo && w.pan_photo);
                   return (
                     <tr key={w.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}>
                       <td style={{ padding: '12px', color: '#94a3b8', fontSize: '11px' }}>{idx + 1}</td>
@@ -148,7 +220,13 @@ export default function AdminRevenue() {
                         <span style={{ background: '#f5f3ff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px' }}>{w.subscription.plan}</span>
                       </td>
                       <td style={{ padding: '12px', fontWeight: '700', color: '#10b981' }}>₹{planPrice.toLocaleString()}</td>
-                      <td style={{ padding: '12px' }}>{w.aadhaar ? <span style={{ color: '#10b981', fontWeight: '700' }}>✅ Done</span> : <span style={{ color: '#f59e0b', fontWeight: '700' }}>⚠️ Pending</span>}</td>
+                      <td style={{ padding: '12px' }}>
+                        {isKycDone ? (
+                          <span style={{ color: '#10b981', fontWeight: '700' }}>✅ Completed</span>
+                        ) : (
+                          <span style={{ color: '#f59e0b', fontWeight: '700' }}>⚠️ Pending</span>
+                        )}
+                      </td>
                       <td style={{ padding: '12px' }}><span style={{ background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>ACTIVE</span></td>
                     </tr>
                   );
