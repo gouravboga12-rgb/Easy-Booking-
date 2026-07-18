@@ -12,7 +12,6 @@ import './Admin.css';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const orders = useStore(s => s.orders);
-  const subscriptionPlans = useStore(s => s.subscriptionPlans) || [];
   const users = useAuthStore(s => s.users);
   const user = useAuthStore(s => s.user);
   const workers = users.filter(u => u.role === 'worker');
@@ -24,13 +23,8 @@ export default function AdminDashboard() {
   const cancelled   = orders.filter(o => o.status === 'cancelled');
   const revenue     = completed.reduce((s, o) => s + (o.booking?.total || 0), 0);
 
-  const subscriptionRevenue = workers.reduce((sum, w) => {
-    if (!w.subscription?.active) return sum;
-    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-    if (plan) return sum + (parseFloat(plan.price) || 0);
-    const fallbackPrice = w.subscription.plan?.match(/₹\s*(\d+)/)?.[1];
-    return sum + (parseFloat(fallbackPrice || 0));
-  }, 0);
+  const PLAN_PRICES = { '₹99 Monthly': 99, 'Premium Plan': 299, 'Featured Worker Plan': 499 };
+  const subscriptionRevenue = workers.reduce((s, w) => s + (PLAN_PRICES[w.subscription?.plan] || 0), 0);
   const onlineWorkers   = workers.filter(w => w.available).length;
   const activeSubWorkers = workers.filter(w => w.subscription?.active).length;
 
