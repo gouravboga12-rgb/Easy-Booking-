@@ -128,7 +128,6 @@ export default function AdminRevenue() {
   // Subscription Revenue — primary metric (total of all plan revenues)
   const subscriptionRevenue = displayPlans.reduce((sum, p) => sum + p.revenue, 0);
   const gstOnSubscriptions = Math.round(subscriptionRevenue * 0.18);
-  const netPlatformRevenue = subscriptionRevenue + totalBookingRevenue - gstOnBookings;
 
   // Monthly breakdown
   const monthlyData = MONTHS.map((m, idx) => {
@@ -203,13 +202,6 @@ export default function AdminRevenue() {
             </div>
             <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.7 }}>
               GST (18%): ₹{gstOnSubscriptions.toLocaleString()} | Net: ₹{(subscriptionRevenue - gstOnSubscriptions).toLocaleString()}
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px 20px' }}>
-              <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>Net Platform Revenue</div>
-              <div style={{ fontSize: '24px', fontWeight: '800' }}>₹{netPlatformRevenue.toLocaleString()}</div>
-              <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>Bookings + Subscriptions - GST</div>
             </div>
           </div>
         </div>
