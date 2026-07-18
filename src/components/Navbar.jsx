@@ -28,6 +28,34 @@ export default function Navbar() {
   const notifRef = useRef();
 
   const isHome = location.pathname === '/';
+  const prevNotifIdsRef = useRef(new Set());
+  const isFirstLoadRef = useRef(true);
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+      
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (err) {
+      console.error('Audio play error:', err);
+    }
+  };
 
   useEffect(() => {
     const handler = (e) => {
@@ -47,6 +75,27 @@ export default function Navbar() {
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications]);
+
+  useEffect(() => {
+    if (!user || !notifications) return;
+    const currentIds = new Set(notifications.map(n => String(n.id)));
+    if (isFirstLoadRef.current) {
+      prevNotifIdsRef.current = currentIds;
+      isFirstLoadRef.current = false;
+      return;
+    }
+    const hasNewUnread = notifications.some(n => {
+      // Must target user's role
+      const matchesRole = n.audience === 'all' || 
+        (n.audience === 'workers' && user.role === 'worker') || 
+        (n.audience === 'customers' && user.role === 'customer');
+      return matchesRole && !n.read && !prevNotifIdsRef.current.has(String(n.id));
+    });
+    prevNotifIdsRef.current = currentIds;
+    if (hasNewUnread) {
+      playNotificationSound();
+    }
+  }, [notifications, user]);
 
   // Filter notifications relevant to current user's role
   const myNotifs = user ? notifications.filter(n => {

@@ -23,6 +23,34 @@ export default function WorkerLayout() {
   const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef();
+  const prevNotifIdsRef = useRef(new Set());
+  const isFirstLoadRef = useRef(true);
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+      
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (err) {
+      console.error('Audio play error:', err);
+    }
+  };
 
   useEffect(() => {
     const handler = (e) => { if (!notifRef.current?.contains(e.target)) setNotifOpen(false); };
@@ -39,6 +67,24 @@ export default function WorkerLayout() {
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications]);
+
+  useEffect(() => {
+    if (!user || !notifications) return;
+    const currentIds = new Set(notifications.map(n => String(n.id)));
+    if (isFirstLoadRef.current) {
+      prevNotifIdsRef.current = currentIds;
+      isFirstLoadRef.current = false;
+      return;
+    }
+    const hasNewUnread = notifications.some(n => {
+      const matchesRole = n.audience === 'all' || n.audience === 'workers';
+      return matchesRole && !n.read && !prevNotifIdsRef.current.has(String(n.id));
+    });
+    prevNotifIdsRef.current = currentIds;
+    if (hasNewUnread) {
+      playNotificationSound();
+    }
+  }, [notifications, user]);
 
   // Filter notifications for workers
   const myNotifs = notifications.filter(n => n.audience === 'all' || n.audience === 'workers');
