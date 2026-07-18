@@ -225,16 +225,17 @@ export default function WorkerHome() {
     } catch (e) { return true; }
   };
 
-  // Active job: instant assigned/active/arrived OR scheduled that has reached its time
+  // Active job: active/arrived OR assigned (instant or scheduled time arrived or already started early)
   const activeJob = myOrders.find(o =>
-    ['assigned', 'active', 'arrived'].includes(o.status) && isScheduledTimeArrived(o)
+    ['active', 'arrived'].includes(o.status) ||
+    (o.status === 'assigned' && (isScheduledTimeArrived(o) || o.stage > 0))
   );
   const completedJobs = myOrders.filter(o => o.status === 'completed');
   const earnings = user.wallet?.balance || 0;
 
-  // Accepted scheduled orders (future — not yet time to start)
+  // Accepted scheduled orders (future — not yet time to start and not yet started)
   const myAcceptedScheduled = myOrders.filter(o =>
-    o.status === 'assigned' && o.bookingType === 'scheduled' && !isScheduledTimeArrived(o)
+    o.status === 'assigned' && o.bookingType === 'scheduled' && !isScheduledTimeArrived(o) && o.stage === 0
   );
 
   // Helper: check if an incoming pending order collides with accepted scheduled slots

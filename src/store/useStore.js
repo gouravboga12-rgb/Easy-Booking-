@@ -111,6 +111,7 @@ export const useStore = create((set, get) => ({
 
   // Global notifications — fetched from backend API (persisted, cross-session)
   notifications: [],
+  clearedNotificationIds: JSON.parse(localStorage.getItem('cleared_notifications') || '[]'),
   broadcastNotification: (notif) => {
     set(state => ({ notifications: [notif, ...state.notifications] }));
   },
@@ -122,10 +123,14 @@ export const useStore = create((set, get) => ({
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
+        // Filter out cleared notifications
+        const clearedIds = new Set(get().clearedNotificationIds.map(String));
+        const activeNotifs = data.filter(n => !clearedIds.has(String(n.id)));
+
         // Preserve local read state by merging with existing notifications
         const existing = get().notifications;
         const readIds = new Set(existing.filter(n => n.read).map(n => String(n.id)));
-        const merged = data.map(n => ({ ...n, read: readIds.has(String(n.id)) }));
+        const merged = activeNotifs.map(n => ({ ...n, read: readIds.has(String(n.id)) }));
         set({ notifications: merged });
       }
     } catch (err) {
@@ -141,6 +146,15 @@ export const useStore = create((set, get) => ({
     set(state => ({
       notifications: state.notifications.map(n => ({ ...n, read: true }))
     }));
+  },
+  clearAllNotifications: () => {
+    const currentIds = get().notifications.map(n => String(n.id));
+    const updatedCleared = Array.from(new Set([...get().clearedNotificationIds, ...currentIds]));
+    localStorage.setItem('cleared_notifications', JSON.stringify(updatedCleared));
+    set({
+      clearedNotificationIds: updatedCleared,
+      notifications: []
+    });
   },
 
   services: [],

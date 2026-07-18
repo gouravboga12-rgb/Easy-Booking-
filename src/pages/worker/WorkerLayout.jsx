@@ -21,6 +21,7 @@ export default function WorkerLayout() {
   const fetchNotifications = useStore(s => s.fetchNotifications);
   const markNotificationRead = useStore(s => s.markNotificationRead);
   const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
+  const clearAllNotifications = useStore(s => s.clearAllNotifications);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef();
   const notifRefMobile = useRef();
@@ -189,6 +190,9 @@ export default function WorkerLayout() {
                     {unreadCount > 0 && (
                       <button onClick={markAllNotificationsRead} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#6366f1', cursor: 'pointer', fontWeight: '700' }}>Mark all read</button>
                     )}
+                    {myNotifs.length > 0 && (
+                      <button onClick={clearAllNotifications} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#ef4444', cursor: 'pointer', fontWeight: '700' }}>Clear all</button>
+                    )}
                     <button onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center' }}><HiX /></button>
                   </div>
                 </div>
@@ -208,7 +212,7 @@ export default function WorkerLayout() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '12px', fontWeight: n.read ? '500' : '700', color: '#1a1a1a', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
                         <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>{n.body}</div>
-                        <div style={{ fontSize: '10px', color: '#aaa', marginTop: '3px' }}>{n.sent}</div>
+                        <div style={{ fontSize: '10px', color: '#aaa', marginTop: '3px' }}>{n.sent_at ? new Date(n.sent_at).toLocaleString() : (n.sent || '')}</div>
                       </div>
                       {!n.read && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#6366f1', flexShrink: 0, marginTop: '5px' }}></span>}
                     </div>
@@ -304,6 +308,9 @@ export default function WorkerLayout() {
                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                        {unreadCount > 0 && (
                          <button onClick={markAllNotificationsRead} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#6366f1', cursor: 'pointer', fontWeight: '700' }}>Mark all read</button>
+                       )}
+                       {myNotifs.length > 0 && (
+                         <button onClick={clearAllNotifications} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#ef4444', cursor: 'pointer', fontWeight: '700' }}>Clear all</button>
                        )}
                        <button onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center' }}><HiX /></button>
                      </div>

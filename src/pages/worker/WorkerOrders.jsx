@@ -31,19 +31,20 @@ export default function WorkerOrders() {
     } catch (e) { return true; }
   };
 
-  // Ongoing: instant orders + scheduled orders whose time has arrived
+  // Ongoing: instant orders + scheduled orders whose time has arrived OR started early
   const ongoingOrders = orders.filter(o =>
     o.operator?.id === user.id &&
-    ['assigned', 'active', 'arrived'].includes(o.status) &&
-    isScheduledTimeArrived(o)
+    (['active', 'arrived'].includes(o.status) ||
+     (o.status === 'assigned' && (isScheduledTimeArrived(o) || o.stage > 0)))
   );
 
-  // Scheduled tab: accepted scheduled jobs NOT yet at their time
+  // Scheduled tab: accepted scheduled jobs NOT yet at their time and not yet started
   const scheduledOrders = orders.filter(o =>
     o.operator?.id === user.id &&
     o.status === 'assigned' &&
     o.bookingType === 'scheduled' &&
-    !isScheduledTimeArrived(o)
+    !isScheduledTimeArrived(o) &&
+    o.stage === 0
   );
 
   // Completed/cancelled orders list
