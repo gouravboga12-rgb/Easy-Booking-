@@ -6,28 +6,45 @@ import {
   HiChevronDown, HiChevronUp,
   HiClipboardList, HiCog, HiLogout,
   HiShoppingCart, HiLocationMarker, HiUser,
-  HiSearch
+  HiSearch, HiBell, HiX
 } from 'react-icons/hi';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
   const cartCount = useStore(s => s.cart.length);
+  const notifications = useStore(s => s.notifications);
+  const markNotificationRead = useStore(s => s.markNotificationRead);
+  const markAllNotificationsRead = useStore(s => s.markAllNotificationsRead);
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
   const [dropOpen, setDropOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [loc, setLoc] = useState('');
   const [navSearchVal, setNavSearchVal] = useState(params.get('q') || '');
   const dropRef = useRef();
+  const notifRef = useRef();
 
   const isHome = location.pathname === '/';
 
   useEffect(() => {
-    const handler = (e) => { if (!dropRef.current?.contains(e.target)) setDropOpen(false); };
+    const handler = (e) => {
+      if (!dropRef.current?.contains(e.target)) setDropOpen(false);
+      if (!notifRef.current?.contains(e.target)) setNotifOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Filter notifications relevant to current user's role
+  const myNotifs = user ? notifications.filter(n => {
+    if (n.audience === 'all') return true;
+    if (n.audience === 'workers' && user.role === 'worker') return true;
+    if (n.audience === 'customers' && user.role === 'customer') return true;
+    return false;
+  }) : [];
+  const unreadCount = myNotifs.filter(n => !n.read).length;
 
   const handleLogout = () => { logout(); navigate('/'); setDropOpen(false); };
 
@@ -137,6 +154,59 @@ export default function Navbar() {
               <HiUser className="signin-icon" />
               <span>Sign In</span>
             </Link>
+          )}
+
+          {/* Notification Bell (Only for logged-in customer/worker) */}
+          {user && (user.role === 'customer' || user.role === 'worker') && (
+            <div className="user-menu" ref={notifRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => { setNotifOpen(o => !o); setDropOpen(false); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '50%', color: '#555' }}
+                title="Notifications"
+              >
+                <HiBell style={{ fontSize: '22px' }} />
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: '2px', right: '2px', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '9px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: '340px', background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.13)', border: '1px solid #eee', zIndex: 9999, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #f3f4f6' }}>
+                    <strong style={{ fontSize: '14px', color: '#1a1a1a' }}>🔔 Notifications</strong>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {unreadCount > 0 && (
+                        <button onClick={markAllNotificationsRead} style={{ background: 'none', border: 'none', fontSize: '11px', color: '#6366f1', cursor: 'pointer', fontWeight: '700' }}>Mark all read</button>
+                      )}
+                      <button onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center' }}><HiX /></button>
+                    </div>
+                  </div>
+                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                    {myNotifs.length === 0 ? (
+                      <div style={{ padding: '32px 16px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔕</div>
+                        No notifications yet
+                      </div>
+                    ) : myNotifs.map(n => (
+                      <div
+                        key={n.id}
+                        onClick={() => markNotificationRead(n.id)}
+                        style={{ padding: '12px 16px', borderBottom: '1px solid #f9fafb', display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', background: n.read ? '#fff' : '#f5f3ff', transition: 'background 0.2s' }}
+                      >
+                        <span style={{ fontSize: '20px', marginTop: '2px' }}>{n.channel === 'email' ? '📧' : n.channel === 'sms' ? '📱' : '🔔'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: n.read ? '500' : '700', color: '#1a1a1a', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.title}</div>
+                          <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.body}</div>
+                          <div style={{ fontSize: '10px', color: '#aaa', marginTop: '4px' }}>{n.sent}</div>
+                        </div>
+                        {!n.read && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1', flexShrink: 0, marginTop: '6px' }}></span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Cart Button */}

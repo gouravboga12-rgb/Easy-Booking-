@@ -109,6 +109,22 @@ export const useStore = create((set, get) => ({
   cart: [],
   liveTracking: {},
 
+  // Global notifications broadcast by admin
+  notifications: [],
+  broadcastNotification: (notif) => {
+    set(state => ({ notifications: [notif, ...state.notifications] }));
+  },
+  markNotificationRead: (id) => {
+    set(state => ({
+      notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
+    }));
+  },
+  markAllNotificationsRead: () => {
+    set(state => ({
+      notifications: state.notifications.map(n => ({ ...n, read: true }))
+    }));
+  },
+
   services: [],
 
   fetchServices: async () => {

@@ -145,17 +145,11 @@ export default function AdminReports() {
 
   return (
     <div className="admin-page" style={{ paddingBottom: '32px' }}>
-      <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="admin-header">
         <div>
           <h1>Reports & Analytics</h1>
           <p>Platform-wide analytics across users, workers, bookings, revenue, subscriptions, and growth trends</p>
         </div>
-        <button
-          onClick={() => alert('Export: In production, this generates a CSV/PDF report of the selected section.')}
-          style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <HiDownload /> Export Report
-        </button>
       </div>
 
       {/* Summary Grid */}

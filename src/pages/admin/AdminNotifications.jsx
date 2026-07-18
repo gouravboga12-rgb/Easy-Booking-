@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStore } from '../../store/useStore';
 import { HiBell, HiMail, HiPhone, HiSpeakerphone, HiCheckCircle, HiUsers } from 'react-icons/hi';
 import './Admin.css';
 
@@ -13,6 +14,7 @@ export default function AdminNotifications() {
   const users = useAuthStore(s => s.users);
   const workers = users.filter(u => u.role === 'worker');
   const customers = users.filter(u => u.role === 'customer');
+  const broadcastNotification = useStore(s => s.broadcastNotification);
 
   const [tab, setTab] = useState('compose');
   const [history, setHistory] = useState(NOTIFICATION_HISTORY);
@@ -40,8 +42,11 @@ export default function AdminNotifications() {
       sent: new Date().toLocaleString(),
       status: 'delivered',
       recipients: recipientCount,
+      read: false,
     };
     setHistory(prev => [newNotif, ...prev]);
+    // Broadcast to global store so customer/worker notification bell picks it up
+    broadcastNotification(newNotif);
     setSent(true);
     setForm({ title: '', body: '', channel: 'push', audience: 'all' });
     setTimeout(() => setSent(false), 4000);
