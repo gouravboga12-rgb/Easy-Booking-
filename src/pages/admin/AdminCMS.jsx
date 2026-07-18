@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useStore } from '../../store/useStore';
 import { HiSpeakerphone, HiMail, HiPhone, HiBell, HiPlus, HiCheckCircle, HiX, HiStar } from 'react-icons/hi';
 import './Admin.css';
 
@@ -14,13 +15,20 @@ const INIT_FAQS = [
 ];
 
 const BANNERS = [
-  { id: 'b1', title: 'Electricians & Plumbers', subtitle: 'Verified professionals at your doorstep in 60 mins', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80', cta: 'Book Electrician', page: 'Home Slide 1', active: true },
-  { id: 'b2', title: 'Deep Cleaning Staff', subtitle: 'Expert housekeepers & deep cleaning for your home', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80', cta: 'Book Cleaner', page: 'Home Slide 2', active: true },
-  { id: 'b3', title: 'Construction & Site Labour', subtitle: 'Experienced masons, welders & fabricators on demand', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80', cta: 'Book Labour', page: 'Home Slide 3', active: true },
-  { id: 'b4', title: 'Cooking Chefs & Home Cooks', subtitle: 'Hire private chefs & daily home cooks instantly', image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80', cta: 'Book Cook', page: 'Home Slide 4', active: true },
+  { id: 'b1', title: 'Electricians & Plumbers', subtitle: 'Verified professionals at your doorstep in 60 mins', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80', cta: 'Book Electrician', page: 'Home Slide 1', active: true, vehicleId: 'electricians' },
+  { id: 'b2', title: 'Deep Cleaning Staff', subtitle: 'Expert housekeepers & deep cleaning for your home', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80', cta: 'Book Cleaner', page: 'Home Slide 2', active: true, vehicleId: 'cleaning-staff' },
+  { id: 'b3', title: 'Construction & Site Labour', subtitle: 'Experienced masons, welders & fabricators on demand', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80', cta: 'Book Labour', page: 'Home Slide 3', active: true, vehicleId: 'construction-labour' },
+  { id: 'b4', title: 'Cooking Chefs & Home Cooks', subtitle: 'Hire private chefs & daily home cooks instantly', image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80', cta: 'Book Cook', page: 'Home Slide 4', active: true, vehicleId: 'home-cooks' },
 ];
 
 export default function AdminCMS() {
+  const services = useStore(s => s.services) || [];
+  const fetchServices = useStore(s => s.fetchServices);
+
+  useEffect(() => {
+    if (fetchServices) fetchServices();
+  }, [fetchServices]);
+
   const [tab, setTab] = useState('banners');
   const [banners, setBanners] = useState(BANNERS);
   const [announcements, setAnnouncements] = useState(INIT_ANNOUNCEMENTS);
@@ -32,8 +40,47 @@ export default function AdminCMS() {
   const [showAddBanner, setShowAddBanner] = useState(false);
   const [newAnn, setNewAnn] = useState({ title: '', message: '', audience: 'all' });
   const [newFaq, setNewFaq] = useState({ q: '', a: '' });
-  const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true });
+  const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '' });
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handleImageUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditingBanner(prev => ({ ...prev, image: reader.result }));
+        } else {
+          setNewBanner(prev => ({ ...prev, image: reader.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSelectServiceForNew = (serviceId) => {
+    const s = services.find(srv => srv.id === serviceId);
+    if (!s) return;
+    setNewBanner(prev => ({
+      ...prev,
+      vehicleId: s.id,
+      title: s.name,
+      subtitle: s.desc || `Verified ${s.name.toLowerCase()} professionals at your doorstep`,
+      cta: `Book ${s.name.split(' & ')[0]}`
+    }));
+  };
+
+  const handleSelectServiceForEdit = (serviceId) => {
+    const s = services.find(srv => srv.id === serviceId);
+    if (!s) return;
+    setEditingBanner(prev => ({
+      ...prev,
+      vehicleId: s.id,
+      title: s.name,
+      subtitle: s.desc || `Verified ${s.name.toLowerCase()} professionals at your doorstep`,
+      cta: `Book ${s.name.split(' & ')[0]}`
+    }));
+  };
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
 
@@ -136,41 +183,66 @@ export default function AdminCMS() {
               <form onSubmit={handleAddBanner} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Link to Particular Service (Prefills title/sub/cta)</label>
+                    <select 
+                      value={newBanner.vehicleId || ''} 
+                      onChange={e => handleSelectServiceForNew(e.target.value)} 
+                      style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}
+                    >
+                      <option value="">-- No Direct Link / Custom --</option>
+                      {services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.categoryLabel || s.category})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
                     <input value={newBanner.title} onChange={e => setNewBanner(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Electricians & Plumbers" required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Subtitle</label>
                     <input value={newBanner.subtitle} onChange={e => setNewBanner(p => ({ ...p, subtitle: e.target.value }))} placeholder="e.g. Verified professionals at your doorstep" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
-                  </div>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Image URL</label>
-                    <input value={newBanner.image} onChange={e => setNewBanner(p => ({ ...p, image: e.target.value }))} placeholder="https://images.unsplash.com/..." required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>CTA Button Text</label>
                     <input value={newBanner.cta} onChange={e => setNewBanner(p => ({ ...p, cta: e.target.value }))} placeholder="e.g. Book Electrician" required style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Page Placement / Index</label>
-                    <select value={newBanner.page} onChange={e => setNewBanner(p => ({ ...p, page: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', minWidth: '150px' }}>
-                      <option value="Home Slide 1">Home Slide 1</option>
-                      <option value="Home Slide 2">Home Slide 2</option>
-                      <option value="Home Slide 3">Home Slide 3</option>
-                      <option value="Home Slide 4">Home Slide 4</option>
-                      <option value="Home Slide 5">Home Slide 5</option>
-                    </select>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Image (Upload file or paste URL)</label>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
+                        📁 Choose Image File
+                        <input type="file" accept="image/*" onChange={e => handleImageUpload(e, false)} style={{ display: 'none' }} />
+                      </label>
+                      <input value={newBanner.image} onChange={e => setNewBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste image URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                      {newBanner.image && (
+                        <img src={newBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
-                    <input type="checkbox" id="addActive" checked={newBanner.active} onChange={e => setNewBanner(p => ({ ...p, active: e.target.checked }))} />
-                    <label htmlFor="addActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
-                  </div>
+                </div>
+ 
+                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Page Placement / Index</label>
+                     <select value={newBanner.page} onChange={e => setNewBanner(p => ({ ...p, page: e.target.value }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', minWidth: '150px' }}>
+                       <option value="Home Slide 1">Home Slide 1</option>
+                       <option value="Home Slide 2">Home Slide 2</option>
+                       <option value="Home Slide 3">Home Slide 3</option>
+                       <option value="Home Slide 4">Home Slide 4</option>
+                       <option value="Home Slide 5">Home Slide 5</option>
+                     </select>
+                   </div>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                     <input type="checkbox" id="addActive" checked={newBanner.active} onChange={e => setNewBanner(p => ({ ...p, active: e.target.checked }))} />
+                     <label htmlFor="addActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
+                   </div>
                   <button type="submit" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>Create Banner</button>
                 </div>
               </form>
@@ -343,6 +415,19 @@ export default function AdminCMS() {
             <h3 style={{ color: '#6d28d9', fontWeight: '800' }}>Edit Home Banner</h3>
             <form onSubmit={handleSaveBanner} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', textAlign: 'left' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Link to Particular Service (Prefills title/sub/cta)</label>
+                <select 
+                  value={editingBanner.vehicleId || ''} 
+                  onChange={e => handleSelectServiceForEdit(e.target.value)} 
+                  style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }}
+                >
+                  <option value="">-- No Direct Link / Custom --</option>
+                  {services.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.categoryLabel || s.category})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
                 <input value={editingBanner.title} onChange={e => setEditingBanner(p => ({ ...p, title: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
               </div>
@@ -351,8 +436,17 @@ export default function AdminCMS() {
                 <input value={editingBanner.subtitle || ''} onChange={e => setEditingBanner(p => ({ ...p, subtitle: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Image URL</label>
-                <input value={editingBanner.image} onChange={e => setEditingBanner(p => ({ ...p, image: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Image (Upload file or paste URL)</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
+                    📁 Choose Image File
+                    <input type="file" accept="image/*" onChange={e => handleImageUpload(e, true)} style={{ display: 'none' }} />
+                  </label>
+                  <input value={editingBanner.image} onChange={e => setEditingBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste image URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  {editingBanner.image && (
+                    <img src={editingBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>CTA Button Text</label>
