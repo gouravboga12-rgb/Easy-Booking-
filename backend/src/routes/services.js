@@ -4,6 +4,21 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Ensure services.image column is LONGTEXT to support large base64 uploads without truncation
+const ensureImageLongText = async () => {
+  try {
+    const [cols] = await pool.query('SHOW COLUMNS FROM services');
+    const imageCol = cols.find(c => c.Field === 'image');
+    if (imageCol && imageCol.Type.toLowerCase() !== 'longtext') {
+      await pool.query('ALTER TABLE services MODIFY COLUMN image LONGTEXT');
+      console.log("Column 'image' in services altered to LONGTEXT.");
+    }
+  } catch (err) {
+    console.warn("Altering services image column failed/skipped:", err.message);
+  }
+};
+ensureImageLongText().catch(err => console.error('ensureImageLongText error:', err));
+
 // GET /api/services — Public: fetch all services
 router.get('/', async (req, res) => {
   try {

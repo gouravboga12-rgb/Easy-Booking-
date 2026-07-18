@@ -52,7 +52,7 @@ async function seedServices() {
         category_label VARCHAR(100),
         rate DECIMAL(10, 2) NOT NULL DEFAULT 0,
         unit VARCHAR(20) NOT NULL DEFAULT 'day',
-        image TEXT,
+        image LONGTEXT,
         sort_order INT DEFAULT 99,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
