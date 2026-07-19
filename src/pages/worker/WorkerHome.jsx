@@ -353,8 +353,13 @@ export default function WorkerHome() {
     { Icon: HiCurrencyRupee, val: `₹${earnings.toLocaleString()}`,           label: 'Wallet Bal',  color: '#8b5cf6' },
   ];
 
-  const handleToggleOnline = () => {
-    updateWorkerAvailability(user.id, { online: !user.available });
+  const handleToggleOnline = async () => {
+    const isCurrentlyOnline = Number(user.available) === 1 || user.available === true;
+    const nextState = !isCurrentlyOnline;
+    await updateWorkerAvailability(user.id, { online: nextState });
+    if (nextState) {
+      await fetchOrdersForWorker(user.id);
+    }
   };
 
   const [targetSearchQuery, setTargetSearchQuery] = useState('');

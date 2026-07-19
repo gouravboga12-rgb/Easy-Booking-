@@ -228,7 +228,7 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
       worker.categories = typeof worker.categories === 'string' ? JSON.parse(worker.categories) : (worker.categories || []);
     } catch (e) { worker.categories = []; }
 
-    const isOnline = worker.available === 1;
+    const isOnline = Number(worker.available) === 1 || worker.available === true || worker.available === '1';
     const isSubActive = isSubscriptionActive(worker);
     
     const [activeAssignments] = await pool.query(

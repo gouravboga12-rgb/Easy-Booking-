@@ -258,11 +258,14 @@ export const useAuthStore = create((set, get) => ({
       
       const user = get().user;
       if (user && user.id === workerId) {
-        const isOnlineNow = availabilityData.online !== undefined ? availabilityData.online : user.available;
+        const isOnlineNow = availabilityData.online !== undefined 
+          ? Boolean(availabilityData.online) 
+          : (availabilityData.available === 1 || availabilityData.available === true || availabilityData.available === '1');
+        
         const updated = {
           ...user,
           availability: { ...user.availability, ...availabilityData },
-          available: isOnlineNow
+          available: isOnlineNow ? 1 : 0
         };
         localStorage.setItem('user', JSON.stringify(updated));
         set({ user: updated });
@@ -271,7 +274,7 @@ export const useAuthStore = create((set, get) => ({
         if (isOnlineNow) {
           try {
             const fetchOrders = useStore.getState().fetchOrdersForWorker;
-            if (fetchOrders) fetchOrders(workerId);
+            if (fetchOrders) await fetchOrders(workerId);
           } catch (e) {}
         }
       }
