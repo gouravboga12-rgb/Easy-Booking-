@@ -36,17 +36,26 @@ export default function AdminCMS() {
   const addBanner = useStore(s => s.addBanner);
   const updateBanner = useStore(s => s.updateBanner);
   const deleteBanner = useStore(s => s.deleteBanner);
+  const popupAds = useStore(s => s.popupAds) || [];
+  const fetchPopupAds = useStore(s => s.fetchPopupAds);
+  const addPopupAd = useStore(s => s.addPopupAd);
+  const updatePopupAd = useStore(s => s.updatePopupAd);
+  const deletePopupAd = useStore(s => s.deletePopupAd);
 
   useEffect(() => {
     if (fetchServices) fetchServices();
     if (fetchBanners) fetchBanners();
-  }, [fetchServices, fetchBanners]);
+    if (fetchPopupAds) fetchPopupAds();
+  }, [fetchServices, fetchBanners, fetchPopupAds]);
 
   const [tab, setTab] = useState('banners');
   const [announcements, setAnnouncements] = useState(INIT_ANNOUNCEMENTS);
   const [faqs, setFaqs] = useState(INIT_FAQS);
   const [editingFaq, setEditingFaq] = useState(null);
   const [editingBanner, setEditingBanner] = useState(null);
+  const [showAddPopupAd, setShowAddPopupAd] = useState(false);
+  const [editingPopupAd, setEditingPopupAd] = useState(null);
+  const [newPopupAd, setNewPopupAd] = useState({ title: '', mediaUrl: '', redirectUrl: '', active: true, delaySeconds: 15 });
   const [deletingBannerId, setDeletingBannerId] = useState(null);
   const [showAddAnn, setShowAddAnn] = useState(false);
   const [showAddFaq, setShowAddFaq] = useState(false);
@@ -154,8 +163,58 @@ export default function AdminCMS() {
     showSuccess('FAQ updated!');
   };
 
+  const handlePopupMediaUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditingPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+        } else {
+          setNewPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddPopupAd = async (e) => {
+    e.preventDefault();
+    if (addPopupAd) {
+      await addPopupAd(newPopupAd);
+    }
+    setNewPopupAd({ title: '', mediaUrl: '', redirectUrl: '', active: true, delaySeconds: 15 });
+    setShowAddPopupAd(false);
+    showSuccess('Pop-up ad created successfully!');
+  };
+
+  const handleSavePopupAd = async (e) => {
+    e.preventDefault();
+    if (updatePopupAd && editingPopupAd) {
+      await updatePopupAd(editingPopupAd.id, editingPopupAd);
+    }
+    setEditingPopupAd(null);
+    showSuccess('Pop-up ad updated successfully!');
+  };
+
+  const handleDeletePopupAd = async (id) => {
+    if (window.confirm('Are you sure you want to delete this pop-up ad?')) {
+      if (deletePopupAd) {
+        await deletePopupAd(id);
+      }
+      showSuccess('Pop-up ad deleted!');
+    }
+  };
+
+  const handleTogglePopupAdActive = async (ad) => {
+    if (updatePopupAd) {
+      await updatePopupAd(ad.id, { active: !ad.active });
+    }
+  };
+
   const TABS = [
     { key: 'banners', label: '🖼️ Banners' },
+    { key: 'popup-ads', label: '⚡ Pop-up Ads' },
     { key: 'announcements', label: '📢 Announcements' },
     { key: 'faqs', label: '❓ FAQs' },
     { key: 'blogs', label: '📝 Blogs' },
@@ -330,6 +389,154 @@ export default function AdminCMS() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* POP-UP ADS */}
+      {tab === 'popup-ads' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <button onClick={() => setShowAddPopupAd(!showAddPopupAd)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <HiPlus /> Add Pop-up Ad
+            </button>
+          </div>
+
+          {showAddPopupAd && (
+            <div style={{ background: '#fff', padding: '20px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '20px', border: '1px solid #ede9fe' }}>
+              <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: '700', color: '#6d28d9' }}>Create Pop-up Ad</h3>
+              <form onSubmit={handleAddPopupAd} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Ad Title (Optional)</label>
+                    <input value={newPopupAd.title} onChange={e => setNewPopupAd(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Special Festival Discount Offer" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Redirect URL (Optional)</label>
+                    <input value={newPopupAd.redirectUrl} onChange={e => setNewPopupAd(p => ({ ...p, redirectUrl: e.target.value }))} placeholder="e.g. https://... or /browse" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Ad Media (Upload Image/Video or Paste Media URL)</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
+                      📁 Choose File
+                      <input type="file" accept="image/*,video/*" onChange={e => handlePopupMediaUpload(e, false)} style={{ display: 'none' }} />
+                    </label>
+                    <input value={newPopupAd.mediaUrl} onChange={e => setNewPopupAd(p => ({ ...p, mediaUrl: e.target.value }))} placeholder="Or paste media URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                    {newPopupAd.mediaUrl && (
+                      isVideo(newPopupAd.mediaUrl) ? (
+                        <video src={newPopupAd.mediaUrl} style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} muted />
+                      ) : (
+                        <img src={newPopupAd.mediaUrl} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Pop-up Delay (Seconds)</label>
+                    <input type="number" min="5" max="60" value={newPopupAd.delaySeconds} onChange={e => setNewPopupAd(p => ({ ...p, delaySeconds: parseInt(e.target.value, 10) }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', width: '120px' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                    <input type="checkbox" id="addPopupActive" checked={newPopupAd.active} onChange={e => setNewPopupAd(p => ({ ...p, active: e.target.checked }))} />
+                    <label htmlFor="addPopupActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Website</label>
+                  </div>
+                  <button type="submit" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>Create Pop-up Ad</button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {popupAds.map(ad => (
+              <div key={ad.id} style={{ background: '#fff', border: '1px solid #eee', borderRadius: '14px', overflow: 'hidden', display: 'flex', gap: 0 }}>
+                <div style={{ width: '140px', flexShrink: 0, background: '#f3f4f6', overflow: 'hidden', position: 'relative' }}>
+                  {isVideo(ad.mediaUrl) ? (
+                    <video src={ad.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay loop muted playsInline />
+                  ) : (
+                    <img src={ad.mediaUrl} alt={ad.title || 'Pop-up Ad'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', color: '#888', fontWeight: '700', textTransform: 'uppercase', marginBottom: '3px' }}>Trigger Delay: {ad.delaySeconds || 15}s</div>
+                    <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '700' }}>{ad.title || 'Untitled Pop-up Ad'}</h3>
+                    {ad.redirectUrl && (
+                      <div style={{ fontSize: '11px', color: '#4b5563', fontWeight: '600', marginTop: '4px' }}>
+                        🔗 {ad.redirectUrl}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', background: ad.active ? '#dcfce7' : '#f3f4f6', color: ad.active ? '#15803d' : '#9ca3af', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
+                      {ad.active ? 'Active' : 'Inactive'}
+                    </span>
+                    <button onClick={() => handleTogglePopupAdActive(ad)} style={{ background: ad.active ? '#fee2e2' : '#dcfce7', color: ad.active ? '#dc2626' : '#15803d', border: '1px solid', borderColor: ad.active ? '#fca5a5' : '#bbf7d0', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      {ad.active ? 'Disable' : 'Enable'}
+                    </button>
+                    <button onClick={() => setEditingPopupAd({ ...ad })} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleDeletePopupAd(ad.id)} style={{ background: 'none', border: '1px solid #fca5a5', color: '#ef4444', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* EDIT POPUP AD MODAL */}
+          {editingPopupAd && (
+            <div className="cm-modal-overlay">
+              <div className="cm-modal" style={{ maxWidth: '520px' }}>
+                <h3>Edit Pop-up Ad</h3>
+                <form onSubmit={handleSavePopupAd} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Ad Title (Optional)</label>
+                    <input value={editingPopupAd.title || ''} onChange={e => setEditingPopupAd(p => ({ ...p, title: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Redirect URL (Optional)</label>
+                    <input value={editingPopupAd.redirectUrl || ''} onChange={e => setEditingPopupAd(p => ({ ...p, redirectUrl: e.target.value }))} placeholder="https://..." style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Ad Media (Image / Video)</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
+                        📁 Choose File
+                        <input type="file" accept="image/*,video/*" onChange={e => handlePopupMediaUpload(e, true)} style={{ display: 'none' }} />
+                      </label>
+                      <input value={editingPopupAd.mediaUrl || ''} onChange={e => setEditingPopupAd(p => ({ ...p, mediaUrl: e.target.value }))} placeholder="Media URL..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                      {editingPopupAd.mediaUrl && (
+                        isVideo(editingPopupAd.mediaUrl) ? (
+                          <video src={editingPopupAd.mediaUrl} style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} muted />
+                        ) : (
+                          <img src={editingPopupAd.mediaUrl} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                        )
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Pop-up Delay (Seconds)</label>
+                      <input type="number" min="5" max="60" value={editingPopupAd.delaySeconds || 15} onChange={e => setEditingPopupAd(p => ({ ...p, delaySeconds: parseInt(e.target.value, 10) }))} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', width: '120px' }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                      <input type="checkbox" id="editPopupActive" checked={editingPopupAd.active !== 0 && editingPopupAd.active !== false} onChange={e => setEditingPopupAd(p => ({ ...p, active: e.target.checked }))} />
+                      <label htmlFor="editPopupActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Website</label>
+                    </div>
+                  </div>
+                  <div className="cm-actions" style={{ marginTop: '16px' }}>
+                    <button type="button" className="cm-cancel" onClick={() => setEditingPopupAd(null)}>Cancel</button>
+                    <button type="submit" className="cm-confirm">Save Changes</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

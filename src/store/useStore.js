@@ -951,5 +951,79 @@ export const useStore = create((set, get) => ({
       console.error('Delete category error:', err);
       return { error: 'Connection error' };
     }
+  },
+
+  popupAds: [],
+  fetchPopupAds: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/popup-ads`);
+      if (response.ok) {
+        const data = await response.json();
+        set({ popupAds: data });
+      }
+    } catch (err) {
+      console.error('Fetch popup ads error:', err);
+    }
+  },
+  addPopupAd: async (newAd) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/popup-ads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newAd)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set(state => ({ popupAds: [data, ...state.popupAds] }));
+        return data;
+      }
+    } catch (err) {
+      console.error('Add popup ad error:', err);
+    }
+  },
+  updatePopupAd: async (id, updates) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/popup-ads/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        set(state => ({
+          popupAds: state.popupAds.map(ad => ad.id === id ? data : ad)
+        }));
+        return data;
+      }
+    } catch (err) {
+      console.error('Update popup ad error:', err);
+    }
+  },
+  deletePopupAd: async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/popup-ads/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        set(state => ({
+          popupAds: state.popupAds.filter(ad => ad.id !== id)
+        }));
+        return true;
+      }
+    } catch (err) {
+      console.error('Delete popup ad error:', err);
+    }
   }
 }));

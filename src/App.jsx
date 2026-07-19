@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
+import PopupAdModal from './components/PopupAdModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
@@ -264,6 +265,7 @@ function Layout() {
           </Route>
         </Routes>
       </main>
+      {!isAdminOrWorker && <PopupAdModal />}
       {!isAdminOrWorker && <BottomNav />}
     </>
   );

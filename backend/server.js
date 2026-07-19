@@ -9,6 +9,7 @@ import subscriptionRoutes from './src/routes/subscriptions.js';
 import categoryRoutes from './src/routes/categories.js';
 import notificationRoutes from './src/routes/notifications.js';
 import bannerRoutes from './src/routes/banners.js';
+import popupAdRoutes from './src/routes/popupAds.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/popup-ads', popupAdRoutes);
 
 
 // Health Check

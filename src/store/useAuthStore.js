@@ -23,6 +23,7 @@ export const useAuthStore = create((set, get) => ({
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      sessionStorage.removeItem('popup_ad_dismissed');
       set({ user: data.user });
 
       // Load all users if logged in as Admin
