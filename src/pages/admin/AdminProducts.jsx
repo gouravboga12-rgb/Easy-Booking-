@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { categories } from '../../data/vehicles';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { HiCube, HiChevronLeft, HiPencil, HiPlus, HiTrash, HiCheckCircle } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
@@ -8,9 +7,15 @@ import './Admin.css';
 export default function AdminProducts() {
   const navigate = useNavigate();
   const services = useStore(s => s.services);
+  const categories = useStore(s => s.categories) || [];
+  const fetchCategories = useStore(s => s.fetchCategories);
   const addService = useStore(s => s.addService);
   const updateService = useStore(s => s.updateService);
   const deleteService = useStore(s => s.deleteService);
+
+  useEffect(() => {
+    if (fetchCategories) fetchCategories();
+  }, [fetchCategories]);
 
   const [activeCat, setActiveCat] = useState('all');
   const [showModal, setShowModal] = useState(false);

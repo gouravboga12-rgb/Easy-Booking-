@@ -3,6 +3,13 @@ import { useStore } from '../../store/useStore';
 import { HiSpeakerphone, HiMail, HiPhone, HiBell, HiPlus, HiCheckCircle, HiX, HiStar } from 'react-icons/hi';
 import './Admin.css';
 
+const isVideo = (url) => {
+  if (!url) return false;
+  if (url.startsWith('data:video/')) return true;
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleanUrl);
+};
+
 const INIT_ANNOUNCEMENTS = [
   { id: 'a1', title: 'App Update v2.1 Released', message: 'New features: Instant booking, worker ratings & reviews, subscription plans.', date: '2026-06-28', audience: 'all', pinned: true },
   { id: 'a2', title: 'Worker Subscription Offer', message: 'Get 50% off on your first month premium subscription. Use code FIRST50.', date: '2026-06-25', audience: 'workers', pinned: false },
@@ -46,7 +53,7 @@ export default function AdminCMS() {
   const [showAddBanner, setShowAddBanner] = useState(false);
   const [newAnn, setNewAnn] = useState({ title: '', message: '', audience: 'all' });
   const [newFaq, setNewFaq] = useState({ q: '', a: '' });
-  const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '' });
+  const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '', redirectUrl: '', showCta: true, showBrowseAll: true });
   const [successMsg, setSuccessMsg] = useState('');
 
   const handleImageUpload = (e, isEdit = false) => {
@@ -95,7 +102,7 @@ export default function AdminCMS() {
     if (addBanner) {
       await addBanner(newBanner);
     }
-    setNewBanner({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '' });
+    setNewBanner({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '', redirectUrl: '', showCta: true, showBrowseAll: true });
     setShowAddBanner(false);
     showSuccess('Banner added successfully!');
   };
@@ -191,7 +198,7 @@ export default function AdminCMS() {
             <div style={{ background: '#fff', padding: '20px', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '20px', border: '1px solid #ede9fe' }}>
               <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: '700', color: '#6d28d9' }}>Create Home Banner</h3>
               <form onSubmit={handleAddBanner} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Link to Particular Service (Prefills title/sub/cta)</label>
                     <select 
@@ -204,6 +211,10 @@ export default function AdminCMS() {
                         <option key={s.id} value={s.id}>{s.name} ({s.categoryLabel || s.category})</option>
                       ))}
                     </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Redirect URL (Optional / e.g. https://... or /browse)</label>
+                    <input value={newBanner.redirectUrl || ''} onChange={e => setNewBanner(p => ({ ...p, redirectUrl: e.target.value }))} placeholder="e.g. https://external-link.com" style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
@@ -224,15 +235,19 @@ export default function AdminCMS() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Image (Upload file or paste URL)</label>
+                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Media (Upload Image/Video file or paste URL)</label>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
-                        📁 Choose Image File
-                        <input type="file" accept="image/*" onChange={e => handleImageUpload(e, false)} style={{ display: 'none' }} />
+                        📁 Choose Media File
+                        <input type="file" accept="image/*,video/*" onChange={e => handleImageUpload(e, false)} style={{ display: 'none' }} />
                       </label>
-                      <input value={newBanner.image} onChange={e => setNewBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste image URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                      <input value={newBanner.image} onChange={e => setNewBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste media URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                       {newBanner.image && (
-                        <img src={newBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                        isVideo(newBanner.image) ? (
+                          <video src={newBanner.image} style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} muted />
+                        ) : (
+                          <img src={newBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                        )
                       )}
                     </div>
                   </div>
@@ -249,10 +264,18 @@ export default function AdminCMS() {
                        <option value="Home Slide 5">Home Slide 5</option>
                      </select>
                    </div>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
-                     <input type="checkbox" id="addActive" checked={newBanner.active} onChange={e => setNewBanner(p => ({ ...p, active: e.target.checked }))} />
-                     <label htmlFor="addActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
-                   </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                      <input type="checkbox" id="addActive" checked={newBanner.active} onChange={e => setNewBanner(p => ({ ...p, active: e.target.checked }))} />
+                      <label htmlFor="addActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                      <input type="checkbox" id="addShowCta" checked={newBanner.showCta !== false} onChange={e => setNewBanner(p => ({ ...p, showCta: e.target.checked }))} />
+                      <label htmlFor="addShowCta" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Show CTA Button</label>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                      <input type="checkbox" id="addShowBrowseAll" checked={newBanner.showBrowseAll !== false} onChange={e => setNewBanner(p => ({ ...p, showBrowseAll: e.target.checked }))} />
+                      <label htmlFor="addShowBrowseAll" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Show Browse All</label>
+                    </div>
                   <button type="submit" style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>Create Banner</button>
                 </div>
               </form>
@@ -262,15 +285,32 @@ export default function AdminCMS() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {banners.map(b => (
               <div key={b.id} style={{ background: '#fff', border: '1px solid #eee', borderRadius: '14px', overflow: 'hidden', display: 'flex', gap: 0 }}>
-                <div style={{ width: '140px', flexShrink: 0, background: '#f3f4f6', overflow: 'hidden' }}>
-                  <img src={b.image} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ width: '140px', flexShrink: 0, background: '#f3f4f6', overflow: 'hidden', position: 'relative' }}>
+                  {isVideo(b.image) ? (
+                    <video src={b.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay loop muted playsInline />
+                  ) : (
+                    <img src={b.image} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
                 </div>
                 <div style={{ flex: 1, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: '10px', color: '#888', fontWeight: '700', textTransform: 'uppercase', marginBottom: '3px' }}>{b.page}</div>
                     <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '700' }}>{b.title}</h3>
                     {b.subtitle && <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#666' }}>{b.subtitle}</p>}
-                    <span style={{ fontSize: '12px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>{b.cta}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>{b.cta}</span>
+                      {b.redirectUrl && (
+                        <span style={{ fontSize: '11px', background: '#f3f4f6', color: '#4b5563', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
+                          🔗 {b.redirectUrl}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '11px', background: b.showCta !== 0 && b.showCta !== false ? '#ecfdf5' : '#fef2f2', color: b.showCta !== 0 && b.showCta !== false ? '#047857' : '#b91c1c', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
+                        CTA: {b.showCta !== 0 && b.showCta !== false ? 'On' : 'Off'}
+                      </span>
+                      <span style={{ fontSize: '11px', background: b.showBrowseAll !== 0 && b.showBrowseAll !== false ? '#ecfdf5' : '#fef2f2', color: b.showBrowseAll !== 0 && b.showBrowseAll !== false ? '#047857' : '#b91c1c', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
+                        Browse All: {b.showBrowseAll !== 0 && b.showBrowseAll !== false ? 'On' : 'Off'}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span style={{ fontSize: '11px', background: b.active ? '#dcfce7' : '#f3f4f6', color: b.active ? '#15803d' : '#9ca3af', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
@@ -438,6 +478,15 @@ export default function AdminCMS() {
                 </select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Redirect URL (Optional / e.g. https://... or /browse)</label>
+                <input 
+                  value={editingBanner.redirectUrl || ''} 
+                  onChange={e => setEditingBanner(p => ({ ...p, redirectUrl: e.target.value }))} 
+                  placeholder="e.g. https://external-link.com" 
+                  style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Banner Title</label>
                 <input value={editingBanner.title} onChange={e => setEditingBanner(p => ({ ...p, title: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} required />
               </div>
@@ -446,15 +495,19 @@ export default function AdminCMS() {
                 <input value={editingBanner.subtitle || ''} onChange={e => setEditingBanner(p => ({ ...p, subtitle: e.target.value }))} style={{ padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Image (Upload file or paste URL)</label>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#555' }}>Service Media (Upload Image/Video file or paste URL)</label>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <label style={{ flexShrink: 0, padding: '9px 16px', border: '1.5px dashed #ccc', borderRadius: '6px', cursor: 'pointer', textAlign: 'center', fontSize: '12.5px', background: '#fafafa', fontWeight: '700', display: 'inline-block' }}>
-                    📁 Choose Image File
-                    <input type="file" accept="image/*" onChange={e => handleImageUpload(e, true)} style={{ display: 'none' }} />
+                    📁 Choose Media File
+                    <input type="file" accept="image/*,video/*" onChange={e => handleImageUpload(e, true)} style={{ display: 'none' }} />
                   </label>
-                  <input value={editingBanner.image} onChange={e => setEditingBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste image URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
+                  <input value={editingBanner.image} onChange={e => setEditingBanner(p => ({ ...p, image: e.target.value }))} placeholder="Or paste media URL link here..." required style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px' }} />
                   {editingBanner.image && (
-                    <img src={editingBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                    isVideo(editingBanner.image) ? (
+                      <video src={editingBanner.image} style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} muted />
+                    ) : (
+                      <img src={editingBanner.image} alt="Preview" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd', flexShrink: 0 }} />
+                    )
                   )}
                 </div>
               </div>
@@ -473,10 +526,18 @@ export default function AdminCMS() {
                     <option value="Home Slide 5">Home Slide 5</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
-                  <input type="checkbox" id="editActive" checked={editingBanner.active} onChange={e => setEditingBanner(p => ({ ...p, active: e.target.checked }))} />
-                  <label htmlFor="editActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
-                </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                   <input type="checkbox" id="editActive" checked={editingBanner.active} onChange={e => setEditingBanner(p => ({ ...p, active: e.target.checked }))} />
+                   <label htmlFor="editActive" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Active on Home</label>
+                 </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                   <input type="checkbox" id="editShowCta" checked={editingBanner.showCta !== 0 && editingBanner.showCta !== false} onChange={e => setEditingBanner(p => ({ ...p, showCta: e.target.checked }))} />
+                   <label htmlFor="editShowCta" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Show CTA Button</label>
+                 </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px' }}>
+                   <input type="checkbox" id="editShowBrowseAll" checked={editingBanner.showBrowseAll !== 0 && editingBanner.showBrowseAll !== false} onChange={e => setEditingBanner(p => ({ ...p, showBrowseAll: e.target.checked }))} />
+                   <label htmlFor="editShowBrowseAll" style={{ fontSize: '12px', fontWeight: '700', color: '#555', cursor: 'pointer' }}>Show Browse All</label>
+                 </div>
               </div>
               <div className="cm-actions" style={{ marginTop: '16px' }}>
                 <button type="button" className="cm-cancel" onClick={() => setEditingBanner(null)}>Cancel</button>

@@ -25,6 +25,13 @@ import {
 import { FaHammer } from 'react-icons/fa';
 import './Home.css';
 
+const isVideo = (url) => {
+  if (!url) return false;
+  if (url.startsWith('data:video/')) return true;
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleanUrl);
+};
+
 const BANNERS = [
   { id: 1, tag: 'Most Booked', title: 'Electricians & Plumbers', sub: 'Verified professionals at your doorstep in 60 mins', cta: 'Book Electrician', vehicleId: 'electricians', bg: 'linear-gradient(120deg,#1a1a2e,#16213e)', accent: '#4f46e5', img: '/images/services/electricians.png' },
   { id: 2, tag: 'Instant Booking', title: 'Deep Cleaning Staff', sub: 'Expert housekeepers & deep cleaning for your home', cta: 'Book Cleaner', vehicleId: 'cleaning-staff', bg: 'linear-gradient(120deg,#0f3460,#533483)', accent: '#fbbf24', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=700&q=80' },
@@ -133,6 +140,13 @@ export default function Home() {
 
   const getBannerStyle = (b) => {
     if (!b) return {};
+    if (isVideo(b.image || b.img)) {
+      return {
+        background: 'black',
+        position: 'relative',
+        overflow: 'hidden'
+      };
+    }
     // Neutral dark gradient for readability, no colored effect (no blue/red/green tint)
     const grad = 'linear-gradient(to right, rgba(0, 0, 0, 0.8) 35%, rgba(0, 0, 0, 0.1) 100%)';
     return {
@@ -194,24 +208,73 @@ export default function Home() {
 
       {/* ── Hero Banner ── */}
       <section className="hero-banner" style={getBannerStyle(banner)}>
-        <div className="hb-content">
+        {isVideo(banner.image || banner.img) && (
+          <video
+            key={banner.image || banner.img}
+            src={banner.image || banner.img}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 1,
+            }}
+          />
+        )}
+        {/* Overlay gradient for video readability */}
+        {isVideo(banner.image || banner.img) && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(to right, rgba(0, 0, 0, 0.8) 35%, rgba(0, 0, 0, 0.2) 100%)',
+              zIndex: 2,
+            }}
+          />
+        )}
+        <div className="hb-content" style={{ zIndex: 3, position: 'relative' }}>
           <span className="hb-tag">
             <HiLightningBolt style={{ width: 12, height: 12 }} /> {banner.tag || banner.page || 'Featured'}
           </span>
           <h1>{banner.title}</h1>
           <p>{banner.sub || banner.subtitle}</p>
           <div className="hb-actions">
-            <button
-              className="hb-cta"
-              style={{ background: banner.accent || 'var(--primary)', color: isDark ? '#1a1a1a' : '#fff' }}
-              onClick={() => navigate(`/book/${banner.vehicleId}`)}
-            >
-              {banner.cta} <HiArrowRight style={{ width: 16, height: 16 }} />
-            </button>
-            <button className="hb-browse" onClick={() => navigate('/browse')}>Browse All</button>
+            {(banner.showCta !== 0 && banner.showCta !== false) && (
+              <button
+                className="hb-cta"
+                style={{ background: banner.accent || 'var(--primary)', color: isDark ? '#1a1a1a' : '#fff' }}
+                onClick={() => {
+                  if (banner.redirectUrl) {
+                    if (banner.redirectUrl.startsWith('http://') || banner.redirectUrl.startsWith('https://')) {
+                      window.open(banner.redirectUrl, '_blank');
+                    } else {
+                      navigate(banner.redirectUrl);
+                    }
+                  } else if (banner.vehicleId) {
+                    navigate(`/book/${banner.vehicleId}`);
+                  } else {
+                    navigate('/browse');
+                  }
+                }}
+              >
+                {banner.cta || 'Book Now'} <HiArrowRight style={{ width: 16, height: 16 }} />
+              </button>
+            )}
+            {(banner.showBrowseAll !== 0 && banner.showBrowseAll !== false) && (
+              <button className="hb-browse" onClick={() => navigate('/browse')}>Browse All</button>
+            )}
           </div>
         </div>
-        <div className="hb-dots">
+        <div className="hb-dots" style={{ zIndex: 3, position: 'relative' }}>
           {displayBanners.map((_, i) => (
             <button key={i} className={`dot ${i === bannerIdx ? 'active' : ''}`} onClick={() => setBannerIdx(i)} />
           ))}

@@ -19,6 +19,36 @@ const ensureTable = async () => {
     )
   `);
 
+  try {
+    const [columns] = await pool.query("SHOW COLUMNS FROM banners LIKE 'redirectUrl'");
+    if (columns.length === 0) {
+      await pool.query("ALTER TABLE banners ADD COLUMN redirectUrl VARCHAR(1000)");
+      console.log("Successfully added redirectUrl column to banners table.");
+    }
+  } catch (err) {
+    console.error("Error ensuring redirectUrl column exists:", err);
+  }
+
+  try {
+    const [columns] = await pool.query("SHOW COLUMNS FROM banners LIKE 'showCta'");
+    if (columns.length === 0) {
+      await pool.query("ALTER TABLE banners ADD COLUMN showCta TINYINT(1) DEFAULT 1");
+      console.log("Successfully added showCta column to banners table.");
+    }
+  } catch (err) {
+    console.error("Error ensuring showCta column exists:", err);
+  }
+
+  try {
+    const [columns] = await pool.query("SHOW COLUMNS FROM banners LIKE 'showBrowseAll'");
+    if (columns.length === 0) {
+      await pool.query("ALTER TABLE banners ADD COLUMN showBrowseAll TINYINT(1) DEFAULT 1");
+      console.log("Successfully added showBrowseAll column to banners table.");
+    }
+  } catch (err) {
+    console.error("Error ensuring showBrowseAll column exists:", err);
+  }
+
   const [rows] = await pool.query('SELECT COUNT(*) as count FROM banners');
   if (rows[0].count === 0) {
     const defaultBanners = [
@@ -55,16 +85,27 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ message: 'Forbidden. Admin access required' });
   }
 
-  const { title, subtitle, image, cta, page, active, vehicleId } = req.body;
+  const { title, subtitle, image, cta, page, active, vehicleId, redirectUrl, showCta, showBrowseAll } = req.body;
   if (!title || !image) {
     return res.status(400).json({ message: 'Title and image are required' });
   }
 
   try {
     const [result] = await pool.query(
-      `INSERT INTO banners (title, subtitle, image, cta, page, active, vehicleId)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [title, subtitle || '', image, cta || 'Book Now', page || 'Home Slide 1', active !== false, vehicleId || '']
+      `INSERT INTO banners (title, subtitle, image, cta, page, active, vehicleId, redirectUrl, showCta, showBrowseAll)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title,
+        subtitle || '',
+        image,
+        cta || 'Book Now',
+        page || 'Home Slide 1',
+        active !== false,
+        vehicleId || '',
+        redirectUrl || '',
+        showCta !== false,
+        showBrowseAll !== false
+      ]
     );
 
     const [rows] = await pool.query('SELECT * FROM banners WHERE id = ?', [result.insertId]);
@@ -82,7 +123,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { title, subtitle, image, cta, page, active, vehicleId } = req.body;
+  const { title, subtitle, image, cta, page, active, vehicleId, redirectUrl, showCta, showBrowseAll } = req.body;
 
   try {
     const [existing] = await pool.query('SELECT * FROM banners WHERE id = ?', [id]);
@@ -92,7 +133,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     await pool.query(
       `UPDATE banners 
-       SET title = ?, subtitle = ?, image = ?, cta = ?, page = ?, active = ?, vehicleId = ?
+       SET title = ?, subtitle = ?, image = ?, cta = ?, page = ?, active = ?, vehicleId = ?, redirectUrl = ?, showCta = ?, showBrowseAll = ?
        WHERE id = ?`,
       [
         title !== undefined ? title : existing[0].title,
@@ -102,6 +143,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         page !== undefined ? page : existing[0].page,
         active !== undefined ? active : existing[0].active,
         vehicleId !== undefined ? vehicleId : existing[0].vehicleId,
+        redirectUrl !== undefined ? redirectUrl : existing[0].redirectUrl,
+        showCta !== undefined ? showCta : existing[0].showCta,
+        showBrowseAll !== undefined ? showBrowseAll : existing[0].showBrowseAll,
         id
       ]
     );
