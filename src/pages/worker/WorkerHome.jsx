@@ -249,16 +249,34 @@ export default function WorkerHome() {
   };
 
   const workerMatchesService = (worker, serviceCategory, serviceName, vehicleId) => {
-    const categories = Array.isArray(worker?.categories) ? worker.categories : [];
-    const skills = Array.isArray(worker?.skills) ? worker.skills.map(s => String(s).toLowerCase()) : [];
+    let categories = [];
+    if (Array.isArray(worker?.categories)) {
+      categories = worker.categories;
+    } else if (typeof worker?.categories === 'string') {
+      try { categories = JSON.parse(worker.categories); } catch (e) { categories = []; }
+    }
+
+    let skills = [];
+    if (Array.isArray(worker?.skills)) {
+      skills = worker.skills.map(s => String(s).toLowerCase());
+    } else if (typeof worker?.skills === 'string') {
+      try { skills = JSON.parse(worker.skills).map(s => String(s).toLowerCase()); } catch (e) { skills = []; }
+    }
+
     const designation = (worker?.vehicle_details || worker?.vehicle || '').toLowerCase();
+    const cleanDesignation = designation.replace(/&/g, ' and ').replace(/[-_]/g, ' ');
     
     const sCat = (serviceCategory || '').toLowerCase();
     const sName = (serviceName || '').toLowerCase();
     const vId = (vehicleId || '').toLowerCase();
 
     if (categories.length > 0) {
-      if (categories.includes('all') || categories.includes(serviceCategory) || categories.includes(sCat)) {
+      if (
+        categories.includes('all') || 
+        categories.includes(serviceCategory) || 
+        categories.includes(sCat) ||
+        categories.some(c => String(c).toLowerCase().replace(/[-_]/g, '') === sCat.replace(/[-_]/g, ''))
+      ) {
         return true;
       }
     }
@@ -269,46 +287,46 @@ export default function WorkerHome() {
 
     const searchTerms = [
       sCat, sName, vId,
-      ...sCat.split(/[-_\s]+/),
-      ...sName.split(/[-_\s]+/),
-      ...vId.split(/[-_\s]+/)
-    ].filter(t => t && t.length > 2);
+      ...sCat.split(/[-_\s&]+/),
+      ...sName.split(/[-_\s&]+/),
+      ...vId.split(/[-_\s&]+/)
+    ].map(t => t.trim().toLowerCase()).filter(t => t && t.length > 2);
 
-    if (searchTerms.some(term => designation.includes(term))) return true;
+    if (searchTerms.some(term => cleanDesignation.includes(term))) return true;
     if (skills.some(skill => searchTerms.some(term => skill.includes(term) || term.includes(skill)))) return true;
 
     if (sCat.includes('construction') || sName.includes('labour') || vId.includes('labour') || sName.includes('construction')) {
-      if (designation.includes('construction') || designation.includes('labour') || designation.includes('mason') || designation.includes('civil') || designation.includes('site') || designation.includes('helper')) return true;
+      if (cleanDesignation.includes('construction') || cleanDesignation.includes('labour') || cleanDesignation.includes('mason') || cleanDesignation.includes('civil') || cleanDesignation.includes('site') || cleanDesignation.includes('helper')) return true;
       if (skills.some(s => s.includes('construction') || s.includes('labour') || s.includes('mason') || s.includes('cement') || s.includes('brick'))) return true;
     }
 
     if (sCat.includes('driver') || sCat.includes('logistics') || sName.includes('driver') || sName.includes('goods')) {
-      if (designation.includes('driver') || designation.includes('logistics') || designation.includes('auto') || designation.includes('truck') || designation.includes('mover')) return true;
+      if (cleanDesignation.includes('driver') || cleanDesignation.includes('logistics') || cleanDesignation.includes('auto') || cleanDesignation.includes('truck') || cleanDesignation.includes('mover')) return true;
       if (skills.some(s => s.includes('driver') || s.includes('driving') || s.includes('logistics') || s.includes('loading'))) return true;
     }
 
     if (sName.includes('electrician') || sName.includes('electrical')) {
-      if (designation.includes('electrician') || designation.includes('electrical')) return true;
+      if (cleanDesignation.includes('electrician') || cleanDesignation.includes('electrical')) return true;
       if (skills.some(s => s.includes('wiring') || s.includes('circuit') || s.includes('electric'))) return true;
     }
 
     if (sName.includes('plumber') || sName.includes('plumbing')) {
-      if (designation.includes('plumber') || designation.includes('plumbing')) return true;
+      if (cleanDesignation.includes('plumber') || cleanDesignation.includes('plumbing')) return true;
       if (skills.some(s => s.includes('pipe') || s.includes('leak') || s.includes('tap') || s.includes('water'))) return true;
     }
 
     if (sName.includes('painter') || sName.includes('painting')) {
-      if (designation.includes('painter') || designation.includes('painting')) return true;
+      if (cleanDesignation.includes('painter') || cleanDesignation.includes('painting')) return true;
       if (skills.some(s => s.includes('paint') || s.includes('wall') || s.includes('putty'))) return true;
     }
 
     if (sName.includes('carpenter') || sName.includes('carpentry')) {
-      if (designation.includes('carpenter') || designation.includes('carpentry')) return true;
+      if (cleanDesignation.includes('carpenter') || cleanDesignation.includes('carpentry')) return true;
       if (skills.some(s => s.includes('wood') || s.includes('furniture') || s.includes('lock'))) return true;
     }
 
     if (sName.includes('clean') || sCat.includes('housekeeping')) {
-      if (designation.includes('clean') || designation.includes('housekeeping') || designation.includes('laundry')) return true;
+      if (cleanDesignation.includes('clean') || cleanDesignation.includes('housekeeping') || cleanDesignation.includes('laundry')) return true;
       if (skills.some(s => s.includes('clean') || s.includes('pest') || s.includes('wash'))) return true;
     }
 
