@@ -248,14 +248,82 @@ export default function WorkerHome() {
     });
   };
 
+  const workerMatchesService = (worker, serviceCategory, serviceName, vehicleId) => {
+    const categories = Array.isArray(worker?.categories) ? worker.categories : [];
+    const skills = Array.isArray(worker?.skills) ? worker.skills.map(s => String(s).toLowerCase()) : [];
+    const designation = (worker?.vehicle_details || worker?.vehicle || '').toLowerCase();
+    
+    const sCat = (serviceCategory || '').toLowerCase();
+    const sName = (serviceName || '').toLowerCase();
+    const vId = (vehicleId || '').toLowerCase();
+
+    if (categories.length > 0) {
+      if (categories.includes('all') || categories.includes(serviceCategory) || categories.includes(sCat)) {
+        return true;
+      }
+    }
+
+    if (categories.length === 0 && skills.length === 0 && !designation) {
+      return true;
+    }
+
+    const searchTerms = [
+      sCat, sName, vId,
+      ...sCat.split(/[-_\s]+/),
+      ...sName.split(/[-_\s]+/),
+      ...vId.split(/[-_\s]+/)
+    ].filter(t => t && t.length > 2);
+
+    if (searchTerms.some(term => designation.includes(term))) return true;
+    if (skills.some(skill => searchTerms.some(term => skill.includes(term) || term.includes(skill)))) return true;
+
+    if (sCat.includes('construction') || sName.includes('labour') || vId.includes('labour') || sName.includes('construction')) {
+      if (designation.includes('construction') || designation.includes('labour') || designation.includes('mason') || designation.includes('civil') || designation.includes('site') || designation.includes('helper')) return true;
+      if (skills.some(s => s.includes('construction') || s.includes('labour') || s.includes('mason') || s.includes('cement') || s.includes('brick'))) return true;
+    }
+
+    if (sCat.includes('driver') || sCat.includes('logistics') || sName.includes('driver') || sName.includes('goods')) {
+      if (designation.includes('driver') || designation.includes('logistics') || designation.includes('auto') || designation.includes('truck') || designation.includes('mover')) return true;
+      if (skills.some(s => s.includes('driver') || s.includes('driving') || s.includes('logistics') || s.includes('loading'))) return true;
+    }
+
+    if (sName.includes('electrician') || sName.includes('electrical')) {
+      if (designation.includes('electrician') || designation.includes('electrical')) return true;
+      if (skills.some(s => s.includes('wiring') || s.includes('circuit') || s.includes('electric'))) return true;
+    }
+
+    if (sName.includes('plumber') || sName.includes('plumbing')) {
+      if (designation.includes('plumber') || designation.includes('plumbing')) return true;
+      if (skills.some(s => s.includes('pipe') || s.includes('leak') || s.includes('tap') || s.includes('water'))) return true;
+    }
+
+    if (sName.includes('painter') || sName.includes('painting')) {
+      if (designation.includes('painter') || designation.includes('painting')) return true;
+      if (skills.some(s => s.includes('paint') || s.includes('wall') || s.includes('putty'))) return true;
+    }
+
+    if (sName.includes('carpenter') || sName.includes('carpentry')) {
+      if (designation.includes('carpenter') || designation.includes('carpentry')) return true;
+      if (skills.some(s => s.includes('wood') || s.includes('furniture') || s.includes('lock'))) return true;
+    }
+
+    if (sName.includes('clean') || sCat.includes('housekeeping')) {
+      if (designation.includes('clean') || designation.includes('housekeeping') || designation.includes('laundry')) return true;
+      if (skills.some(s => s.includes('clean') || s.includes('pest') || s.includes('wash'))) return true;
+    }
+
+    return false;
+  };
+
   // Filter requests that are:
   // 1. Pending assignment
-  // 2. Matches category
+  // 2. Matches category OR work experience / skills
   // 3. Worker has not rejected
   // 4. Does NOT collide with an accepted scheduled slot
   const pendingRequests = orders.filter(o => 
     o.status === 'pending' &&
     (!o.rejectedWorkers || !o.rejectedWorkers.includes(user.id)) &&
+    workerMatchesService(user, o.vehicle?.category, o.vehicle?.name, o.vehicle?.id) &&
     !collidesWithScheduled(o)
   );
 

@@ -120,33 +120,77 @@ function isSubscriptionActive(user) {
   return sub && sub.active && (!sub.expiresAt || sub.expiresAt >= todayStr);
 }
 
-// Worker service role matching helper
-function workerMatchesRole(worker, serviceId, serviceName) {
+// Worker service role & work experience matching helper
+function workerMatchesRole(worker, serviceId, serviceName, serviceCategory) {
+  const categories = Array.isArray(worker.categories) ? worker.categories : [];
+  const skills = Array.isArray(worker.skills) ? worker.skills.map(s => String(s).toLowerCase()) : [];
   const designation = (worker.vehicle_details || worker.vehicle || '').toLowerCase();
-  const skills = Array.isArray(worker.skills) ? worker.skills.map(s => s.toLowerCase()) : [];
-  const sId = serviceId.toLowerCase();
-  const sName = serviceName.toLowerCase();
   
-  if (sId.includes('electrician') || sName.includes('electrician') || sName.includes('electrical')) {
-    return designation.includes('electrician') || designation.includes('electrical') || skills.some(s => s.includes('wiring') || s.includes('circuit') || s.includes('electr'));
+  const sCat = (serviceCategory || '').toLowerCase();
+  const sName = (serviceName || '').toLowerCase();
+  const vId = (serviceId || '').toLowerCase();
+
+  // 1. Direct Category Match (worker selected this category ID/label or "all")
+  if (categories.length > 0) {
+    if (categories.includes('all') || categories.includes(serviceCategory) || categories.includes(sCat)) {
+      return true;
+    }
   }
-  if (sId.includes('plumber') || sName.includes('plumber') || sName.includes('plumbing')) {
-    return designation.includes('plumber') || designation.includes('plumbing') || skills.some(s => s.includes('pipe') || s.includes('leak') || s.includes('tap') || s.includes('water tank') || s.includes('plumb'));
+
+  // 2. Unrestricted worker (no categories selected AND no designation/skills configured)
+  if (categories.length === 0 && skills.length === 0 && !designation) {
+    return true;
   }
-  if (sId.includes('ac-technician') || sName.includes('ac') || sName.includes('air conditioner')) {
-    return designation.includes('ac') || designation.includes('air conditioner') || designation.includes('cooling') || skills.some(s => s.includes('ac') || s.includes('compressor') || s.includes('filter') || s.includes('gas charging'));
+
+  // 3. Work Experience / Skills / Designation Keyword Match
+  const searchTerms = [
+    sCat, sName, vId,
+    ...sCat.split(/[-_\s]+/),
+    ...sName.split(/[-_\s]+/),
+    ...vId.split(/[-_\s]+/)
+  ].filter(t => t && t.length > 2);
+
+  // Check if designation or any skill contains search terms
+  if (searchTerms.some(term => designation.includes(term))) return true;
+  if (skills.some(skill => searchTerms.some(term => skill.includes(term) || term.includes(skill)))) return true;
+
+  // Domain synonym matching:
+  if (sCat.includes('construction') || sName.includes('labour') || vId.includes('labour') || sName.includes('construction')) {
+    if (designation.includes('construction') || designation.includes('labour') || designation.includes('mason') || designation.includes('civil') || designation.includes('site') || designation.includes('helper')) return true;
+    if (skills.some(s => s.includes('construction') || s.includes('labour') || s.includes('mason') || s.includes('cement') || s.includes('brick'))) return true;
   }
-  if (sId.includes('painter') || sName.includes('painter') || sName.includes('painting')) {
-    return designation.includes('painter') || designation.includes('painting') || skills.some(s => s.includes('paint') || s.includes('wall') || s.includes('putty') || s.includes('primer'));
+
+  if (sCat.includes('driver') || sCat.includes('logistics') || sName.includes('driver') || sName.includes('goods')) {
+    if (designation.includes('driver') || designation.includes('logistics') || designation.includes('auto') || designation.includes('truck') || designation.includes('mover')) return true;
+    if (skills.some(s => s.includes('driver') || s.includes('driving') || s.includes('logistics') || s.includes('loading'))) return true;
   }
-  if (sId.includes('carpenter') || sName.includes('carpenter') || sName.includes('carpentry')) {
-    return designation.includes('carpenter') || designation.includes('carpentry') || skills.some(s => s.includes('wood') || s.includes('furniture') || s.includes('hinge') || s.includes('lock'));
+
+  if (sName.includes('electrician') || sName.includes('electrical')) {
+    if (designation.includes('electrician') || designation.includes('electrical')) return true;
+    if (skills.some(s => s.includes('wiring') || s.includes('circuit') || s.includes('electric'))) return true;
   }
-  if (sId.includes('mason') || sName.includes('mason') || sName.includes('masonry')) {
-    return designation.includes('mason') || designation.includes('brick') || designation.includes('plaster') || skills.some(s => s.includes('cement') || s.includes('brick') || s.includes('plaster'));
+
+  if (sName.includes('plumber') || sName.includes('plumbing')) {
+    if (designation.includes('plumber') || designation.includes('plumbing')) return true;
+    if (skills.some(s => s.includes('pipe') || s.includes('leak') || s.includes('tap') || s.includes('water'))) return true;
   }
-  
-  return true; 
+
+  if (sName.includes('painter') || sName.includes('painting')) {
+    if (designation.includes('painter') || designation.includes('painting')) return true;
+    if (skills.some(s => s.includes('paint') || s.includes('wall') || s.includes('putty'))) return true;
+  }
+
+  if (sName.includes('carpenter') || sName.includes('carpentry')) {
+    if (designation.includes('carpenter') || designation.includes('carpentry')) return true;
+    if (skills.some(s => s.includes('wood') || s.includes('furniture') || s.includes('lock'))) return true;
+  }
+
+  if (sName.includes('clean') || sCat.includes('housekeeping')) {
+    if (designation.includes('clean') || designation.includes('housekeeping') || designation.includes('laundry')) return true;
+    if (skills.some(s => s.includes('clean') || s.includes('pest') || s.includes('wash'))) return true;
+  }
+
+  return false;
 }
 
 // GET /api/orders/worker/:id (List orders for a worker)
@@ -241,11 +285,8 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         continue;
       }
 
-      // Category check: calculate category match score without hard-dropping nearby orders
-      const categoryMatch = (!worker.categories || worker.categories.length === 0 || !o.service_category || worker.categories.includes(o.service_category) || worker.categories.includes('all'));
-
-      // Role matching check
-      if (!workerMatchesRole(worker, o.vehicle_id, o.service_name || '')) {
+      // Check if worker chosen categories OR work experience/skills match the service
+      if (!workerMatchesRole(worker, o.vehicle_id, o.service_name || '', o.service_category || '')) {
         continue;
       }
 
