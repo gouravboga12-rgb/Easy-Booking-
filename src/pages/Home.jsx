@@ -207,7 +207,25 @@ export default function Home() {
       </div>
 
       {/* ── Hero Banner ── */}
-      <section className="hero-banner" style={getBannerStyle(banner)}>
+      <section 
+        className="hero-banner" 
+        style={{ 
+          ...getBannerStyle(banner), 
+          cursor: banner.redirectUrl ? 'pointer' : 'default' 
+        }}
+        onClick={(e) => {
+          if (e.target.closest('.hb-dots') || e.target.closest('.hb-browse') || e.target.closest('.hb-cta')) {
+            return;
+          }
+          if (banner.redirectUrl) {
+            if (banner.redirectUrl.startsWith('http://') || banner.redirectUrl.startsWith('https://')) {
+              window.open(banner.redirectUrl, '_blank');
+            } else {
+              navigate(banner.redirectUrl);
+            }
+          }
+        }}
+      >
         {isVideo(banner.image || banner.img) && (
           <video
             key={banner.image || banner.img}
