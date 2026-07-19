@@ -636,3 +636,48 @@
   }
 }
 
+/* Hero Banner Navigation Arrows */
+.hb-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 46px;
+  height: 46px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+.hb-arrow:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: #fff;
+  transform: translateY(-50%) scale(1.15);
+}
+.hb-arrow.left {
+  left: 24px;
+}
+.hb-arrow.right {
+  right: 24px;
+}
+
+@media (max-width: 768px) {
+  .hb-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .hb-arrow.left {
+    left: 8px !important;
+  }
+  .hb-arrow.right {
+    right: 8px !important;
+  }
+}
+

@@ -15,7 +15,7 @@ const getCategoryIcon = (iconName) => {
 import {
   HiStar, HiUsers, HiTruck, HiLocationMarker,
   HiShieldCheck, HiLightningBolt, HiPhone,
-  HiArrowRight, HiChevronRight, HiSearch, HiCheckCircle, HiBadgeCheck,
+  HiArrowRight, HiChevronLeft, HiChevronRight, HiSearch, HiCheckCircle, HiBadgeCheck,
 } from 'react-icons/hi';
 import {
   MdConstruction, MdEngineering,
@@ -214,7 +214,7 @@ export default function Home() {
           cursor: banner.redirectUrl ? 'pointer' : 'default' 
         }}
         onClick={(e) => {
-          if (e.target.closest('.hb-dots') || e.target.closest('.hb-browse') || e.target.closest('.hb-cta')) {
+          if (e.target.closest('.hb-dots') || e.target.closest('.hb-browse') || e.target.closest('.hb-cta') || e.target.closest('.hb-arrow')) {
             return;
           }
           if (banner.redirectUrl) {
@@ -292,6 +292,30 @@ export default function Home() {
             )}
           </div>
         </div>
+        {displayBanners.length > 1 && (
+          <>
+            <button
+              className="hb-arrow left"
+              aria-label="Previous Slide"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBannerIdx(prev => (prev === 0 ? displayBanners.length - 1 : prev - 1));
+              }}
+            >
+              <HiChevronLeft style={{ width: 24, height: 24 }} />
+            </button>
+            <button
+              className="hb-arrow right"
+              aria-label="Next Slide"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBannerIdx(prev => (prev === displayBanners.length - 1 ? 0 : prev + 1));
+              }}
+            >
+              <HiChevronRight style={{ width: 24, height: 24 }} />
+            </button>
+          </>
+        )}
         <div className="hb-dots" style={{ zIndex: 3, position: 'relative' }}>
           {displayBanners.map((_, i) => (
             <button key={i} className={`dot ${i === bannerIdx ? 'active' : ''}`} onClick={() => setBannerIdx(i)} />
