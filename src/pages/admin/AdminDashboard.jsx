@@ -31,13 +31,20 @@ export default function AdminDashboard() {
   const cancelled   = orders.filter(o => o.status === 'cancelled');
   const revenue     = completed.reduce((s, o) => s + (o.booking?.total || 0), 0);
 
-  const subscriptionRevenue = workers.reduce((sum, w) => {
-    if (!w.subscription?.active) return sum;
-    if (w.subscription.price !== undefined) return sum + (parseFloat(w.subscription.price) || 0);
-    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-    if (plan) return sum + (parseFloat(plan.price) || 0);
-    const fallbackPrice = w.subscription.plan?.match(/(\d+)/)?.[0];
-    return sum + (parseFloat(fallbackPrice || 0));
+  const subscriptionRevenue = users.reduce((sum, u) => {
+    const sub = u.subscription;
+    if (!sub) return sum;
+    if (Array.isArray(sub.history) && sub.history.length > 0) {
+      return sum + sub.history.reduce((hSum, entry) => hSum + (parseFloat(entry.price) || 0), 0);
+    }
+    if (sub.active) {
+      if (sub.price !== undefined) return sum + (parseFloat(sub.price) || 0);
+      const plan = subscriptionPlans.find(p => p.name === sub.plan);
+      if (plan) return sum + (parseFloat(plan.price) || 0);
+      const fallbackPrice = sub.plan?.match(/(\d+)/)?.[0];
+      return sum + (parseFloat(fallbackPrice || 0));
+    }
+    return sum;
   }, 0);
 
   const onlineWorkers   = workers.filter(w => w.available).length;

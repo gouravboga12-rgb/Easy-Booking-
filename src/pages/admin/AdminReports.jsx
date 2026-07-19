@@ -69,10 +69,18 @@ export default function AdminReports() {
     const subscribers = subscribedUsers.filter(u => u.subscription?.active && u.subscription?.plan === plan.name);
     const count = subscribers.length;
     
-    // Sum the actual prices paid by the users, falling back to plan.price
-    const revenueVal = subscribers.reduce((sum, u) => {
-      if (u.subscription.price !== undefined) return sum + (parseFloat(u.subscription.price) || 0);
-      return sum + plan.price;
+    // Sum all payments made by users for this plan across active and upgrade history
+    const revenueVal = users.reduce((sum, u) => {
+      const sub = u.subscription;
+      if (!sub) return sum;
+      if (Array.isArray(sub.history) && sub.history.length > 0) {
+        const planPurchases = sub.history.filter(h => h.plan === plan.name);
+        return sum + planPurchases.reduce((s, h) => s + (parseFloat(h.price) || 0), 0);
+      }
+      if (sub.active && sub.plan === plan.name) {
+        return sum + (sub.price !== undefined ? (parseFloat(sub.price) || 0) : plan.price);
+      }
+      return sum;
     }, 0);
 
     return {
@@ -82,7 +90,22 @@ export default function AdminReports() {
     };
   });
 
-  const subscriptionRevenue = displayPlans.reduce((sum, p) => sum + p.revenue, 0);
+  const subscriptionRevenue = users.reduce((sum, u) => {
+    const sub = u.subscription;
+    if (!sub) return sum;
+    if (Array.isArray(sub.history) && sub.history.length > 0) {
+      return sum + sub.history.reduce((hSum, entry) => hSum + (parseFloat(entry.price) || 0), 0);
+    }
+    if (sub.active) {
+      if (sub.price !== undefined) return sum + (parseFloat(sub.price) || 0);
+      const plan = subscriptionPlans.find(p => p.name === sub.plan);
+      if (plan) return sum + (parseFloat(plan.price) || 0);
+      const fallbackPrice = sub.plan?.match(/(\d+)/)?.[0];
+      return sum + (parseFloat(fallbackPrice || 0));
+    }
+    return sum;
+  }, 0);
+
   const totalPlatformRevenue = revenue + subscriptionRevenue;
 
   // Top services booked
