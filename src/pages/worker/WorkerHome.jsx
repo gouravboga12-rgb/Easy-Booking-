@@ -200,7 +200,7 @@ export default function WorkerHome() {
   const [prevCoords, setPrevCoords] = useState(null);
 
   // Availability Settings States
-  const [hours, setHours] = useState(user.availability?.hours || '09:00 - 18:00');
+  const [hours, setHours] = useState(user.availability?.hours || '24 Hours');
   const [vacation, setVacation] = useState(user.availability?.vacation || false);
   const [blockDate, setBlockDate] = useState('');
   const [blockedDates, setBlockedDates] = useState(user.availability?.blockedDates || []);
@@ -2213,24 +2213,7 @@ export default function WorkerHome() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f9f9f9', paddingBottom: '12px' }}>
-            <div>
-              <strong style={{ fontSize: '14px', color: '#333', display: 'block' }}>Set Working Hours</strong>
-              <span style={{ fontSize: '12px', color: '#888' }}>Operational availability schedule</span>
-            </div>
-            <select
-              className="auth-select"
-              value={hours}
-              onChange={e => handleUpdateHours(e.target.value)}
-              style={{ width: '160px', padding: '6px 10px', fontSize: '13px', background: '#fafafa', borderRadius: '8px' }}
-            >
-              <option value="09:00 - 18:00">09:00 AM - 06:00 PM</option>
-              <option value="08:00 - 20:00">08:00 AM - 08:00 PM</option>
-              <option value="06:00 - 14:00">06:00 AM - 02:00 PM</option>
-              <option value="14:00 - 22:00">02:00 PM - 10:00 PM</option>
-              <option value="24 Hours">24 Hours Duty</option>
-            </select>
-          </div>
+
 
           {/* Block Dates */}
           <div>
