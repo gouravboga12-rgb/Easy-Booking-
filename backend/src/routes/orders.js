@@ -347,19 +347,17 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
       const matchesRadius = distance !== null ? distance <= radiusLimit : true;
 
       // If worker specified target locations, check if matches target or radius.
-      // Otherwise, check if matches radius (or default true if distance uncomputable).
-      if (targetLocs && targetLocs.length > 0) {
-        if (!matchesTarget && !matchesRadius) {
+      // Operational City & Location Radius Filter:
+      // Worker receives orders within their operational city (e.g. Hyderabad) or within their radius limit; out-of-city jobs (e.g. Nalgonda, Suryapet) are excluded.
+      const workerCity = (worker.city || '').split(',')[0].trim().toLowerCase();
+      if (workerCity && workerCity.length > 2) {
+        const orderInCity = custLocLower.includes(workerCity);
+        const withinRadius = distance !== null && distance <= radiusLimit;
+        if (!orderInCity && !withinRadius) {
           continue;
         }
       } else if (!matchesRadius) {
-        // If distance is known and exceeds radius Limit, check if city text matches before dropping
-        if (distance !== null && distance > radiusLimit) {
-          const workerCityLower = (worker.city || '').toLowerCase();
-          if (!workerCityLower || !custLocLower.includes(workerCityLower)) {
-            continue;
-          }
-        }
+        continue;
       }
 
       // Set priority score: 4 for target+category match, 3 for target match, 2 for category+radius match, 1 for nearby radius match
