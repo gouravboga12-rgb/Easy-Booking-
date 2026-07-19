@@ -42,7 +42,8 @@ export default function WorkerOrders() {
   const ongoingOrders = orders.filter(o =>
     o.operator?.id === user.id &&
     (['active', 'arrived'].includes(o.status) ||
-     (o.status === 'assigned' && (isScheduledTimeArrived(o) || o.stage > 0)))
+     (o.status === 'assigned' && o.bookingType !== 'scheduled') ||
+     (o.status === 'assigned' && o.bookingType === 'scheduled' && (isScheduledTimeArrived(o) || o.stage > 1)))
   );
 
   // Scheduled tab: accepted scheduled jobs NOT yet at their time and not yet started
@@ -51,7 +52,7 @@ export default function WorkerOrders() {
     o.status === 'assigned' &&
     o.bookingType === 'scheduled' &&
     !isScheduledTimeArrived(o) &&
-    o.stage === 0
+    o.stage <= 1
   );
 
   // Completed/cancelled orders list
