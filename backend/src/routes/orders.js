@@ -360,8 +360,8 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         continue;
       }
 
-      // Set priority score: 4 for target+category match, 3 for target match, 2 for category+radius match, 1 for nearby radius match
-      const priority = (matchesTarget ? 3 : 1) + (categoryMatch ? 1 : 0);
+      // Set priority score: 3 for target match, 1 for nearby radius match
+      const priority = matchesTarget ? 3 : 1;
 
       pendingJobs.push({
         ...o,
