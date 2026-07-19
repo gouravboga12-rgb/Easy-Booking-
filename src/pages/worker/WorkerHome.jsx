@@ -344,11 +344,6 @@ export default function WorkerHome() {
   const pendingRequests = orders.filter(o => 
     o.status === 'pending' &&
     (!o.rejectedWorkers || !o.rejectedWorkers.includes(user.id)) &&
-    (
-      workerMatchesService(user, o.vehicle?.category, o.vehicle?.name, o.vehicle?.id) ||
-      workerMatchesService(user, o.serviceCategory, o.serviceName, o.vehicleId) ||
-      true // Backend GET /api/orders/worker/:id already pre-filters role, city and radius
-    ) &&
     !collidesWithScheduled(o)
   );
 
