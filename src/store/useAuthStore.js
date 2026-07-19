@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { API_BASE_URL } from '../config';
+import { useStore } from './useStore';
 
 export const useAuthStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,
@@ -257,13 +258,22 @@ export const useAuthStore = create((set, get) => ({
       
       const user = get().user;
       if (user && user.id === workerId) {
+        const isOnlineNow = availabilityData.online !== undefined ? availabilityData.online : user.available;
         const updated = {
           ...user,
           availability: { ...user.availability, ...availabilityData },
-          available: availabilityData.online !== undefined ? availabilityData.online : user.available
+          available: isOnlineNow
         };
         localStorage.setItem('user', JSON.stringify(updated));
         set({ user: updated });
+
+        // Trigger order refresh immediately if worker came online
+        if (isOnlineNow) {
+          try {
+            const fetchOrders = useStore.getState().fetchOrdersForWorker;
+            if (fetchOrders) fetchOrders(workerId);
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.error(err);
@@ -324,12 +334,36 @@ export const useAuthStore = create((set, get) => ({
       expiresAt.setMonth(expiresAt.getMonth() + val);
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const prevHistory = Array.isArray(user.subscription?.history) ? user.subscription.history : (
+      user.subscription?.plan ? [{
+        id: `sub-${Date.now() - 86400000}`,
+        plan: user.subscription.plan,
+        price: Number(user.subscription.price || 0),
+        purchasedAt: user.subscription.purchasedAt || todayStr,
+        expiresAt: user.subscription.expiresAt || todayStr
+      }] : []
+    );
+
+    const newPurchase = {
+      id: `sub-${Date.now()}`,
+      plan: planName,
+      price: Number(price),
+      duration,
+      durationUnit,
+      purchasedAt: todayStr,
+      expiresAt: expiresAt.toISOString().split('T')[0]
+    };
+
+    const updatedHistory = [...prevHistory, newPurchase];
+
     const subscription = {
       active: true,
       plan: planName,
       price: Number(price),
-      purchasedAt: new Date().toISOString().split('T')[0],
-      expiresAt: expiresAt.toISOString().split('T')[0]
+      purchasedAt: todayStr,
+      expiresAt: expiresAt.toISOString().split('T')[0],
+      history: updatedHistory
     };
 
     try {

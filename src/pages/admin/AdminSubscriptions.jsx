@@ -60,8 +60,13 @@ export default function AdminSubscriptions() {
 
   const activeWorkerPlansCount = workers.filter(w => w.subscription?.active).length;
   const totalSubRevenue = workers.reduce((sum, w) => {
-    const plan = subscriptionPlans.find(p => p.name === w.subscription?.plan);
-    return sum + (parseFloat(plan?.price) || 0);
+    const sub = w.subscription;
+    if (!sub) return sum;
+    if (Array.isArray(sub.history) && sub.history.length > 0) {
+      return sum + sub.history.reduce((hSum, entry) => hSum + (parseFloat(entry.price) || 0), 0);
+    }
+    const plan = subscriptionPlans.find(p => p.name === sub.plan);
+    return sum + (sub.price !== undefined ? (parseFloat(sub.price) || 0) : (parseFloat(plan?.price) || 0));
   }, 0);
 
   const handleCreatePlan = async (e) => {

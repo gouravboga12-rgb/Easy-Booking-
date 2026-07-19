@@ -16,13 +16,15 @@ const DEFAULT_CATEGORIES = [
 
 const formatDbOrder = (dbOrder, services) => {
   const baseVehicle = services.find(v => v.id === dbOrder.vehicle_id) || { id: dbOrder.vehicle_id, name: 'Service', rate: 0 };
-  // Merge service_custom_fields from backend JOIN when available (prevents race condition)
   const dbCustomFields = dbOrder.service_custom_fields
     ? (typeof dbOrder.service_custom_fields === 'string' ? JSON.parse(dbOrder.service_custom_fields) : dbOrder.service_custom_fields)
     : null;
-  const vehicle = dbCustomFields
-    ? { ...baseVehicle, custom_fields: dbCustomFields }
-    : baseVehicle;
+  const category = dbOrder.service_category || baseVehicle.category || '';
+  const vehicle = {
+    ...baseVehicle,
+    category,
+    custom_fields: dbCustomFields || baseVehicle.custom_fields || []
+  };
   const customer = { 
     id: dbOrder.customer_id, 
     name: dbOrder.booking_name || dbOrder.customer_name || 'Customer', 

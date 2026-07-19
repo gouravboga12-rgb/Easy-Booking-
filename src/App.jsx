@@ -77,6 +77,7 @@ function Layout() {
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
   const fetchOrdersForAdmin = useStore(s => s.fetchOrdersForAdmin);
   const fetchServices = useStore(s => s.fetchServices);
+  const fetchBanners = useStore(s => s.fetchBanners);
   const orders = useStore(s => s.orders);
 
   const [toasts, setToasts] = useState([]);
@@ -167,13 +168,14 @@ function Layout() {
   useEffect(() => {
     // Always fetch services from DB on app load (for all users, public too)
     fetchServices();
-  }, [fetchServices]);
+    fetchBanners();
+  }, [fetchServices, fetchBanners]);
 
   useEffect(() => {
     if (!user) return;
 
     const refreshData = () => {
-      fetchServices();
+      fetchBanners();
       if (user.role === 'admin') {
         fetchWorkers();
         fetchOrdersForAdmin();
@@ -187,11 +189,11 @@ function Layout() {
     // Initial fetch
     refreshData();
 
-    // Background polling interval (every 3 seconds) to refresh the lists
+    // Background polling interval (every 3 seconds) to refresh orders and banners (live tracking)
     const interval = setInterval(refreshData, 3000);
 
     return () => clearInterval(interval);
-  }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin, fetchServices]);
+  }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin, fetchBanners]);
 
   return (
     <>

@@ -88,14 +88,19 @@ export default function BookingFlow() {
   useEffect(() => {
     if (vehicle && vehicle.pricing_type === 'dynamic') {
       const ts = vehicle.pricing_rules?.tiers || [];
-      if ((vehicle.pricing_rules?.type === 'tier' || vehicle.pricing_rules?.type === 'custom') && ts.length > 0) {
-        setSelectedTier(ts[0]);
-      } else if (vehicle.pricing_rules?.type === 'person' && ts.length > 0) {
-        setSelectedTier(ts[0]);
-        setWorkersCount(ts[0].value || 1);
+      if (ts.length > 0) {
+        setSelectedTier(prev => {
+          if (!prev) return ts[0];
+          // Preserve current selection if it still exists in updated tiers
+          const found = ts.find(t =>
+            (t.value !== undefined && t.value === prev.value) ||
+            (t.label !== undefined && t.label === prev.label)
+          );
+          return found || ts[0];
+        });
       }
     }
-  }, [vehicle]);
+  }, [vehicle?.id]);
 
   const getShortAddress = (addr) => {
     if (!addr) return 'Select location';
@@ -598,19 +603,26 @@ export default function BookingFlow() {
                        '🎯 Select Option'}
                     </span>
                     <select
-                      value={selectedTier ? JSON.stringify(selectedTier) : ''}
-                      onChange={e => setSelectedTier(e.target.value ? JSON.parse(e.target.value) : null)}
+                      value={selectedTier ? (selectedTier.value !== undefined ? String(selectedTier.value) : (selectedTier.label || '')) : ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const found = tiers.find(t => String(t.value !== undefined ? t.value : t.label) === val);
+                        if (found) setSelectedTier(found);
+                      }}
                       style={{ padding: '12px', border: '1.5px solid #eee', borderRadius: '8px', width: '100%', fontSize: '14px', marginTop: '6px', background: '#fff' }}
                     >
-                      {tiers.map((t, idx) => (
-                        <option key={idx} value={JSON.stringify(t)}>
-                          {vehicle.pricing_rules?.type === 'person'
-                            ? `${t.value} ${t.value === 1 ? 'Worker' : 'Workers'} — ₹${t.price.toLocaleString()}`
-                            : vehicle.pricing_rules?.type === 'tier'
-                            ? `${t.value} Hour(s) — ₹${t.price.toLocaleString()}`
-                            : `${t.label} — ₹${t.price.toLocaleString()}`}
-                        </option>
-                      ))}
+                      {tiers.map((t, idx) => {
+                        const optVal = t.value !== undefined ? String(t.value) : t.label;
+                        return (
+                          <option key={idx} value={optVal}>
+                            {vehicle.pricing_rules?.type === 'person'
+                              ? `${t.value} ${t.value === 1 ? 'Worker' : 'Workers'} — ₹${t.price.toLocaleString()}`
+                              : vehicle.pricing_rules?.type === 'tier'
+                              ? `${t.value} Hour(s) — ₹${t.price.toLocaleString()}`
+                              : `${t.label} — ₹${t.price.toLocaleString()}`}
+                          </option>
+                        );
+                      })}
                     </select>
                     {selectedTier && (
                       <div style={{ marginTop: '8px', padding: '10px 14px', background: 'var(--primary-light, #eff6ff)', borderRadius: '8px', border: '1px solid var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

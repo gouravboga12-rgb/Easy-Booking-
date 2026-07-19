@@ -109,10 +109,18 @@ export default function AdminRevenue() {
     const subscribers = filteredSubscribedUsers.filter(u => u.subscription?.active && u.subscription?.plan === plan.name);
     const count = subscribers.length;
     
-    // Sum the actual prices paid by the users, falling back to plan.price
-    const revenue = subscribers.reduce((sum, u) => {
-      if (u.subscription.price !== undefined) return sum + (parseFloat(u.subscription.price) || 0);
-      return sum + plan.price;
+    // Sum all payments made by users for this plan across active and upgrade history
+    const revenue = filteredSubscribedUsers.reduce((sum, u) => {
+      const sub = u.subscription;
+      if (!sub) return sum;
+      if (Array.isArray(sub.history) && sub.history.length > 0) {
+        const planPurchases = sub.history.filter(h => h.plan === plan.name);
+        return sum + planPurchases.reduce((s, h) => s + (parseFloat(h.price) || 0), 0);
+      }
+      if (sub.active && sub.plan === plan.name) {
+        return sum + (sub.price !== undefined ? (parseFloat(sub.price) || 0) : plan.price);
+      }
+      return sum;
     }, 0);
 
     return {
@@ -121,12 +129,22 @@ export default function AdminRevenue() {
       revenue
     };
   }).filter(plan => {
-    // Keep plan if it's in the database OR has active subscribers
-    return plan.isDbPlan || plan.count > 0;
+    // Keep plan if it's in the database OR has subscribers / revenue
+    return plan.isDbPlan || plan.count > 0 || plan.revenue > 0;
   });
 
-  // Subscription Revenue — primary metric (total of all plan revenues)
-  const subscriptionRevenue = displayPlans.reduce((sum, p) => sum + p.revenue, 0);
+  // Subscription Revenue — primary metric (total of all plan payments received)
+  const subscriptionRevenue = filteredSubscribedUsers.reduce((total, u) => {
+    const sub = u.subscription;
+    if (!sub) return total;
+    if (Array.isArray(sub.history) && sub.history.length > 0) {
+      return total + sub.history.reduce((s, h) => s + (parseFloat(h.price) || 0), 0);
+    }
+    if (sub.active) {
+      return total + (parseFloat(sub.price) || 0);
+    }
+    return total;
+  }, 0);
   const gstOnSubscriptions = Math.round(subscriptionRevenue * 0.18);
 
   // Monthly breakdown

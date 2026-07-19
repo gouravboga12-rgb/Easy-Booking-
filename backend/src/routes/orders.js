@@ -241,10 +241,12 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         continue;
       }
 
-      if (!worker.categories.includes(o.service_category)) {
+      // Category check: if worker has specific categories selected, enforce it; if empty, allow all
+      if (worker.categories && worker.categories.length > 0 && o.service_category && !worker.categories.includes(o.service_category)) {
         continue;
       }
 
+      // Role matching check
       if (!workerMatchesRole(worker, o.vehicle_id, o.service_name || '')) {
         continue;
       }
@@ -262,27 +264,18 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         wLng = liveCoords[0].lng;
       }
 
-      // Check operational city match (mandatory check)
-      if (!worker.city) {
-        continue;
-      }
       const custLocLower = (o.location || '').toLowerCase();
-      const workerCityLower = worker.city.toLowerCase();
-      if (!custLocLower.includes(workerCityLower)) {
-        continue;
-      }
 
-      // 1. Check target locations matching
+      // Target locations check
       let targetLocs = [];
       if (worker.target_locations) {
         try {
           targetLocs = typeof worker.target_locations === 'string' ? JSON.parse(worker.target_locations) : worker.target_locations;
         } catch (e) {}
       }
-
       const matchesTarget = (targetLocs && targetLocs.length > 0) ? targetLocs.some(loc => custLocLower.includes(loc.toLowerCase())) : false;
 
-      // 2. Check radius matching
+      // Distance radius check
       let distance = null;
       if (wLat !== null && wLng !== null && o.customer_lat !== null && o.customer_lng !== null) {
         distance = getHaversineDistance(
@@ -294,11 +287,22 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
       }
 
       const radiusLimit = worker.radius || 10;
-      const matchesRadius = distance !== null ? distance <= radiusLimit : false;
+      const matchesRadius = distance !== null ? distance <= radiusLimit : true;
 
-      // Eligible if matches target locations OR fits within nearby operational radius
-      if (!matchesTarget && !matchesRadius) {
-        continue;
+      // If worker specified target locations, check if matches target or radius.
+      // Otherwise, check if matches radius (or default true if distance uncomputable).
+      if (targetLocs && targetLocs.length > 0) {
+        if (!matchesTarget && !matchesRadius) {
+          continue;
+        }
+      } else if (!matchesRadius) {
+        // If distance is known and exceeds radius Limit, check if city text matches before dropping
+        if (distance !== null && distance > radiusLimit) {
+          const workerCityLower = (worker.city || '').toLowerCase();
+          if (!workerCityLower || !custLocLower.includes(workerCityLower)) {
+            continue;
+          }
+        }
       }
 
       // Set priority score: 2 for target match, 1 for nearby radius match

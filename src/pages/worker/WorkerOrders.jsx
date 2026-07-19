@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import { HiLocationMarker, HiCalendar, HiUser, HiArrowRight, HiClipboardList, HiPhone } from 'react-icons/hi';
@@ -7,6 +7,13 @@ export default function WorkerOrders() {
   const user = useAuthStore(s => s.user);
   const orders = useStore(s => s.orders);
   const advanceStage = useStore(s => s.advanceStage);
+  const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchOrdersForWorker(user.id);
+    }
+  }, [user?.id, fetchOrdersForWorker]);
 
   const [activeTab, setActiveTab] = useState('active'); // 'active', 'scheduled', or 'completed'
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
