@@ -256,7 +256,6 @@ export default function WorkerHome() {
   const pendingRequests = orders.filter(o => 
     o.status === 'pending' &&
     (!o.rejectedWorkers || !o.rejectedWorkers.includes(user.id)) &&
-    (!user.categories || user.categories.length === 0 || !o.vehicle?.category || user.categories.includes(o.vehicle.category)) &&
     !collidesWithScheduled(o)
   );
 

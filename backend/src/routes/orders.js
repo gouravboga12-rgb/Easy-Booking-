@@ -241,10 +241,8 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         continue;
       }
 
-      // Category check: if worker has specific categories selected, enforce it; if empty, allow all
-      if (worker.categories && worker.categories.length > 0 && o.service_category && !worker.categories.includes(o.service_category)) {
-        continue;
-      }
+      // Category check: calculate category match score without hard-dropping nearby orders
+      const categoryMatch = (!worker.categories || worker.categories.length === 0 || !o.service_category || worker.categories.includes(o.service_category) || worker.categories.includes('all'));
 
       // Role matching check
       if (!workerMatchesRole(worker, o.vehicle_id, o.service_name || '')) {
@@ -305,8 +303,8 @@ router.get('/worker/:id', authenticateToken, async (req, res) => {
         }
       }
 
-      // Set priority score: 2 for target match, 1 for nearby radius match
-      const priority = matchesTarget ? 2 : 1;
+      // Set priority score: 4 for target+category match, 3 for target match, 2 for category+radius match, 1 for nearby radius match
+      const priority = (matchesTarget ? 3 : 1) + (categoryMatch ? 1 : 0);
 
       pendingJobs.push({
         ...o,
