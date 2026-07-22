@@ -703,11 +703,8 @@
   }
 }
 
-/* 2. Hide brand text on extremely narrow devices (only show logo icon & worker badge) */
+/* 2. Style adjustments on extremely narrow devices */
 @media (max-width: 400px) {
-  .wth-brand span {
-    display: none !important;
-  }
   .worker-stats {
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important;
     gap: 8px !important;
