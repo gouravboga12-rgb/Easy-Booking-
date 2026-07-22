@@ -193,6 +193,69 @@ export default function BookingFlow() {
     reverseGeocode(latitude, longitude);
   };
 
+  // Automatically locate user on mount to center the map on their city/location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setCoords({ lat: latitude, lng: longitude });
+          setViewState(v => ({ ...v, latitude, longitude }));
+          reverseGeocode(latitude, longitude);
+        },
+        (err) => {
+          console.warn("Auto-geolocation on mount failed/denied:", err);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
+
+  const handleAddressLookup = async () => {
+    if (!form.location || form.location.startsWith('📍 Coords:')) return;
+    setAddressLoading(true);
+    const token = MAPBOX_TOKEN;
+    let lat = null;
+    let lng = null;
+
+    if (token) {
+      try {
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(form.location)}.json?access_token=${token}&limit=1`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.features && data.features.length > 0) {
+            const center = data.features[0].center;
+            lng = center[0];
+            lat = center[1];
+          }
+        }
+      } catch (e) {
+        console.error("Mapbox geocoding failed, trying OSM:", e);
+      }
+    }
+
+    if (lat === null || lng === null) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.location)}&format=json&limit=1`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+          }
+        }
+      } catch (osmErr) {
+        console.error("OSM Nominatim geocoding failed:", osmErr);
+      }
+    }
+
+    if (lat !== null && lng !== null) {
+      setCoords({ lat, lng });
+      setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
+    }
+    setAddressLoading(false);
+  };
+
   const compileNotesAndAnswers = () => {
     let compiled = form.notes || '';
     if (vehicle.pricing_type === 'dynamic' && selectedTier) {
@@ -304,7 +367,14 @@ export default function BookingFlow() {
       vehicle,
       {
         ...form,
-        location: form.location + (form.manualAddress ? `, ${form.manualAddress}` : ''),
+        location: (() => {
+          const loc = (form.location || '').trim();
+          const manual = (form.manualAddress || '').trim();
+          if (!manual) return loc;
+          if (loc.toLowerCase().includes(manual.toLowerCase())) return loc;
+          if (manual.toLowerCase().includes(loc.toLowerCase())) return manual;
+          return `${manual}, ${loc}`;
+        })(),
         lat: coords.lat,
         lng: coords.lng,
         date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
@@ -334,7 +404,14 @@ export default function BookingFlow() {
 
     addToCart(vehicle, {
       ...form,
-      location: form.location + (form.manualAddress ? `, ${form.manualAddress}` : ''),
+      location: (() => {
+        const loc = (form.location || '').trim();
+        const manual = (form.manualAddress || '').trim();
+        if (!manual) return loc;
+        if (loc.toLowerCase().includes(manual.toLowerCase())) return loc;
+        if (manual.toLowerCase().includes(loc.toLowerCase())) return manual;
+        return `${manual}, ${loc}`;
+      })(),
       lat: coords.lat,
       lng: coords.lng,
       date: bookingType === 'instant' ? new Date().toISOString().split('T')[0] : form.date,
@@ -439,6 +516,8 @@ export default function BookingFlow() {
                   placeholder="Enter service address or landmark"
                   value={form.location}
                   onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                  onBlur={handleAddressLookup}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddressLookup(); }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                   <button
