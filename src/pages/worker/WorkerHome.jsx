@@ -1685,17 +1685,17 @@ export default function WorkerHome() {
                   <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#4c1d95', fontWeight: '600', lineHeight: '1.4' }}>
                     💡 Please ask the customer to share the <strong>SAME 4-digit code</strong> used at arrival. Enter it below to unlock completion payment confirmation:
                   </p>
-                  <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: '8px' }}>
+                  <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
                       type="text"
                       maxLength={4}
                       placeholder="Enter 4-digit code"
                       value={otpInput}
                       onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '4px' }}
+                      style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px', textAlign: 'center', fontWeight: 'bold', letterSpacing: '4px', width: '100%', boxSizing: 'border-box' }}
                       required
                     />
-                    <button type="submit" style={{ background: '#6d28d9', color: '#fff', border: 'none', padding: '0 16px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                    <button type="submit" style={{ background: '#6d28d9', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', boxSizing: 'border-box', boxShadow: '0 4px 12px rgba(109,40,217,0.2)' }}>
                       Verify OTP
                     </button>
                   </form>
