@@ -48,6 +48,11 @@ import WorkerProfile from './pages/worker/WorkerProfile';
 import WorkerSubscription from './pages/worker/WorkerSubscription';
 import UserProfile from './pages/UserProfile';
 
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
+import RefundPolicy from './pages/RefundPolicy';
+import ContactUs from './pages/ContactUs';
+
 import './App.css';
 
 function ScrollToTop() {
@@ -217,6 +222,12 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Legal & Policy Pages */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/contact-us" element={<ContactUs />} />
 
           {/* Worker Login/Signup */}
           <Route path="/login-worker" element={<WorkerLogin />} />
