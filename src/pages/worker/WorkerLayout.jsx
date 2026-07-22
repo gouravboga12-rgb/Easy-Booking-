@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
-import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser, HiLightningBolt, HiBell, HiX } from 'react-icons/hi';
+import { HiHome, HiClipboardList, HiClock, HiCurrencyRupee, HiUser, HiLightningBolt, HiBell, HiX, HiDocumentText, HiShieldCheck, HiRefresh, HiMail } from 'react-icons/hi';
 import { MdConstruction } from 'react-icons/md';
 import './Worker.css';
 
@@ -234,9 +233,29 @@ export default function WorkerLayout() {
               <span>{label}</span>
             </NavLink>
           ))}
+
+          <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 12px', display: 'block', marginBottom: '6px' }}>Help & Policies</span>
+            <Link to="/terms-conditions" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+              <HiDocumentText className="ws-nav-icon" />
+              <span>Terms & Conditions</span>
+            </Link>
+            <Link to="/privacy-policy" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+              <HiShieldCheck className="ws-nav-icon" />
+              <span>Privacy Policy</span>
+            </Link>
+            <Link to="/refund-policy" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+              <HiRefresh className="ws-nav-icon" />
+              <span>Refund Policy</span>
+            </Link>
+            <Link to="/contact-us" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+              <HiMail className="ws-nav-icon" />
+              <span>Contact Support</span>
+            </Link>
+          </div>
         </nav>
       </aside>
- 
+
       {/* Main content wrapper */}
       <div className="worker-main">
         {/* Mobile View Top Header */}
@@ -360,7 +379,7 @@ export default function WorkerLayout() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px',
+            gap: '10px',
             width: '100%',
             boxSizing: 'border-box'
           }}>
@@ -368,10 +387,26 @@ export default function WorkerLayout() {
               <img src="/logo.png" alt="Company Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
               <span style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '0.5px' }}>Parrow <b style={{ color: 'var(--primary)' }}>Skills</b></span>
             </div>
-            <p style={{ margin: '4px 0', color: '#cbd5e1', maxWidth: '400px', fontSize: '12px', lineHeight: '1.4' }}>
+            <p style={{ margin: '2px 0', color: '#cbd5e1', maxWidth: '400px', fontSize: '12px', lineHeight: '1.4' }}>
               Reliable on-demand professional labor and booking management platform.
             </p>
-            <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '280px', margin: '4px auto 0' }}>
+
+            <p style={{ margin: '4px 0', color: '#e2e8f0', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+              <span>📧 Support:</span>
+              <a href="mailto:tameemansarkhan@gmail.com" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>tameemansarkhan@gmail.com</a>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', margin: '6px 0', fontSize: '12px' }}>
+              <Link to="/terms-conditions" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Terms & Conditions</Link>
+              <span style={{ color: '#475569' }}>•</span>
+              <Link to="/privacy-policy" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Privacy Policy</Link>
+              <span style={{ color: '#475569' }}>•</span>
+              <Link to="/refund-policy" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Refund Policy</Link>
+              <span style={{ color: '#475569' }}>•</span>
+              <Link to="/contact-us" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Contact Us</Link>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '320px', margin: '4px auto 0' }}>
               Developed by <a href="https://www.codtechitsolutions.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>CODTECH IT SOLUTIONS</a>
             </div>
           </footer>
