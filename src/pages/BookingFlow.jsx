@@ -193,24 +193,6 @@ export default function BookingFlow() {
     reverseGeocode(latitude, longitude);
   };
 
-  // Automatically locate user on mount to center the map on their city/location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setCoords({ lat: latitude, lng: longitude });
-          setViewState(v => ({ ...v, latitude, longitude }));
-          reverseGeocode(latitude, longitude);
-        },
-        (err) => {
-          console.warn("Auto-geolocation on mount failed/denied:", err);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    }
-  }, []);
-
   const handleAddressLookup = async () => {
     if (!form.location || form.location.startsWith('📍 Coords:')) return;
     setAddressLoading(true);
