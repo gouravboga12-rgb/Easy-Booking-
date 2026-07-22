@@ -75,21 +75,22 @@ export default function WorkerRegister() {
 
   const handleGetGpsLocation = () => {
     if (!navigator.geolocation) {
-      alert("GPS is not supported by your browser.");
+      setError("GPS is not supported by your browser. Please enter City and Address manually.");
       return;
     }
     setAddressLoading(true);
+    setError('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         reverseGeocode(latitude, longitude);
       },
       (err) => {
-        console.error(err);
+        console.error("GPS Error:", err);
         setAddressLoading(false);
-        alert("Unable to fetch GPS location. Please check browser permissions and enter details manually.");
+        setError("GPS location could not be fetched automatically. You can enter your City and Operational Address manually below.");
       },
-      { enableHighAccuracy: true, timeout: 5000 }
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     );
   };
 
@@ -220,7 +221,6 @@ export default function WorkerRegister() {
     if (!professionalForm.address) { setError('Please enter your operational address'); return; }
     if (!professionalForm.city) { setError('Please enter your operational city'); return; }
     if (!professionalForm.state) { setError('Please enter your operational state'); return; }
-    if (!professionalForm.lat || !professionalForm.lng) { setError('Please click "Get GPS Location" to capture coordinates'); return; }
     setStep(3);
   };
 
@@ -450,7 +450,7 @@ export default function WorkerRegister() {
                 )}
               </label>
 
-              <label>Current Location Coordinates
+              <label>Current Location Coordinates (Optional)
                 <div style={{ display: 'flex', gap: '10px', marginTop: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
@@ -469,11 +469,11 @@ export default function WorkerRegister() {
                       minWidth: '140px'
                     }}
                   >
-                    {addressLoading ? '🔄 Fetching...' : '📍 Get GPS Location'}
+                    {addressLoading ? '🔄 Fetching...' : '📍 Auto-fill GPS (Optional)'}
                   </button>
                   <div style={{ display: 'flex', gap: '6px', flex: '2 1 180px' }}>
-                    <input placeholder="Lat" value={professionalForm.lat} readOnly style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
-                    <input placeholder="Lng" value={professionalForm.lng} readOnly style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
+                    <input placeholder="Lat (Optional)" value={professionalForm.lat} onChange={e => handleProfChange('lat', e.target.value)} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
+                    <input placeholder="Lng (Optional)" value={professionalForm.lng} onChange={e => handleProfChange('lng', e.target.value)} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '12px', flex: 1, textAlign: 'center', minWidth: '60px' }} />
                   </div>
                 </div>
               </label>
