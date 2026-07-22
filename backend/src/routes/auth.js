@@ -412,8 +412,7 @@ router.post('/register-otp', async (req, res) => {
     }
 
     res.json({ 
-      message: mailSent ? 'Verification OTP code has been sent to your email.' : 'Email service offline. Use verification bypass OTP code.', 
-      debugOtp: otp,
+      message: mailSent ? 'Verification OTP code has been sent to your email.' : 'Failed to send verification email. Please check your email address or try again.', 
       mailSent
     });
   } catch (err) {
@@ -456,8 +455,7 @@ router.post('/resend-otp', async (req, res) => {
     }
 
     res.json({ 
-      message: mailSent ? 'A new OTP has been sent to your email.' : 'Email service offline. Use verification bypass OTP code.', 
-      debugOtp: otp,
+      message: mailSent ? 'A new OTP has been sent to your email.' : 'Failed to send verification email. Please check your email address or try again.', 
       mailSent
     });
   } catch (err) {
@@ -828,7 +826,6 @@ router.post('/forgot-password', async (req, res) => {
 
     res.status(200).json({ 
       message: 'If the email exists, a reset code has been sent',
-      debugOtp: otp,
       mailSent
     });
   } catch (err) {

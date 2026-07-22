@@ -694,13 +694,6 @@ export default function WorkerRegister() {
                 </div>
               </div>
 
-              {debugOtp && (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', marginBottom: '14px', lineHeight: '1.4' }}>
-                  <strong>🔒 Debug Mode Bypass:</strong><br />
-                  Email service is down. Please enter this code: <strong style={{ fontSize: '15px', color: '#1d4ed8' }}>{debugOtp}</strong>
-                </div>
-              )}
-
               <label>Enter OTP
                 <div className="input-wrap">
                   <HiLockClosed className="input-icon" />

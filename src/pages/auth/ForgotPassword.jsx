@@ -120,13 +120,6 @@ export default function ForgotPassword() {
         ) : (
           <form onSubmit={handleResetPassword}>
             {message && <div style={{ color: '#4caf50', fontSize: '14px', marginBottom: '16px', fontWeight: 500 }}>{message}</div>}
-
-            {debugOtp && (
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', marginBottom: '14px', lineHeight: '1.4' }}>
-                <strong>🔒 Debug Mode Bypass:</strong><br />
-                Email service is down. Please enter this code: <strong style={{ fontSize: '15px', color: '#1d4ed8' }}>{debugOtp}</strong>
-              </div>
-            )}
             
             <label>6-Digit OTP Code
               <div className="input-wrap">
