@@ -161,7 +161,7 @@ export default function OrderTracking() {
     setCancelling(true);
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${import.meta.env.VITE_API_URL || 'https://api.testcodtech.online/api'}/orders/${order.id}/status`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'https://api.parrowskills.com/api'}/orders/${order.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: 'cancelled', cancelReason: cancelReason, cancelDetails: finalReason })
