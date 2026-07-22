@@ -1,0 +1,21 @@
+# Parrow Skills Robots.txt
+User-agent: *
+Allow: /
+Allow: /browse
+Allow: /privacy-policy
+Allow: /terms-conditions
+Allow: /refund-policy
+Allow: /contact-us
+Allow: /login
+Allow: /register
+Allow: /login-worker
+Allow: /register-worker
+
+# Disallow private user/admin dashboards from indexing
+Disallow: /admin/
+Disallow: /worker/
+Disallow: /orders
+Disallow: /cart
+Disallow: /track/
+
+Sitemap: https://parrowskills.com/sitemap.xml
