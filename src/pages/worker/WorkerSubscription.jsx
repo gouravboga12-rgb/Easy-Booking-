@@ -191,7 +191,7 @@ export default function WorkerSubscription() {
       {/* Subscription Package Status */}
       <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Subscription Package Status</h2>
-        <div style={{ background: user.subscription?.active ? '#f0fdf4' : '#fef2f2', border: '1px solid', borderColor: user.subscription?.active ? '#bbf7d0' : '#fecaca', padding: '16px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ background: user.subscription?.active ? '#f0fdf4' : '#fef2f2', border: '1px solid', borderColor: user.subscription?.active ? '#bbf7d0' : '#fecaca', padding: '16px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <strong style={{ color: user.subscription?.active ? '#15803d' : '#b91c1c', fontSize: '15px', display: 'block' }}>
               {user.subscription?.active ? `PLAN ACTIVE: ${user.subscription.plan}` : 'NO ACTIVE SUBSCRIPTION'}

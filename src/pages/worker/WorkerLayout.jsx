@@ -7,12 +7,12 @@ import { MdConstruction } from 'react-icons/md';
 import './Worker.css';
 
 const NAV = [
-  { to: '/worker',              icon: HiHome,           label: 'Home'    },
-  { to: '/worker/orders',       icon: HiClipboardList,  label: 'Orders'  },
-  { to: '/worker/history',      icon: HiClock,          label: 'History' },
-  { to: '/worker/wallet',       icon: HiCurrencyRupee,  label: 'Payments & Earnings'  },
-  { to: '/worker/subscription', icon: HiLightningBolt,  label: 'Subscription Plan'  },
-  { to: '/worker/profile',      icon: HiUser,           label: 'Profile' },
+  { to: '/worker',              icon: HiHome,           label: 'Home',                shortLabel: 'Home' },
+  { to: '/worker/orders',       icon: HiClipboardList,  label: 'Orders',              shortLabel: 'Orders' },
+  { to: '/worker/history',      icon: HiClock,          label: 'History',             shortLabel: 'History' },
+  { to: '/worker/wallet',       icon: HiCurrencyRupee,  label: 'Payments & Earnings', shortLabel: 'Wallet' },
+  { to: '/worker/subscription', icon: HiLightningBolt,  label: 'Subscription Plan',   shortLabel: 'Plans' },
+  { to: '/worker/profile',      icon: HiUser,           label: 'Profile',             shortLabel: 'Profile' },
 ];
 
 export default function WorkerLayout() {
@@ -416,7 +416,7 @@ export default function WorkerLayout() {
 
       {/* Mobile View Bottom Navigation */}
       <nav className="worker-bottom-nav">
-        {NAV.map(({ to, icon: Icon, label }) => (
+        {NAV.map(({ to, icon: Icon, label, shortLabel }) => (
           <NavLink
             key={to}
             to={to}
@@ -424,7 +424,7 @@ export default function WorkerLayout() {
             className={({ isActive }) => `wbn-item ${isActive ? 'active' : ''}`}
           >
             <Icon className="wbn-icon" />
-            <span>{label}</span>
+            <span>{shortLabel || label}</span>
           </NavLink>
         ))}
       </nav>

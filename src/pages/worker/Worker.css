@@ -437,7 +437,7 @@
 /* ── Wallet ── */
 .wallet-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .wallet-cards { grid-template-columns: 1fr; gap: 10px; }
   .wallet-card { padding: 14px; }
   .wallet-card.primary strong { font-size: 20px; }
@@ -692,4 +692,73 @@
   .wp-title h1 { font-size: 19px; }
   .worker-top-header { padding: 0 12px; height: 54px; }
   .wth-brand { font-size: 17px; }
+}
+
+/* ── Custom Responsive Layout & Compatibility Overrides ── */
+
+/* 1. Mobile Header user sub-info (hide name & status text) to prevent overflow */
+@media (max-width: 580px) {
+  .wth-info {
+    display: none !important;
+  }
+}
+
+/* 2. Hide brand text on extremely narrow devices (only show logo icon & worker badge) */
+@media (max-width: 400px) {
+  .wth-brand span {
+    display: none !important;
+  }
+  .worker-stats {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .ws-card {
+    padding: 10px 6px !important;
+  }
+  .ws-card strong {
+    font-size: 14px !important;
+  }
+  .ws-card span {
+    font-size: 10px !important;
+  }
+}
+
+/* 3. Add bottom margin to brand footer so it does not overlap with fixed bottom navigation bar */
+@media (max-width: 768px) {
+  .brand-footer {
+    margin-bottom: 80px !important;
+  }
+}
+
+/* 4. Tablet Portrait Sidebar & Content Area Adjustments (768px to 992px) */
+@media (min-width: 768px) and (max-width: 992px) {
+  .worker-sidebar {
+    width: 220px !important;
+    padding: 16px !important;
+  }
+  .worker-main {
+    margin-left: 220px !important;
+    width: calc(100% - 220px) !important;
+  }
+  .worker-content {
+    padding: 20px 16px !important;
+  }
+}
+
+/* 5. Horizontal scrolling for Orders Switcher on mobile to prevent layout breaking */
+@media (max-width: 560px) {
+  .orders-switcher {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+  }
+  .orders-switcher button {
+    flex: 1 0 auto !important;
+    min-width: 140px !important;
+    padding: 8px 12px !important;
+  }
+  .orders-switcher::-webkit-scrollbar {
+    display: none !important;
+  }
 }
