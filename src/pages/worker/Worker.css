@@ -759,3 +759,32 @@
     display: none !important;
   }
 }
+
+/* 6. Contact details Call & WhatsApp buttons layout wrapping on small viewports */
+@media (max-width: 400px) {
+  .contact-actions-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .contact-actions-row a {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+}
+
+/* 7. Dispatch incoming popup action buttons wrapping on small viewports */
+@media (max-width: 400px) {
+  .popup-actions-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .popup-actions-row button {
+    flex: 1 1 calc(50% - 4px) !important;
+    box-sizing: border-box !important;
+  }
+  .popup-actions-row button:last-child {
+    flex: 1 1 100% !important;
+    margin-top: 4px !important;
+  }
+}

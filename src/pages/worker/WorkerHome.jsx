@@ -1212,7 +1212,7 @@ export default function WorkerHome() {
               </div>
 
               {activeJob.customer?.phone && (
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div className="contact-actions-row" style={{ display: 'flex', gap: '10px' }}>
                   {/* Native dialer Call button */}
                   <a
                     href={`tel:${activeJob.customer.phone}`}
@@ -2158,7 +2158,7 @@ export default function WorkerHome() {
                       )}
 
                       {/* Action Buttons */}
-                      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
+                      <div className="popup-actions-row" style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
                         <button
                           onClick={() => handleRejectRequest(req.id)}
                           style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
