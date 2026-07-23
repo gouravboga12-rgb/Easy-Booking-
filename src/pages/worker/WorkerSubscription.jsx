@@ -63,7 +63,7 @@ export default function WorkerSubscription() {
     }
 
     const options = {
-      key: "rzp_test_TCwvMqA7DCXaX0",
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TGqkwSNif2EKBo",
       amount: Math.round(parseFloat(plan.price) * 100),
       currency: "INR",
       name: "Parrow Skills",
