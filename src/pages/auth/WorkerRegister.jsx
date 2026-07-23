@@ -319,7 +319,7 @@ export default function WorkerRegister() {
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '540px', width: '100%' }}>
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
+        <Link to="/" className="auth-brand"><img src="/logo.png" alt="Parrow Skills Logo" className="auth-brand-logo" /> Parrow <b>Skills</b></Link>
 
         {/* Step indicator */}
         {step < 4 && (

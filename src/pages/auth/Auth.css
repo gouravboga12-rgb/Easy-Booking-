@@ -25,6 +25,7 @@
 }
 .auth-brand b { color: var(--primary); }
 .auth-brand-icon { width: 24px; height: 24px; color: var(--primary); }
+.auth-brand-logo { height: 32px; width: auto; object-fit: contain; }
 
 .auth-card h1 { font-size: 28px; font-weight: 800; color: #1a1a1a; margin: 0 0 6px; }
 .auth-sub { font-size: 15px; color: #888; margin: 0 0 24px; }

@@ -104,7 +104,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b></Link>
+        <Link to="/" className="auth-brand"><img src="/logo.png" alt="Parrow Skills Logo" className="auth-brand-logo" /> Parrow <b>Skills</b></Link>
 
         <div className="reg-steps">
           {STEPS.map((s, i) => (

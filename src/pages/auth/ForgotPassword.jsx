@@ -75,7 +75,7 @@ export default function ForgotPassword() {
     <div className="auth-page">
       <div className="auth-card">
         <Link to="/" className="auth-brand">
-          <MdConstruction className="auth-brand-icon" /> Parrow <b>Skills</b>
+          <img src="/logo.png" alt="Parrow Skills Logo" className="auth-brand-logo" /> Parrow <b>Skills</b>
         </Link>
         <h1>{success ? 'Reset Successful' : step === 1 ? 'Forgot Password' : 'Verify OTP'}</h1>
         <p className="auth-sub">
