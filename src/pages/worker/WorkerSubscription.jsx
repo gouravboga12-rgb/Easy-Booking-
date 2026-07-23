@@ -77,12 +77,12 @@ export default function WorkerSubscription() {
         }
       },
       prefill: {
-        name: user.name,
-        email: user.email,
-        contact: user.phone || ""
+        name: user?.name || "",
+        email: user?.email || "",
+        contact: user?.phone || ""
       },
       notes: {
-        userId: user.id,
+        userId: user?.id,
         planName: plan.name
       },
       theme: {
@@ -144,7 +144,7 @@ export default function WorkerSubscription() {
             </div>
             
             <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px' }}>
-              You are upgrading to a new subscription plan (<strong>{selectedPlan.name}</strong> for <strong>₹{parseFloat(selectedPlan.price).toLocaleString()}</strong>) while your current plan (<strong>{user.subscription?.plan}</strong>, valid until <strong>{user.subscription?.expiresAt}</strong>) is still active.
+              You are upgrading to a new subscription plan (<strong>{selectedPlan.name}</strong> for <strong>₹{parseFloat(selectedPlan.price).toLocaleString()}</strong>) while your current plan (<strong>{user?.subscription?.plan}</strong>, valid until <strong>{user?.subscription?.expiresAt}</strong>) is still active.
             </p>
             
             <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', color: '#334155', fontWeight: '600', marginBottom: '20px' }}>
@@ -191,12 +191,12 @@ export default function WorkerSubscription() {
       {/* Subscription Package Status */}
       <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Subscription Package Status</h2>
-        <div style={{ background: user.subscription?.active ? '#f0fdf4' : '#fef2f2', border: '1px solid', borderColor: user.subscription?.active ? '#bbf7d0' : '#fecaca', padding: '16px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ background: user?.subscription?.active ? '#f0fdf4' : '#fef2f2', border: '1px solid', borderColor: user?.subscription?.active ? '#bbf7d0' : '#fecaca', padding: '16px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <strong style={{ color: user.subscription?.active ? '#15803d' : '#b91c1c', fontSize: '15px', display: 'block' }}>
-              {user.subscription?.active ? `PLAN ACTIVE: ${user.subscription.plan}` : 'NO ACTIVE SUBSCRIPTION'}
+            <strong style={{ color: user?.subscription?.active ? '#15803d' : '#b91c1c', fontSize: '15px', display: 'block' }}>
+              {user?.subscription?.active ? `PLAN ACTIVE: ${user.subscription.plan}` : 'NO ACTIVE SUBSCRIPTION'}
             </strong>
-            {user.subscription?.active ? (
+            {user?.subscription?.active ? (
               <span style={{ display: 'block', fontSize: '12px', color: '#475569', marginTop: '4px' }}>
                 📅 Expires on: <strong>{user.subscription.expiresAt}</strong>
               </span>
@@ -206,7 +206,7 @@ export default function WorkerSubscription() {
               </span>
             )}
           </div>
-          <span style={{ fontSize: '24px' }}>{user.subscription?.active ? '✔️' : '❌'}</span>
+          <span style={{ fontSize: '24px' }}>{user?.subscription?.active ? '✔️' : '❌'}</span>
         </div>
       </div>
 
@@ -215,11 +215,11 @@ export default function WorkerSubscription() {
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Choose a Subscription Plan</h2>
         
         {loading ? (
-          <div style={{ padding: '40px 0', textStyle: 'center', color: '#64748b' }}>
+          <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
             🔄 Loading plans...
           </div>
         ) : activeWorkerPlans.length === 0 ? (
-          <div style={{ padding: '40px 0', textStyle: 'center', color: '#94a3b8' }}>
+          <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>
             No worker subscription packages are currently available.
           </div>
         ) : (
@@ -227,7 +227,14 @@ export default function WorkerSubscription() {
             {activeWorkerPlans.map(plan => (
               <div
                 key={plan.id}
-                onClick={() => setSelectedPlan(plan)}
+                onClick={() => {
+                  if (selectedPlan?.id === plan.id) {
+                    handleInitiatePayment(plan);
+                  } else {
+                    setSelectedPlan(plan);
+                  }
+                }}
+                onDoubleClick={() => handleInitiatePayment(plan)}
                 style={{
                   border: '2px solid',
                   borderColor: selectedPlan?.id === plan.id ? 'var(--primary)' : '#f1f5f9',
@@ -238,10 +245,12 @@ export default function WorkerSubscription() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   transition: 'all 0.18s'
                 }}
               >
-                <div style={{ flex: 1, paddingRight: '12px' }}>
+                <div style={{ flex: '1 1 200px', paddingRight: '12px' }}>
                   <strong style={{ display: 'block', fontSize: '15px', color: '#0f172a' }}>{plan.name}</strong>
                   {plan.description && (
                     <span style={{ display: 'block', fontSize: '12px', color: '#64748b', marginTop: '4px', lineHeight: '1.4' }}>
@@ -267,6 +276,28 @@ export default function WorkerSubscription() {
                       `${plan.duration} ${plan.duration === 1 ? 'Month' : 'Months'}`
                     )}
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPlan(plan);
+                      handleInitiatePayment(plan);
+                    }}
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px 16px',
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(109, 40, 217, 0.25)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Pay Now →
+                  </button>
                 </div>
               </div>
             ))}
