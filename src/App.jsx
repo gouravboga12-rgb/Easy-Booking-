@@ -231,8 +231,10 @@ function Layout() {
 
           {/* Worker Login/Signup */}
           <Route path="/login-worker" element={<WorkerLogin />} />
+          <Route path="/login_worker" element={<WorkerLogin />} />
           <Route path="/login-workers" element={<WorkerLogin />} />
           <Route path="/register-worker" element={<WorkerRegister />} />
+          <Route path="/register_worker" element={<WorkerRegister />} />
           <Route path="/register-workers" element={<WorkerRegister />} />
           <Route path="/forgot-password-worker" element={<WorkerForgotPassword />} />
 
