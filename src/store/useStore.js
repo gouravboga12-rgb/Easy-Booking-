@@ -122,11 +122,17 @@ export const useStore = create((set, get) => ({
       const url = role
         ? `${API_BASE_URL}/notifications/for/${role}`
         : `${API_BASE_URL}/notifications`;
-      const res = await fetch(url);
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
-        // Filter out cleared notifications
-        const clearedIds = new Set(get().clearedNotificationIds.map(String));
+        // Load latest cleared IDs from localStorage to prevent cross-tab / incognito sync issues
+        const clearedIdsFromStorage = JSON.parse(localStorage.getItem('cleared_notifications') || '[]');
+        const clearedIds = new Set(clearedIdsFromStorage.map(String));
         const activeNotifs = data.filter(n => !clearedIds.has(String(n.id)));
 
         // Preserve local read state by merging with existing notifications
@@ -149,7 +155,7 @@ export const useStore = create((set, get) => ({
       notifications: state.notifications.map(n => ({ ...n, read: true }))
     }));
   },
-  clearAllNotifications: () => {
+  clearAllNotifications: async () => {
     const currentIds = get().notifications.map(n => String(n.id));
     const updatedCleared = Array.from(new Set([...get().clearedNotificationIds, ...currentIds]));
     localStorage.setItem('cleared_notifications', JSON.stringify(updatedCleared));
@@ -157,6 +163,23 @@ export const useStore = create((set, get) => ({
       clearedNotificationIds: updatedCleared,
       notifications: []
     });
+
+    // Also call backend to clear them permanently for the logged in user
+    try {
+      const token = localStorage.getItem('token');
+      if (token && currentIds.length > 0) {
+        await fetch(`${API_BASE_URL}/notifications/clear-all`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ notificationIds: currentIds.map(Number) })
+        });
+      }
+    } catch (err) {
+      console.error('Error sending clear-all notifications request to server:', err);
+    }
   },
 
   banners: [],
