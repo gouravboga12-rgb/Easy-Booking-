@@ -1,0 +1,499 @@
+import { create } from 'zustand';
+import { API_BASE_URL } from '../config';
+import { useStore } from './useStore';
+
+export const useAuthStore = create((set, get) => ({
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  users: [],
+  loading: false,
+
+  login: async (email, password, expectedRole) => {
+    set({ loading: true });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: email, password, expectedRole })
+      });
+      const data = await response.json();
+      set({ loading: false });
+
+      if (!response.ok) {
+        return { error: data.message || 'Login failed' };
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      sessionStorage.removeItem('popup_ad_dismissed');
+      set({ user: data.user });
+
+      // Load all users if logged in as Admin
+      if (data.user.role === 'admin') {
+        get().fetchWorkers();
+      }
+
+      return { success: true, role: data.user.role };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  },
+
+  register: async (data) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const resData = await response.json();
+      if (!response.ok) {
+        return { error: resData.message || 'Registration failed' };
+      }
+      return { success: true };
+    } catch (err) {
+      return { error: 'Connection error' };
+    }
+  },
+
+  googleLogin: async (token, tokenType = 'credential') => {
+    set({ loading: true });
+    try {
+      const body = tokenType === 'access_token'
+        ? { access_token: token }
+        : { credential: token };
+
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      set({ loading: false });
+
+      if (!response.ok) {
+        return { error: data.message || 'Google login failed' };
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      set({ user: data.user });
+
+      return { success: true, role: data.user.role };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  },
+
+  sendRegisterOtp: async (email, name) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.message || 'Failed to send OTP' };
+      }
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
+    } catch (err) {
+      return { error: 'Connection error' };
+    }
+  },
+
+  resendRegisterOtp: async (email, name) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.message || 'Failed to resend OTP' };
+      }
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
+    } catch (err) {
+      return { error: 'Connection error' };
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    set({ user: null, users: [] });
+  },
+
+  fetchWorkers: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/workers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set({ users: data });
+      }
+    } catch (err) {
+      console.error('Fetch workers failed:', err);
+    }
+  },
+
+  approveWorker: async (workerId, approved) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/auth/workers/${workerId}/approve`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ approved })
+      });
+      // Refresh list
+      get().fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  disableWorker: async (workerId, disabled) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/workers/${workerId}/disable`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ disabled })
+      });
+      if (response.ok) {
+        // Optimistically update local state
+        set(s => ({
+          users: s.users.map(u => u.id === workerId ? { ...u, disabled } : u)
+        }));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  },
+
+  deleteWorker: async (workerId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/workers/${workerId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        set(s => ({ users: s.users.filter(u => u.id !== workerId) }));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  },
+
+  updateWorkerProfile: async (workerId, profileData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
+      });
+      const updatedUser = await response.json();
+      if (response.ok) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  updateUserProfile: async (userId, profileData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
+      });
+      const updatedUser = await response.json();
+      if (response.ok) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  updateWorkerAvailability: async (workerId, availabilityData) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/auth/profile/availability`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(availabilityData)
+      });
+      
+      const user = get().user;
+      if (user && user.id === workerId) {
+        const isOnlineNow = availabilityData.online !== undefined 
+          ? Boolean(availabilityData.online) 
+          : (availabilityData.available === 1 || availabilityData.available === true || availabilityData.available === '1');
+        
+        const updated = {
+          ...user,
+          availability: { ...user.availability, ...availabilityData },
+          available: isOnlineNow ? 1 : 0
+        };
+        localStorage.setItem('user', JSON.stringify(updated));
+        set({ user: updated });
+
+        // Trigger order refresh immediately if worker came online
+        if (isOnlineNow) {
+          try {
+            const fetchOrders = useStore.getState().fetchOrdersForWorker;
+            if (fetchOrders) await fetchOrders(workerId);
+          } catch (e) {}
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  addWorkerEarning: async (workerId, amount, description) => {
+    const user = get().user;
+    if (!user) return;
+
+    const currentWallet = user.wallet || { balance: 0, transactions: [] };
+    const nextBalance = Number(currentWallet.balance || 0) + Number(amount);
+    const newTransaction = {
+      id: `txn-${Date.now()}`,
+      amount: Number(amount),
+      description,
+      type: amount >= 0 ? 'credit' : 'debit',
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    const nextWallet = {
+      balance: nextBalance,
+      transactions: [newTransaction, ...(currentWallet.transactions || [])]
+    };
+
+    const updatedUser = { ...user, wallet: nextWallet };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ wallet: nextWallet })
+      });
+    } catch (err) {
+      console.error('Failed to sync wallet to database:', err);
+    }
+  },
+
+  buySubscription: async (userId, planName, duration, durationUnit = 'month', price = 0) => {
+    const user = get().user;
+    if (!user) return;
+
+    const expiresAt = new Date();
+    const val = Number(duration);
+    if (durationUnit === 'day') {
+      expiresAt.setDate(expiresAt.getDate() + val);
+    } else if (durationUnit === 'week') {
+      expiresAt.setDate(expiresAt.getDate() + val * 7);
+    } else if (durationUnit === 'year') {
+      expiresAt.setFullYear(expiresAt.getFullYear() + val);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + val);
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const prevHistory = Array.isArray(user.subscription?.history) ? user.subscription.history : (
+      user.subscription?.plan ? [{
+        id: `sub-${Date.now() - 86400000}`,
+        plan: user.subscription.plan,
+        price: Number(user.subscription.price || 0),
+        purchasedAt: user.subscription.purchasedAt || todayStr,
+        expiresAt: user.subscription.expiresAt || todayStr
+      }] : []
+    );
+
+    const newPurchase = {
+      id: `sub-${Date.now()}`,
+      plan: planName,
+      price: Number(price),
+      duration,
+      durationUnit,
+      purchasedAt: todayStr,
+      expiresAt: expiresAt.toISOString().split('T')[0]
+    };
+
+    const updatedHistory = [...prevHistory, newPurchase];
+
+    const subscription = {
+      active: true,
+      plan: planName,
+      price: Number(price),
+      purchasedAt: todayStr,
+      expiresAt: expiresAt.toISOString().split('T')[0],
+      history: updatedHistory
+    };
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ subscription })
+      });
+      const updatedUser = await response.json();
+      if (response.ok) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+      }
+    } catch (err) {
+      console.error('Failed to buy subscription:', err);
+    }
+  },
+
+  resetUserPassword: async (userId, newPassword) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}/password`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+      return response.ok;
+    } catch (err) {
+      console.error('resetUserPassword error:', err);
+      return false;
+    }
+  },
+
+  toggleBlockUser: async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const users = get().users;
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      const nextBlocked = !user.blocked;
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}/block`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ blocked: nextBlocked })
+      });
+      if (response.ok) {
+        set(s => ({
+          users: s.users.map(u => u.id === userId ? { ...u, blocked: nextBlocked } : u)
+        }));
+      }
+    } catch (err) {
+      console.error('toggleBlockUser error:', err);
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        set(s => ({ users: s.users.filter(u => u.id !== userId) }));
+      }
+    } catch (err) {
+      console.error('deleteUser error:', err);
+    }
+  },
+
+  getWorkers: () => {
+    const users = get().users;
+    return users.filter(u => u.role === 'worker');
+  },
+
+  getCustomers: () => {
+    const users = get().users;
+    return users.filter(u => u.role === 'customer');
+  },
+
+  forgotPassword: async (email) => {
+    set({ loading: true });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      set({ loading: false });
+      if (!response.ok) {
+        return { error: data.message || 'Request failed' };
+      }
+      return { success: true, message: data.message, debugOtp: data.debugOtp };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  },
+
+  resetPassword: async (email, otp, newPassword) => {
+    set({ loading: true });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword })
+      });
+      const data = await response.json();
+      set({ loading: false });
+      if (!response.ok) {
+        return { error: data.message || 'Reset failed' };
+      }
+      return { success: true };
+    } catch (err) {
+      set({ loading: false });
+      return { error: 'Connection error' };
+    }
+  }
+}));

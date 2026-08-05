@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Parrow Skills",
+    "slug": "easylabourfinder-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./public/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./public/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./public/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.parrowskills.app"
+    },
+    "web": {
+      "favicon": "./public/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./public/logo.png",
+          "color": "#ff8c00"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4365af6f-dba8-4956-b0c8-df4030e36c63"
+      }
+    }
+  }
+}

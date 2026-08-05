@@ -1,0 +1,62 @@
+.orders-page { padding: 32px 40px; max-width: 800px; margin: 0 auto; }
+.orders-page h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0 0 24px; }
+
+.orders-list { display: flex; flex-direction: column; gap: 12px; }
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 16px;
+}
+.order-item:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(255,107,0,0.08); }
+
+.oi-left { display: flex; align-items: center; gap: 14px; }
+.oi-icon { font-size: 36px; }
+.oi-name { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+.oi-loc { font-size: 13px; color: #666; margin-bottom: 2px; }
+.oi-meta { font-size: 12px; color: #aaa; }
+
+.oi-right { text-align: right; flex-shrink: 0; }
+.oi-amount { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
+.oi-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+.oi-status.active { background: #fff0f0; color: #ff4444; }
+.oi-status.complete { background: #f0fdf4; color: #22c55e; }
+.oi-id { font-size: 11px; color: #ccc; }
+
+.orders-empty {
+  padding: 80px 40px;
+  text-align: center;
+}
+.empty-icon { font-size: 64px; margin-bottom: 16px; }
+.orders-empty h2 { font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px; }
+.orders-empty p { color: #888; margin-bottom: 24px; }
+.orders-empty button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .orders-page { padding: 20px; }
+  .order-item { flex-direction: column; align-items: flex-start; }
+  .oi-right { text-align: left; }
+}
