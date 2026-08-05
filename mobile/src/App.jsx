@@ -287,16 +287,6 @@ function Layout() {
   );
 }
 
-export const dom = {
-  matchContents: true,
-  webviewProps: {
-    javaScriptEnabled: true,
-    domStorageEnabled: true,
-    originWhitelist: ['*'],
-    mixedContentMode: 'always'
-  }
-};
-
 export default function App() {
   return (
     <GoogleOAuthProvider clientId="372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com">
