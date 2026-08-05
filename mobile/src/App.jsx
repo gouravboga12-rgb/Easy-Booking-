@@ -1,5 +1,5 @@
 'use dom';
-import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
@@ -287,13 +287,23 @@ function Layout() {
   );
 }
 
+export const dom = {
+  matchContents: true,
+  webviewProps: {
+    javaScriptEnabled: true,
+    domStorageEnabled: true,
+    originWhitelist: ['*'],
+    mixedContentMode: 'always'
+  }
+};
+
 export default function App() {
   return (
     <GoogleOAuthProvider clientId="372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com">
-      <BrowserRouter>
+      <HashRouter>
         <ScrollToTop />
         <Layout />
-      </BrowserRouter>
+      </HashRouter>
     </GoogleOAuthProvider>
   );
 }
