@@ -63,6 +63,20 @@ function ScrollToTop() {
   return null;
 }
 
+function RootRouteIndex() {
+  const user = useAuthStore(s => s.user);
+  if (!user) {
+    return <UnifiedLoginSelect />;
+  }
+  if (user.role === 'worker') {
+    return <Navigate to="/worker" replace />;
+  }
+  if (user.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  return <Home />;
+}
+
 function AdminRouteWrapper() {
   const user = useAuthStore(s => s.user);
   if (!user) {
@@ -76,10 +90,10 @@ function AdminRouteWrapper() {
 
 function Layout() {
   const { pathname } = useLocation();
-  const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
-  const isAuthSelectPage = pathname === '/login' || pathname === '/auth-select';
-
   const user = useAuthStore(s => s.user);
+  const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
+  const isAuthPage = ['/login', '/login-customer', '/login-worker', '/register', '/register-worker', '/auth-select', '/forgot-password'].includes(pathname) || (!user && pathname === '/');
+  const hideNavs = isAdminOrWorker || isAuthPage;
   const fetchWorkers = useAuthStore(s => s.fetchWorkers);
   const fetchOrdersForCustomer = useStore(s => s.fetchOrdersForCustomer);
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);
@@ -195,8 +209,6 @@ function Layout() {
     return () => clearInterval(interval);
   }, [user, fetchWorkers, fetchOrdersForCustomer, fetchOrdersForWorker, fetchOrdersForAdmin, fetchBanners]);
 
-  const hideNavs = isAdminOrWorker || isAuthSelectPage;
-
   return (
     <>
       {/* Toast Overlay */}
@@ -210,14 +222,15 @@ function Layout() {
       </div>
 
       {!hideNavs && <Navbar />}
-      <main style={{ paddingBottom: hideNavs ? '0' : '72px', paddingTop: hideNavs ? '0' : '68px' }}>
+      <main style={{ paddingBottom: hideNavs ? '0' : 'calc(84px + env(safe-area-inset-bottom, 16px))', paddingTop: hideNavs ? '0' : '68px' }}>
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
+          {/* Public & Entry Screen */}
+          <Route path="/" element={<RootRouteIndex />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/cart" element={<Cart />} />
           
-          {/* Single Unified Login Screen */}
+          {/* Unified Entry Screen & Login Portals */}
           <Route path="/login" element={<UnifiedLoginSelect />} />
           <Route path="/auth-select" element={<UnifiedLoginSelect />} />
           <Route path="/login-customer" element={<Login />} />

@@ -340,7 +340,21 @@ export default function Navbar() {
                     ) : myNotifs.map(n => (
                       <div
                         key={n.id}
-                        onClick={() => markNotificationRead(n.id)}
+                        onClick={() => {
+                          markNotificationRead(n.id);
+                          setNotifOpen(false);
+                          const targetOrderId = n.order_id || n.orderId;
+                          const titleLower = (n.title || '').toLowerCase();
+                          const bodyLower = (n.body || '').toLowerCase();
+                          if (targetOrderId && (titleLower.includes('track') || titleLower.includes('assigned') || titleLower.includes('reached') || titleLower.includes('started') || bodyLower.includes('location'))) {
+                            navigate(`/track/${targetOrderId}`);
+                          } else if (targetOrderId || titleLower.includes('booking') || titleLower.includes('payment')) {
+                            if (user?.role === 'worker') navigate('/worker/orders');
+                            else navigate('/orders');
+                          } else if (titleLower.includes('message') || titleLower.includes('chat')) {
+                            navigate('/contact-us');
+                          }
+                        }}
                         style={{ padding: '12px 16px', borderBottom: '1px solid #f9fafb', display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', background: n.read ? '#fff' : '#f5f3ff', transition: 'background 0.2s' }}
                       >
                         <span style={{ fontSize: '20px', marginTop: '2px' }}>{n.channel === 'email' ? '📧' : n.channel === 'sms' ? '📱' : '🔔'}</span>
