@@ -1,7 +1,6 @@
+android/
 node_modules/
 .expo/
 dist/
 *.log
-android/build/
-android/app/build/
-android/.gradle/
+
