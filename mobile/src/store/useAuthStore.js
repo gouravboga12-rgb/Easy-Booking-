@@ -2,8 +2,25 @@ import { create } from 'zustand';
 import { API_BASE_URL } from '../config';
 import { useStore } from './useStore';
 
+const getSafeItem = (key) => {
+  try { return window.localStorage ? window.localStorage.getItem(key) : null; } catch (e) { return null; }
+};
+const setSafeItem = (key, val) => {
+  try { if (window.localStorage) window.localStorage.setItem(key, val); } catch (e) {}
+};
+const removeSafeItem = (key) => {
+  try { if (window.localStorage) window.localStorage.removeItem(key); } catch (e) {}
+};
+
 export const useAuthStore = create((set, get) => ({
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: (() => {
+    try {
+      const raw = getSafeItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  })(),
   users: [],
   loading: false,
 
@@ -22,9 +39,9 @@ export const useAuthStore = create((set, get) => ({
         return { error: data.message || 'Login failed' };
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      sessionStorage.removeItem('popup_ad_dismissed');
+      setSafeItem('token', data.token);
+      setSafeItem('user', JSON.stringify(data.user));
+      try { window.sessionStorage?.removeItem('popup_ad_dismissed'); } catch (e) {}
       set({ user: data.user });
 
       // Load all users if logged in as Admin
@@ -121,8 +138,8 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    removeSafeItem('token');
+    removeSafeItem('user');
     set({ user: null, users: [] });
   },
 

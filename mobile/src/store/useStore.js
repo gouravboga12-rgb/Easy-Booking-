@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { API_BASE_URL } from '../config';
 
+const getSafeItem = (key) => {
+  try { return window.localStorage ? window.localStorage.getItem(key) : null; } catch (e) { return null; }
+};
+const setSafeItem = (key, val) => {
+  try { if (window.localStorage) window.localStorage.setItem(key, val); } catch (e) {}
+};
+const removeSafeItem = (key) => {
+  try { if (window.localStorage) window.localStorage.removeItem(key); } catch (e) {}
+};
+
 const ORDER_STAGES = ['Confirmed', 'Operator Assigned', 'En Route', 'On Site', 'Completed'];
 
 const DEFAULT_CATEGORIES = [
@@ -113,7 +123,14 @@ export const useStore = create((set, get) => ({
 
   // Global notifications — fetched from backend API (persisted, cross-session)
   notifications: [],
-  clearedNotificationIds: JSON.parse(localStorage.getItem('cleared_notifications') || '[]'),
+  clearedNotificationIds: (() => {
+    try {
+      const raw = getSafeItem('cleared_notifications');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  })(),
   broadcastNotification: (notif) => {
     set(state => ({ notifications: [notif, ...state.notifications] }));
   },
@@ -122,7 +139,7 @@ export const useStore = create((set, get) => ({
       const url = role
         ? `${API_BASE_URL}/notifications/for/${role}`
         : `${API_BASE_URL}/notifications`;
-      const token = localStorage.getItem('token');
+      const token = getSafeItem('token');
       const headers = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;

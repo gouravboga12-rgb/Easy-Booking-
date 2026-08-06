@@ -185,6 +185,14 @@ function Layout() {
   }, [orders, user]);
 
   useEffect(() => {
+    try {
+      if (window.nativeSplashScreen) {
+        window.nativeSplashScreen.hide();
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
     fetchServices();
     fetchBanners();
   }, [fetchServices, fetchBanners]);
