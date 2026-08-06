@@ -227,7 +227,7 @@ function Layout() {
       <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '68px' }}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<RootIndex />} />
+          <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login-select" element={<UnifiedLoginSelect />} />
           <Route path="/login-customer" element={<Login />} />

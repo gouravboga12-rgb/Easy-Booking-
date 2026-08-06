@@ -45,7 +45,7 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <WebView
         ref={webViewRef}
-        source={{ uri: 'https://parrowskills.com/#/' }}
+        source={{ uri: 'https://parrowskills.com/#/login-select' }}
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
