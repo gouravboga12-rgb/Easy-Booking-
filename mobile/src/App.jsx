@@ -1,4 +1,3 @@
-'use dom';
 import { HashRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef, Component } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
