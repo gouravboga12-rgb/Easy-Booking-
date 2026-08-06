@@ -19,9 +19,20 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import WorkerLogin from './pages/auth/WorkerLogin';
 import WorkerRegister from './pages/auth/WorkerRegister';
-import AdminLogin from './pages/auth/AdminLogin';
+import UnifiedLoginSelect from './pages/auth/UnifiedLoginSelect';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import WorkerForgotPassword from './pages/auth/WorkerForgotPassword';
+
+function RootIndex() {
+  const user = useAuthStore(s => s.user);
+  if (!user) {
+    return <UnifiedLoginSelect />;
+  }
+  if (user.role === 'worker') {
+    return <Navigate to="/worker" replace />;
+  }
+  return <Home />;
+}
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -216,7 +227,11 @@ function Layout() {
       <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '68px' }}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<RootIndex />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login-select" element={<UnifiedLoginSelect />} />
+          <Route path="/login-customer" element={<Login />} />
+          <Route path="/login-simple" element={<Login />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
