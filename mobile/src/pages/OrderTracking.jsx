@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { API_BASE_URL } from '../config';
 import { HiLocationMarker, HiCalendar, HiClock, HiDocumentText, HiUser } from 'react-icons/hi';
 import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -161,7 +162,7 @@ export default function OrderTracking() {
     setCancelling(true);
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${import.meta.env.VITE_API_URL || 'https://api.parrowskills.com/api'}/orders/${order.id}/status`, {
+      await fetch(`${API_BASE_URL}/orders/${order.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: 'cancelled', cancelReason: cancelReason, cancelDetails: finalReason })
