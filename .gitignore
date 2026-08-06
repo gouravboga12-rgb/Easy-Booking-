@@ -29,6 +29,16 @@ image copy 2.png
 # Environment and backend dependencies
 .env
 backend/node_modules
+mobile/node_modules
+mobile/dist
+mobile/.expo
+mobile/android/build
+mobile/android/app/build
+mobile/android/.gradle
+mobile/android/app/.cxx
+**/build
+**/.gradle
 *.pem
+
 
 
