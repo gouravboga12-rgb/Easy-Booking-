@@ -440,8 +440,45 @@ export default function OrderTracking() {
               </div>
               <div className="op-name">{order.operator.name}</div>
               <div className="op-rating">⭐ {order.operator.rating}</div>
-              <div className="op-vehicle">{order.operator.vehicle}</div>
-              <a href={`tel:${order.operator.phone}`} className="call-btn">📞 Call Operator</a>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const phone = order.operator?.phone || '+919876543210';
+                    window.location.href = `tel:${phone}`;
+                  }}
+                  className="call-btn"
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '10px 8px', fontSize: '12px' }}
+                >
+                  📞 Call
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rawPhone = (order.operator?.phone || '9876543210').replace(/[^0-9]/g, '');
+                    const fullPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+                    const msg = `Hi ${order.operator?.name || 'Operator'}, regarding Order #${order.id} on Parrow Skills.`;
+                    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}
+                  style={{
+                    flex: 1,
+                    background: '#25D366',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '10px 8px',
+                    fontWeight: '700',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  💬 WhatsApp
+                </button>
+              </div>
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>

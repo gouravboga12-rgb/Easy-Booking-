@@ -38,8 +38,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "4365af6f-dba8-4956-b0c8-df4030e36c63"
+        "projectId": "5224f65b-1ac1-47a6-9adf-f6441a6268e1"
       }
-    }
+    },
+    "owner": "namza63"
   }
 }

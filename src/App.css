@@ -76,3 +76,14 @@
     transform: translateX(0) scale(1);
   }
 }
+
+@media (max-width: 640px) {
+  .notification-container {
+    top: 12px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 420px;
+  }
+}

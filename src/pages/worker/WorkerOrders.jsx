@@ -282,6 +282,58 @@ export default function WorkerOrders() {
                     <div className="oc-row"><HiLocationMarker className="oc-icon" />{o.booking?.location}</div>
                     <div className="oc-row"><HiCalendar className="oc-icon" />Scheduled: {o.booking?.date} · {o.booking?.duration} {o.vehicle?.unit}</div>
                     <div className="oc-row"><HiUser className="oc-icon" />Customer: {o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
+                    <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone = o.customer?.phone || '+919876543210';
+                          window.location.href = `tel:${phone}`;
+                        }}
+                        style={{
+                          flex: 1,
+                          background: '#2563eb',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '7px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        📞 Call Customer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rawPhone = (o.customer?.phone || '9876543210').replace(/[^0-9]/g, '');
+                          const fullPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+                          const msg = `Hi ${o.customer?.name || 'Customer'}, I am your assigned Parrow Skills worker for Order #${o.id}.`;
+                          window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        style={{
+                          flex: 1,
+                          background: '#25D366',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '7px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        💬 WhatsApp
+                      </button>
+                    </div>
                     
                     {/* Payment details */}
                     <div className="oc-row" style={{ color: '#0f766e', fontWeight: '600' }}>

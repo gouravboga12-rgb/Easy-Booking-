@@ -85,6 +85,25 @@ export default function WorkerSubscription() {
         userId: user?.id,
         planName: plan.name
       },
+      config: {
+        display: {
+          blocks: {
+            banks: {
+              name: 'Pay via UPI (GPay, PhonePe, Paytm) / Cards / Netbanking',
+              instruments: [
+                { method: 'upi' },
+                { method: 'card' },
+                { method: 'netbanking' },
+                { method: 'wallet' }
+              ]
+            }
+          },
+          sequence: ['block.banks'],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      },
       theme: {
         color: "#6d28d9"
       }

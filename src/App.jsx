@@ -34,10 +34,12 @@ function RootIndex() {
   return <Home />;
 }
 
+import AdminLogin from './pages/auth/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminWorkers from './pages/admin/AdminWorkers';
 import AdminLayout from './pages/admin/AdminLayout';
+
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminMore from './pages/admin/AdminMore';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -252,6 +254,7 @@ function Layout() {
           <Route path="/register_worker" element={<WorkerRegister />} />
           <Route path="/register-workers" element={<WorkerRegister />} />
           <Route path="/forgot-password-worker" element={<WorkerForgotPassword />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* Customer */}
           <Route path="/book/:id" element={<BookingFlow />} />
