@@ -13,7 +13,7 @@ import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Worker.css';
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 
 const getCustomerOtp = (customer) => {
   if (!customer) return '4821';
@@ -348,7 +348,10 @@ export default function WorkerHome() {
     !collidesWithScheduled(o)
   );
 
-  const isSubscribed = !!user.subscription?.active;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const subExpiresAt = user?.subscription?.expiresAt;
+  const isSubExpired = user?.subscription?.active && subExpiresAt && subExpiresAt < todayStr;
+  const isSubscribed = user?.subscription?.active && !isSubExpired;
 
   const STATS = [
     { Icon: HiStar,          val: `${user.rating}★`,                        label: 'Rating',      color: '#f59e0b' },
@@ -869,59 +872,47 @@ export default function WorkerHome() {
       {/* Subscription Alert Banner */}
       {!isSubscribed && (
         <div className="sub-warning-banner" style={{
-          background: '#fef2f2',
-          border: '1.5px solid #fecaca',
+          background: 'linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)',
+          border: '2px solid #fca5a5',
           color: '#b91c1c',
-          padding: '20px',
+          padding: '20px 24px',
           borderRadius: '16px',
           marginBottom: '24px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxShadow: '0 4px 12px rgba(220,38,38,0.05)'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 4px 16px rgba(220,38,38,0.1)'
         }}>
-          <strong style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            ⚠️ Subscription Plan Expired
-          </strong>
-          <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0, fontWeight: '500' }}>
-            Your activation plan has expired. Please renew your subscription to start receiving new service requests and continue growing your business with our platform.
-          </p>
-          <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-            <Link
-              to="/worker/subscription"
-              style={{
-                background: '#dc2626',
-                color: '#fff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '700',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              Renew Subscription
-            </Link>
-            <Link
-              to="/worker/subscription"
-              style={{
-                background: '#fff',
-                color: '#dc2626',
-                border: '1px solid #fca5a5',
-                padding: '10px 18px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '700',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              View Plans
-            </Link>
+          <div style={{ flex: '1 1 280px' }}>
+            <strong style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#991b1b', marginBottom: '4px' }}>
+              ⚠️ {isSubExpired ? `Subscription Plan Expired (${subExpiresAt})` : 'Subscription Required'}
+            </strong>
+            <p style={{ fontSize: '13.5px', lineHeight: '1.5', margin: 0, color: '#7f1d1d', fontWeight: '500' }}>
+              {isSubExpired
+                ? `Your subscription plan expired on ${subExpiresAt}. Please renew your plan now to continue receiving booking requests and keep your profile active.`
+                : 'You do not have an active subscription package. Activate a plan to receive booking requests and accept jobs.'}
+            </p>
           </div>
+          <Link
+            to="/worker/subscription"
+            style={{
+              background: '#dc2626',
+              color: '#fff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '10px',
+              fontSize: '13.5px',
+              fontWeight: '800',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(220,38,38,0.25)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            ⚡ {isSubExpired ? 'Renew Subscription Now →' : 'Activate Subscription →'}
+          </Link>
         </div>
       )}
 
