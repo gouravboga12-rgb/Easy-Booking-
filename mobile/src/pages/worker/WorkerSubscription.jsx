@@ -46,12 +46,8 @@ export default function WorkerSubscription() {
   };
 
   const handleInitiatePayment = (plan) => {
-    const isCurrentlyActive = user.subscription?.active && user.subscription?.expiresAt >= new Date().toISOString().split('T')[0];
-    if (isCurrentlyActive) {
-      setShowUpgradeNotice(true);
-    } else {
-      handlePayment(plan);
-    }
+    setSelectedPlan(plan);
+    handlePayment(plan);
   };
 
   const handlePayment = async (plan) => {
@@ -208,26 +204,50 @@ export default function WorkerSubscription() {
       )}
 
       {/* Subscription Package Status */}
-      <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Subscription Package Status</h2>
-        <div style={{ background: user?.subscription?.active ? '#f0fdf4' : '#fef2f2', border: '1px solid', borderColor: user?.subscription?.active ? '#bbf7d0' : '#fecaca', padding: '16px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <strong style={{ color: user?.subscription?.active ? '#15803d' : '#b91c1c', fontSize: '15px', display: 'block' }}>
-              {user?.subscription?.active ? `PLAN ACTIVE: ${user.subscription.plan}` : 'NO ACTIVE SUBSCRIPTION'}
-            </strong>
-            {user?.subscription?.active ? (
-              <span style={{ display: 'block', fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                📅 Expires on: <strong>{user.subscription.expiresAt}</strong>
-              </span>
-            ) : (
-              <span style={{ display: 'block', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                Activate a plan below to display your profile publicly and unlock active dispatch requests.
-              </span>
-            )}
+      {(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const expiresAt = user?.subscription?.expiresAt;
+        const isExpired = user?.subscription?.active && expiresAt && expiresAt < todayStr;
+        const isCurrentlyActive = user?.subscription?.active && !isExpired;
+
+        return (
+          <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Subscription Package Status</h2>
+            <div style={{
+              background: isCurrentlyActive ? '#f0fdf4' : '#fef2f2',
+              border: '1px solid',
+              borderColor: isCurrentlyActive ? '#bbf7d0' : '#fecaca',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div>
+                <strong style={{ color: isCurrentlyActive ? '#15803d' : '#b91c1c', fontSize: '15px', display: 'block' }}>
+                  {isCurrentlyActive ? `PLAN ACTIVE: ${user.subscription.plan}` : isExpired ? `⚠️ PLAN EXPIRED: ${user.subscription.plan}` : 'NO ACTIVE SUBSCRIPTION'}
+                </strong>
+                {isCurrentlyActive ? (
+                  <span style={{ display: 'block', fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                    📅 Expires on: <strong>{user.subscription.expiresAt}</strong>
+                  </span>
+                ) : isExpired ? (
+                  <span style={{ display: 'block', fontSize: '12px', color: '#b91c1c', marginTop: '4px', fontWeight: '600' }}>
+                    ⚠️ Expired on <strong>{user.subscription.expiresAt}</strong>. Please renew your plan below.
+                  </span>
+                ) : (
+                  <span style={{ display: 'block', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    Activate a plan below to display your profile publicly and unlock active dispatch requests.
+                  </span>
+                )}
+              </div>
+              <span style={{ fontSize: '24px' }}>{isCurrentlyActive ? '✔️' : '❌'}</span>
+            </div>
           </div>
-          <span style={{ fontSize: '24px' }}>{user?.subscription?.active ? '✔️' : '❌'}</span>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Choose a Subscription Plan */}
       <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: '1px solid #eee' }}>
