@@ -76,8 +76,8 @@ export default function WorkerHome() {
 
   // Manual city/state editing states
   const [isEditingCity, setIsEditingCity] = useState(false);
-  const [cityInput, setCityInput] = useState(user.city || '');
-  const [stateInput, setStateInput] = useState(user.state || '');
+  const [cityInput, setCityInput] = useState(user?.city || '');
+  const [stateInput, setStateInput] = useState(user?.state || '');
 
   useEffect(() => {
     if (user) {
@@ -96,8 +96,8 @@ export default function WorkerHome() {
   const [customCancelReason, setCustomCancelReason] = useState('');
 
   // Upcoming scheduled orders today for reminder banners and alert hooks (future only)
-  const upcomingScheduled = orders.filter(o => {
-    if (o.operator?.id !== user.id) return false;
+  const upcomingScheduled = (orders || []).filter(o => {
+    if (!o || !user || o.operator?.id !== user.id) return false;
     if (o.status !== 'assigned' || o.bookingType !== 'scheduled') return false;
     const today = new Date().toLocaleDateString('en-CA');
     if (o.booking?.date !== today) return false;
@@ -920,10 +920,10 @@ export default function WorkerHome() {
       <div className="worker-header" style={{ marginBottom: '24px' }}>
         <div className="wh-left">
           <div className="wh-avatar" style={{ overflow: 'hidden' }}>
-            <img src={user?.photo || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&q=80'} alt={user?.name || 'Worker'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={user.photo || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&q=80'} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
-            <h1>Hey, {(user?.name || user?.phone || 'Worker').split(' ')[0]}! 👋</h1>
+            <h1>Hey, {user.name.split(' ')[0]}! 👋</h1>
             <p className="wh-vehicle" style={{ fontSize: '13px', color: '#666' }}>
               <MdDirectionsCar style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4, color: 'var(--primary)' }} />
               {user.vehicle}

@@ -42,10 +42,8 @@ export default function BottomNav() {
   else if (user?.role === 'worker') tabs = workerTabs;
 
   const resolvedTabs = tabs.map(t => {
-    if (t.label === 'Account' && user) {
-      const userFirstName = (user.name || user.email?.split('@')[0] || user.phone || 'Account').split(' ')[0];
-      return { ...t, to: '/profile', Icon: HiUser, label: userFirstName };
-    }
+    if (t.label === 'Account' && user)
+      return { ...t, to: '/profile', Icon: HiUser, label: user.name.split(' ')[0] };
     return t;
   });
 

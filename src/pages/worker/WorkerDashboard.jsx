@@ -30,9 +30,9 @@ export default function WorkerDashboard() {
       {/* Header */}
       <div className="worker-header">
         <div className="wh-left">
-          <div className="wh-avatar">{(user?.name || user?.phone || 'W').charAt(0).toUpperCase()}</div>
+          <div className="wh-avatar">{user.name.charAt(0)}</div>
           <div>
-            <h1>Hey, {(user?.name || user?.phone || 'Worker').split(' ')[0]}! 👋</h1>
+            <h1>Hey, {user.name.split(' ')[0]}! 👋</h1>
             <p className="wh-vehicle">
               <MdDirectionsCar style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4 }} />
               {user.vehicle}

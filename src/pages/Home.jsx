@@ -156,14 +156,14 @@ export default function Home() {
     };
   };
 
-  const highlightedServices = (services || [])
-    .filter(v => v && ['plumbers', 'electricians', 'cleaning-staff', 'carpenters', 'painters', 'ac-technicians'].includes(v.id))
+  const highlightedServices = services
+    .filter(v => ['plumbers', 'electricians', 'cleaning-staff', 'carpenters', 'painters', 'ac-technicians'].includes(v.id))
     .map(s => ({
       ...s,
       rating: s.id === 'ac-technicians' ? 4.8 : s.id === 'electricians' ? 4.8 : s.id === 'plumbers' ? 4.7 : s.id === 'carpenters' ? 4.7 : s.id === 'cleaning-staff' ? 4.6 : 4.5
     }));
 
-  const activeBanners = (banners || []).filter(b => b && b.active);
+  const activeBanners = banners.filter(b => b.active);
   const displayBanners = activeBanners.length > 0 ? activeBanners : BANNERS;
 
   useEffect(() => {
@@ -188,8 +188,7 @@ export default function Home() {
       {/* ── Top Category Scroll Boxes ── */}
       <div className="top-categories-container">
         <div className="top-categories-row">
-          {(categories || []).map(cat => {
-            if (!cat) return null;
+          {categories.map(cat => {
             const imgUrl = cat.image_url || CAT_IMAGES[cat.id] || 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&q=80';
             return (
               <div
@@ -198,9 +197,9 @@ export default function Home() {
                 onClick={() => navigate(`/browse?cat=${cat.id}`)}
               >
                 <div className="top-cat-box">
-                  <img src={imgUrl} alt={cat.label || ''} />
+                  <img src={imgUrl} alt={cat.label} />
                 </div>
-                <span>{(cat.label || '').split(' & ')[0]}</span>
+                <span>{cat.label.split(' & ')[0]}</span>
               </div>
             );
           })}

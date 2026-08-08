@@ -392,53 +392,48 @@ export default function Navbar() {
           </button>
 
           {/* Profile Dropdown (Only show after login) */}
-          {user && (() => {
-            const userName = user.name || user.email?.split('@')[0] || user.phone || 'User';
-            const userInitial = userName.charAt(0).toUpperCase();
-            const userFirstName = userName.split(' ')[0];
-            return (
-              <div className="user-menu" ref={dropRef}>
-                <button className="avatar-btn" onClick={() => setDropOpen(o => !o)}>
-                  <span className="avatar-circle">{userInitial}</span>
-                  <span className="avatar-name">{userFirstName}</span>
-                  {dropOpen ? <HiChevronUp className="chevron-icon" /> : <HiChevronDown className="chevron-icon" />}
-                </button>
-                {dropOpen && (
-                  <div className="dropdown">
-                    <div className="drop-header">
-                      <strong>{userName}</strong>
-                      <span className={`role-tag ${user.role}`}>{user.role}</span>
-                    </div>
-                    <div className="drop-email">{user.email || user.phone}</div>
-                    <hr />
-                    {user.role === 'customer' && (
-                      <>
-                        <Link to="/profile" className="drop-item" onClick={() => setDropOpen(false)}>
-                          <HiUser className="drop-icon" /> My Profile
-                        </Link>
-                        <Link to="/orders" className="drop-item" onClick={() => setDropOpen(false)}>
-                          <HiClipboardList className="drop-icon" /> My Orders
-                        </Link>
-                      </>
-                    )}
-                    {user.role === 'admin' && (
-                      <Link to="/admin" className="drop-item" onClick={() => setDropOpen(false)}>
-                        <HiCog className="drop-icon" /> Admin Panel
-                      </Link>
-                    )}
-                    {user.role === 'worker' && (
-                      <Link to="/worker" className="drop-item" onClick={() => setDropOpen(false)}>
-                        <HiCog className="drop-icon" /> My Jobs
-                      </Link>
-                    )}
-                    <button className="drop-item logout" onClick={handleLogout}>
-                      <HiLogout className="drop-icon" /> Logout
-                    </button>
+          {user && (
+            <div className="user-menu" ref={dropRef}>
+              <button className="avatar-btn" onClick={() => setDropOpen(o => !o)}>
+                <span className="avatar-circle">{user.name.charAt(0).toUpperCase()}</span>
+                <span className="avatar-name">{user.name.split(' ')[0]}</span>
+                {dropOpen ? <HiChevronUp className="chevron-icon" /> : <HiChevronDown className="chevron-icon" />}
+              </button>
+              {dropOpen && (
+                <div className="dropdown">
+                  <div className="drop-header">
+                    <strong>{user.name}</strong>
+                    <span className={`role-tag ${user.role}`}>{user.role}</span>
                   </div>
-                )}
-              </div>
-            );
-          })()}
+                  <div className="drop-email">{user.email}</div>
+                  <hr />
+                  {user.role === 'customer' && (
+                    <>
+                      <Link to="/profile" className="drop-item" onClick={() => setDropOpen(false)}>
+                        <HiUser className="drop-icon" /> My Profile
+                      </Link>
+                      <Link to="/orders" className="drop-item" onClick={() => setDropOpen(false)}>
+                        <HiClipboardList className="drop-icon" /> My Orders
+                      </Link>
+                    </>
+                  )}
+                  {user.role === 'admin' && (
+                    <Link to="/admin" className="drop-item" onClick={() => setDropOpen(false)}>
+                      <HiCog className="drop-icon" /> Admin Panel
+                    </Link>
+                  )}
+                  {user.role === 'worker' && (
+                    <Link to="/worker" className="drop-item" onClick={() => setDropOpen(false)}>
+                      <HiCog className="drop-icon" /> My Jobs
+                    </Link>
+                  )}
+                  <button className="drop-item logout" onClick={handleLogout}>
+                    <HiLogout className="drop-icon" /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </nav>

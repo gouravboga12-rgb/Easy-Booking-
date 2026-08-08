@@ -136,9 +136,9 @@ export default function WorkerLayout() {
           <span className="ws-badge">Worker</span>
         </div>
         <div className="ws-user-profile" style={{ position: 'relative' }}>
-          <div className="ws-avatar">{(user?.name || user?.phone || 'W').charAt(0).toUpperCase()}</div>
+          <div className="ws-avatar">{user.name.charAt(0)}</div>
           <div className="ws-user-info">
-            <strong>{user?.name || user?.phone || 'Worker'}</strong>
+            <strong>{user.name}</strong>
             <span className={`ws-status ${user.available ? 'online' : 'offline'}`}>
               {user.available ? '● Online' : '○ Offline'}
             </span>
@@ -267,9 +267,9 @@ export default function WorkerLayout() {
             <span className="wth-badge">Worker</span>
           </div>
           <div className="wth-user" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="wth-avatar">{(user?.name || user?.phone || 'W').charAt(0).toUpperCase()}</div>
+            <div className="wth-avatar">{user.name.charAt(0)}</div>
             <div className="wth-info">
-              <strong>{(user?.name || user?.phone || 'Worker').split(' ')[0]}</strong>
+              <strong>{user.name.split(' ')[0]}</strong>
               <span className={`wth-status ${user.available ? 'online' : 'offline'}`}>
                 {user.available ? '● Online' : '○ Offline'}
               </span>
