@@ -150,11 +150,23 @@ function Layout() {
     // Parse the hash fragment (Google implicit flow returns #access_token=XXX&...)
     const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
     const token = hashParams.get('access_token');
+    const state = hashParams.get('state');
     if (!token) return;
+
+    // If Google login was initiated from the mobile app, redirect to custom scheme so Android opens the app and closes Chrome
+    if (state === 'app_mobile_oauth') {
+      window.history.replaceState(null, '', window.location.pathname);
+      console.log('[GoogleOAuth] App state detected, launching app deep link parrowskills://');
+      window.location.href = `parrowskills://oauth#access_token=${token}`;
+      setTimeout(() => {
+        window.location.href = `com.parrowskills.app://oauth#access_token=${token}`;
+      }, 400);
+      return;
+    }
 
     // Immediately clear the hash from URL so it doesn't re-process on navigation
     window.history.replaceState(null, '', window.location.pathname);
-    console.log('[GoogleOAuth] Access token received, calling backend...');
+    console.log('[GoogleOAuth] Website access token received, calling backend...');
 
     googleLoginRef.current(token, 'access_token')
       .then((result) => {

@@ -27,9 +27,11 @@ export default function Register() {
   const triggerDirectGoogleOAuth = () => {
     const GOOGLE_CLIENT_ID = "372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com";
     const redirectUri = "https://parrowskills.com";
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('openid email profile')}&prompt=select_account`;
+    const isInApp = !!(window.ReactNativeWebView && window.ReactNativeWebView.postMessage);
+    const stateParam = isInApp ? "&state=app_mobile_oauth" : "&state=website_oauth";
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('openid email profile')}&prompt=select_account${stateParam}`;
     
-    if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+    if (isInApp) {
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_GOOGLE_AUTH', url: authUrl }));
     } else {
       window.location.href = authUrl;

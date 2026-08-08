@@ -93,6 +93,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Listen for deep link URL redirects (parrowskills://oauth#access_token=...) from Chrome after Google Sign-In
+    const handleDeepLink = (event) => {
+      const url = typeof event === 'string' ? event : (event && event.url ? event.url : '');
+      if (!url) return;
+      const hashIndex = url.indexOf('#');
+      const hashFragment = hashIndex !== -1 ? url.slice(hashIndex + 1) : (url.includes('?') ? url.split('?')[1] : '');
+      const hashParams = new URLSearchParams(hashFragment);
+      const accessToken = hashParams.get('access_token');
+      if (accessToken && webViewRef.current) {
+        console.log('Deep link token received in app:', accessToken.slice(0, 10));
+        webViewRef.current.injectJavaScript(`
+          (function() {
+            try {
+              if (window.__handleGoogleAccessToken) {
+                window.__handleGoogleAccessToken('${accessToken}');
+              } else {
+                window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+              }
+            } catch(e) {
+              window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+            }
+          })();
+        `);
+      }
+    };
+
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url); });
+    const sub = Linking.addEventListener('url', handleDeepLink);
+    return () => {
+      if (sub && sub.remove) sub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     // Fast startup timer to prevent long orange spinner overlay
     const timer = setTimeout(() => {
       setLoading(false);

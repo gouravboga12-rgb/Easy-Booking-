@@ -2,6 +2,7 @@
   "expo": {
     "name": "Parrow Skills",
     "slug": "easylabourfinder-mobile",
+    "scheme": "parrowskills",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./public/logo.png",
