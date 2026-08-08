@@ -27,6 +27,35 @@ export default function Login() {
     navigate(from);
   };
 
+  useEffect(() => {
+    // Check if returning from Google OAuth redirect (URL hash contains #access_token=...)
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const token = params.get('access_token');
+      if (token) {
+        setGoogleLoading(true);
+        window.history.replaceState(null, '', window.location.pathname);
+        googleLogin(token, 'access_token').then((result) => {
+          setGoogleLoading(false);
+          if (result.error) {
+            setError(result.error);
+          } else {
+            const from = location.state?.from || '/';
+            navigate(from);
+          }
+        });
+      }
+    }
+  }, [googleLogin, location.state, navigate]);
+
+  const triggerDirectGoogleOAuth = () => {
+    const GOOGLE_CLIENT_ID = "372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com";
+    const redirectUri = window.location.origin + window.location.pathname;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('openid email profile')}&prompt=select_account`;
+    window.location.href = authUrl;
+  };
+
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -38,9 +67,22 @@ export default function Login() {
       navigate(from);
     },
     onError: () => {
-      setError('Google login was cancelled or failed.');
+      triggerDirectGoogleOAuth();
     },
   });
+
+  const onGoogleBtnClick = () => {
+    // In Android WebView, trigger direct OAuth URL to bypass GIS WebView 400/403 blocks
+    if (window.ReactNativeWebView || /wv|Android.*Version\/[0-9]/i.test(navigator.userAgent)) {
+      triggerDirectGoogleOAuth();
+    } else {
+      try {
+        handleGoogleLogin();
+      } catch (e) {
+        triggerDirectGoogleOAuth();
+      }
+    }
+  };
 
   return (
     <div className="auth-page">
@@ -53,7 +95,7 @@ export default function Login() {
         <button
           type="button"
           className="google-btn"
-          onClick={() => handleGoogleLogin()}
+          onClick={onGoogleBtnClick}
           disabled={googleLoading || loading}
         >
           {googleLoading ? (
