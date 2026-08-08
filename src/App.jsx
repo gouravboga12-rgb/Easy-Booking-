@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
@@ -138,6 +138,9 @@ function Layout() {
     }
   };
 
+  const navigate = useNavigate();
+  const [isAuthenticatingGoogle, setIsAuthenticatingGoogle] = useState(false);
+
   // Global Google OAuth Redirect Hash Listener
   const googleLogin = useAuthStore(s => s.googleLogin);
   const googleLoginRef = useRef(googleLogin);
@@ -167,23 +170,33 @@ function Layout() {
     // Immediately clear the hash from URL so it doesn't re-process on navigation
     window.history.replaceState(null, '', window.location.pathname);
     console.log('[GoogleOAuth] Website access token received, calling backend...');
+    setIsAuthenticatingGoogle(true);
 
     googleLoginRef.current(token, 'access_token')
       .then((result) => {
+        setIsAuthenticatingGoogle(false);
         console.log('[GoogleOAuth] Backend result:', result);
         if (result && !result.error) {
-          console.log('[GoogleOAuth] Login successful, redirecting to /');
-          window.location.href = '/';
+          console.log('[GoogleOAuth] Login successful, navigating smoothly');
+          const userRole = result.role || useAuthStore.getState().user?.role;
+          if (userRole === 'worker') {
+            navigate('/worker', { replace: true });
+          } else if (userRole === 'admin') {
+            navigate('/admin', { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
         } else {
           console.error('[GoogleOAuth] Login failed:', result?.error);
           alert('Google Sign-In failed: ' + (result?.error || 'Unknown error. Please try again.'));
-          window.location.href = '/login';
+          navigate('/login', { replace: true });
         }
       })
       .catch((err) => {
+        setIsAuthenticatingGoogle(false);
         console.error('[GoogleOAuth] Exception:', err);
         alert('Google Sign-In error: ' + (err?.message || 'Please try again.'));
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -192,26 +205,37 @@ function Layout() {
   useEffect(() => {
     const handleTokenFromMobile = (token) => {
       console.log('[GoogleOAuth-Mobile] Token received via injection, calling backend...');
+      setIsAuthenticatingGoogle(true);
       googleLoginRef.current(token, 'access_token')
         .then((result) => {
+          setIsAuthenticatingGoogle(false);
           if (result && !result.error) {
-            console.log('[GoogleOAuth-Mobile] Login successful, navigating to /');
-            window.location.replace('/');
+            console.log('[GoogleOAuth-Mobile] Login successful, navigating smoothly');
+            const userRole = result.role || useAuthStore.getState().user?.role;
+            if (userRole === 'worker') {
+              navigate('/worker', { replace: true });
+            } else if (userRole === 'admin') {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/', { replace: true });
+            }
           } else {
             console.error('[GoogleOAuth-Mobile] Login failed:', result?.error);
             alert('Google Sign-In failed: ' + (result?.error || 'Please try again.'));
-            window.location.replace('/login');
+            navigate('/login', { replace: true });
           }
         })
         .catch((err) => {
+          setIsAuthenticatingGoogle(false);
           console.error('[GoogleOAuth-Mobile] Exception:', err);
           alert('Google Sign-In error: ' + (err?.message || 'Please try again.'));
-          window.location.replace('/login');
+          navigate('/login', { replace: true });
         });
     };
 
     window.__handleGoogleAccessToken = handleTokenFromMobile;
     window.__googleAuthCancelled = () => {
+      setIsAuthenticatingGoogle(false);
       console.log('[GoogleOAuth-Mobile] User cancelled Google Sign-In');
     };
 
@@ -375,6 +399,40 @@ function Layout() {
 
   return (
     <>
+      {/* Google Sign-In Loading Overlay */}
+      {isAuthenticatingGoogle && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999999,
+          background: 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+          fontFamily: 'Inter, system-ui, sans-serif'
+        }}>
+          <img src="/logo.png" alt="Parrow Skills" style={{ height: '64px', width: 'auto', marginBottom: '8px' }} />
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #ffedd5',
+            borderTopColor: '#ff8c00',
+            borderRadius: '50%',
+            animation: 'googleAuthSpin 0.8s linear infinite'
+          }} />
+          <style>{`@keyframes googleAuthSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          <h3 style={{ margin: 0, color: '#0f172a', fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px' }}>Signing in with Google</h3>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '14px', fontWeight: 500 }}>Securing your account session...</p>
+        </div>
+      )}
+
       {/* Toast Overlay */}
       <div className="notification-container">
         {toasts.map(t => (
