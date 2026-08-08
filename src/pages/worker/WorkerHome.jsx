@@ -55,6 +55,7 @@ export default function WorkerHome() {
   const navigate = useNavigate();
   const addWorkerEarning = useAuthStore(s => s.addWorkerEarning);
   const orders = useStore(s => s.orders);
+  const services = useStore(s => s.services);
   const assignWorker = useStore(s => s.assignWorker);
   const rejectOrder = useStore(s => s.rejectOrder);
   const advanceStage = useStore(s => s.advanceStage);
