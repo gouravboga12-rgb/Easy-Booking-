@@ -540,51 +540,23 @@ export default function BookingFlow() {
                     height: '240px',
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    border: '1.5px solid #e2e8f0',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                    background: '#f8fafc'
-                  }}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const latOffset = ((rect.height / 2) - y) * 0.0001;
-                    const lngOffset = (x - (rect.width / 2)) * 0.0001;
-                    const newLat = coords.lat + latOffset;
-                    const newLng = coords.lng + lngOffset;
-                    setCoords({ lat: newLat, lng: newLng });
-                    setViewState(v => ({ ...v, latitude: newLat, longitude: newLng }));
-                    reverseGeocode(newLat, newLng);
+                    border: '1.5px solid #cbd5e1',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                    background: '#e5e7eb',
+                    marginTop: '6px'
                   }}
                 >
-                  {MAPBOX_TOKEN ? (
-                    <Map
-                      {...viewState}
-                      onMoveStart={() => setIsMoving(true)}
-                      onMove={e => setViewState(e.viewState)}
-                      onMoveEnd={(e) => {
-                        setIsMoving(false);
-                        handleMapMoveEnd(e);
-                      }}
-                      style={{ width: '100%', height: '100%' }}
-                      mapStyle="mapbox://styles/mapbox/outdoors-v12"
-                      mapboxAccessToken={MAPBOX_TOKEN}
-                    >
-                      <NavigationControl position="bottom-right" />
-                    </Map>
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#e5e7eb' }}>
-                      <iframe
-                        title="Interactive Map"
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        scrolling="no"
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.01}%2C${coords.lat - 0.01}%2C${coords.lng + 0.01}%2C${coords.lat + 0.01}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`}
-                        style={{ border: 0, filter: 'contrast(1.02)' }}
-                      />
-                    </div>
-                  )}
+                  <iframe
+                    title="Interactive Location Map"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    scrolling="no"
+                    marginHeight="0"
+                    marginWidth="0"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.008}%2C${coords.lat - 0.005}%2C${coords.lng + 0.008}%2C${coords.lat + 0.005}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`}
+                    style={{ border: 0, width: '100%', height: '100%', pointerEvents: 'auto', filter: 'contrast(1.03) saturate(1.05)' }}
+                  />
 
                   {/* Top-Left Dark Badge */}
                   <div style={{
@@ -599,19 +571,19 @@ export default function BookingFlow() {
                     fontSize: '11px',
                     fontWeight: '800',
                     letterSpacing: '0.6px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                     pointerEvents: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px'
                   }}>
-                    <span>PIN LOCATION (DRAG PIN OR CLICK MAP)</span>
+                    <span>PIN LOCATION (CLICK MAP OR LOCATE)</span>
                   </div>
 
-                  {/* Cyan Location Pin in Center */}
+                  {/* Address Bubble on Center Pin */}
                   <div style={{
                     position: 'absolute',
-                    top: '50%',
+                    top: '44%',
                     left: '50%',
                     transform: 'translate(-50%, -100%)',
                     zIndex: 12,
@@ -625,13 +597,14 @@ export default function BookingFlow() {
                       color: '#fff',
                       fontSize: '11px',
                       fontWeight: '700',
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       borderRadius: '6px',
                       marginBottom: '4px',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      border: '1px solid #334155'
                     }}>
-                      {addressLoading ? 'Locating...' : (form.location ? getShortAddress(form.location) : 'Selected Pin')}
+                      {addressLoading ? '⌛ Locating address...' : (form.location ? getShortAddress(form.location) : 'Selected Pin')}
                     </div>
                     <svg width="34" height="42" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0Z" fill="#06b6d4"/>
