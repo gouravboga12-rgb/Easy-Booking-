@@ -162,18 +162,48 @@ export default function App() {
       } else if (data.type === 'OPEN_GOOGLE_AUTH') {
         try {
           const authUrl = data.url;
+          // For mobile app: use parrowskills.com as redirect — WebBrowser intercepts it before it fully loads
           const redirectUri = 'https://parrowskills.com';
           const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+          
           if (result.type === 'success' && result.url && webViewRef.current) {
-            const redirectUrl = result.url;
-            const injectJS = `
+            // Extract the access_token from the hash fragment of the result URL
+            // Google returns: https://parrowskills.com/#access_token=XXX&token_type=Bearer&...
+            const resultUrl = result.url;
+            const hashIndex = resultUrl.indexOf('#');
+            const hashFragment = hashIndex !== -1 ? resultUrl.slice(hashIndex + 1) : '';
+            const hashParams = new URLSearchParams(hashFragment);
+            const accessToken = hashParams.get('access_token');
+            
+            if (accessToken) {
+              // Inject JS to call the backend with the token directly (no page reload!)
+              const injectJS = `
+                (function() {
+                  try {
+                    // Call the global handler set up by Login.jsx / App.jsx
+                    if (window.__handleGoogleAccessToken) {
+                      window.__handleGoogleAccessToken('${accessToken}');
+                    } else {
+                      // Fallback: navigate to home with hash so the App.jsx listener picks it up
+                      window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+                    }
+                  } catch(e) {
+                    window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+                  }
+                })();
+              `;
+              webViewRef.current.injectJavaScript(injectJS);
+            } else {
+              // No token found — navigate with the full URL so hash listener can try
+              webViewRef.current.injectJavaScript(`window.location.replace("${resultUrl}");`);
+            }
+          } else if (result.type === 'cancel' || result.type === 'dismiss') {
+            // User cancelled — inject JS to reset the loading state
+            webViewRef.current && webViewRef.current.injectJavaScript(`
               (function() {
-                try {
-                  window.location.href = "${redirectUrl}";
-                } catch(e) {}
+                try { window.__googleAuthCancelled && window.__googleAuthCancelled(); } catch(e) {}
               })();
-            `;
-            webViewRef.current.injectJavaScript(injectJS);
+            `);
           }
         } catch (authErr) {
           console.warn('Google Auth Session Error:', authErr);
@@ -202,7 +232,28 @@ export default function App() {
     if (url.includes('accounts.google.com')) {
       WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com').then((result) => {
         if (result.type === 'success' && result.url && webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
+          const resultUrl = result.url;
+          const hashIndex = resultUrl.indexOf('#');
+          const hashFragment = hashIndex !== -1 ? resultUrl.slice(hashIndex + 1) : '';
+          const hashParams = new URLSearchParams(hashFragment);
+          const accessToken = hashParams.get('access_token');
+          if (accessToken) {
+            webViewRef.current.injectJavaScript(`
+              (function() {
+                try {
+                  if (window.__handleGoogleAccessToken) {
+                    window.__handleGoogleAccessToken('${accessToken}');
+                  } else {
+                    window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+                  }
+                } catch(e) {
+                  window.location.replace('/#access_token=${accessToken}&token_type=Bearer');
+                }
+              })();
+            `);
+          } else {
+            webViewRef.current.injectJavaScript(`window.location.replace("${resultUrl}");`);
+          }
         }
       }).catch(e => console.warn('Google auth load err:', e));
       return false;

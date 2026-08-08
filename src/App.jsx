@@ -140,21 +140,74 @@ function Layout() {
 
   // Global Google OAuth Redirect Hash Listener
   const googleLogin = useAuthStore(s => s.googleLogin);
+  const googleLoginRef = useRef(googleLogin);
+  useEffect(() => { googleLoginRef.current = googleLogin; }, [googleLogin]);
+
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-      const params = new URLSearchParams(hash.replace('#', '?'));
-      const token = params.get('access_token');
-      if (token) {
-        window.history.replaceState(null, '', window.location.pathname);
-        googleLogin(token, 'access_token').then((result) => {
-          if (!result.error) {
-            window.location.href = '/';
+    if (!hash || !hash.includes('access_token=')) return;
+
+    // Parse the hash fragment (Google implicit flow returns #access_token=XXX&...)
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+    const token = hashParams.get('access_token');
+    if (!token) return;
+
+    // Immediately clear the hash from URL so it doesn't re-process on navigation
+    window.history.replaceState(null, '', window.location.pathname);
+    console.log('[GoogleOAuth] Access token received, calling backend...');
+
+    googleLoginRef.current(token, 'access_token')
+      .then((result) => {
+        console.log('[GoogleOAuth] Backend result:', result);
+        if (result && !result.error) {
+          console.log('[GoogleOAuth] Login successful, redirecting to /');
+          window.location.href = '/';
+        } else {
+          console.error('[GoogleOAuth] Login failed:', result?.error);
+          alert('Google Sign-In failed: ' + (result?.error || 'Unknown error. Please try again.'));
+          window.location.href = '/login';
+        }
+      })
+      .catch((err) => {
+        console.error('[GoogleOAuth] Exception:', err);
+        alert('Google Sign-In error: ' + (err?.message || 'Please try again.'));
+        window.location.href = '/login';
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Expose a global handler so the mobile app's injected JS can call it directly
+  // without triggering a full page reload (mobile path: WebBrowser → injectJavaScript → this fn)
+  useEffect(() => {
+    const handleTokenFromMobile = (token) => {
+      console.log('[GoogleOAuth-Mobile] Token received via injection, calling backend...');
+      googleLoginRef.current(token, 'access_token')
+        .then((result) => {
+          if (result && !result.error) {
+            console.log('[GoogleOAuth-Mobile] Login successful, navigating to /');
+            window.location.replace('/');
+          } else {
+            console.error('[GoogleOAuth-Mobile] Login failed:', result?.error);
+            alert('Google Sign-In failed: ' + (result?.error || 'Please try again.'));
+            window.location.replace('/login');
           }
+        })
+        .catch((err) => {
+          console.error('[GoogleOAuth-Mobile] Exception:', err);
+          alert('Google Sign-In error: ' + (err?.message || 'Please try again.'));
+          window.location.replace('/login');
         });
-      }
-    }
-  }, [googleLogin]);
+    };
+
+    window.__handleGoogleAccessToken = handleTokenFromMobile;
+    window.__googleAuthCancelled = () => {
+      console.log('[GoogleOAuth-Mobile] User cancelled Google Sign-In');
+    };
+
+    return () => {
+      delete window.__handleGoogleAccessToken;
+      delete window.__googleAuthCancelled;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Request Notification permission prompt when app opens or user logs in
   useEffect(() => {
