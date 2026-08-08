@@ -266,7 +266,9 @@ function Layout() {
       orders.forEach(currentOrder => {
         const matchingPrev = prevOrders.find(o => o.id === currentOrder.id);
         const serviceName = currentOrder.vehicle?.name || 'Service Request';
-        const workerName = currentOrder.operator?.name || 'Assigned Worker';
+        const rawWorkerName = (currentOrder.operator?.name || '').trim();
+        const isTestWorkerName = !rawWorkerName || /^(testing|test|demo|admin)$/i.test(rawWorkerName);
+        const workerName = isTestWorkerName ? 'Assigned Worker' : rawWorkerName;
         
         if (matchingPrev) {
           if (matchingPrev.status !== currentOrder.status) {

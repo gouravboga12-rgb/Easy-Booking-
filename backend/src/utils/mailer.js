@@ -126,6 +126,13 @@ export const sendRegisterOtpEmail = async (to, name, otp) => {
  * Send Invoice Email to Customer upon project completion
  */
 export const sendInvoiceEmail = async (to, name, order) => {
+  const rawWorkerName = (order.worker_name || '').trim();
+  const isTestWorkerName = !rawWorkerName || /^(testing|test|demo|admin)$/i.test(rawWorkerName);
+  const displayWorkerName = isTestWorkerName ? 'Verified Professional' : rawWorkerName;
+
+  const numAmount = parseFloat(order.total_amount || 0);
+  const displayAmount = numAmount > 0 ? `₹${numAmount.toLocaleString('en-IN')}` : 'As Agreed (Custom Quote)';
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
       <div style="text-align: center; border-bottom: 2px solid #ff8c00; padding-bottom: 15px; margin-bottom: 20px;">
@@ -141,13 +148,13 @@ export const sendInvoiceEmail = async (to, name, order) => {
         <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Service Category:</strong> ${order.vehicle_name || 'Professional Service'}</div>
         <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Duration:</strong> ${order.duration} ${order.unit || 'trips'}</div>
         <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Date:</strong> ${order.booking_date}</div>
-        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Partner Assigned:</strong> ${order.worker_name || 'Verified Professional'}</div>
+        <div style="margin-bottom: 10px; font-size: 14px;"><strong style="color: #334155;">Partner Assigned:</strong> ${displayWorkerName}</div>
       </div>
 
       <div style="border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; padding: 15px 0; margin: 20px 0; font-size: 16px;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1e293b;">
           <span>Total Amount Paid:</span>
-          <span style="color: #10b981; font-size: 18px;">₹${parseFloat(order.total_amount || 0).toLocaleString()}</span>
+          <span style="color: #10b981; font-size: 18px;">${displayAmount}</span>
         </div>
       </div>
 
