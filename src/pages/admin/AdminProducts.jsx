@@ -469,18 +469,33 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              {/* Service Availability Option */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
-                <input 
-                  type="checkbox" 
-                  id="serviceAvailable" 
-                  checked={form.available !== false} 
-                  onChange={e => setForm(p => ({ ...p, available: e.target.checked }))} 
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <label htmlFor="serviceAvailable" style={{ fontSize: '13px', fontWeight: '700', color: form.available !== false ? '#059669' : '#4b5563', cursor: 'pointer' }}>
-                  {form.available !== false ? '🟢 Service Available for Booking' : '🔴 Service Currently Unavailable'}
-                </label>
+              {/* Service Control Options */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: form.available !== false ? '#f0fdf4' : '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${form.available !== false ? '#bbf7d0' : '#e2e8f0'}` }}>
+                  <input 
+                    type="checkbox" 
+                    id="serviceAvailable" 
+                    checked={form.available !== false} 
+                    onChange={e => setForm(p => ({ ...p, available: e.target.checked }))} 
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="serviceAvailable" style={{ fontSize: '13px', fontWeight: '700', color: form.available !== false ? '#059669' : '#4b5563', cursor: 'pointer' }}>
+                    {form.available !== false ? '🟢 Service Available for Booking' : '🔴 Service Currently Unavailable'}
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: form.show_price ? '#f0fdf4' : '#fff1f2', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${form.show_price ? '#bbf7d0' : '#fecdd3'}` }}>
+                  <input 
+                    type="checkbox" 
+                    id="showPriceCheckbox" 
+                    checked={!!form.show_price} 
+                    onChange={e => setForm(p => ({ ...p, show_price: e.target.checked }))} 
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="showPriceCheckbox" style={{ fontSize: '13px', fontWeight: '700', color: form.show_price ? '#15803d' : '#be123c', cursor: 'pointer' }}>
+                    {form.show_price ? '🏷️ Fixed Pricing Enabled (Prices visible to customers)' : '🚫 Pricing Turned OFF (Prices hidden, Worker enters payment upon completion)'}
+                  </label>
+                </div>
               </div>
 
               {/* Dynamic Option Fields Builder */}
