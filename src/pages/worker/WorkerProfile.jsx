@@ -78,7 +78,7 @@ export default function WorkerProfile() {
     }
   };
 
-  const handleLogout = () => { logout(); navigate('/'); };
+  const handleLogout = () => { logout(); navigate('/login-select'); };
 
   const handleSave = () => {
     const skills = skillsInput

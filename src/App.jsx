@@ -138,6 +138,36 @@ function Layout() {
     }
   };
 
+  // Request Notification permission prompt when app opens or user logs in
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, [user]);
+
+  const sendBrowserNotification = (title, body, url) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body,
+          icon: '/logo.png',
+          badge: '/logo.png',
+          data: { url }
+        });
+        notif.onclick = function (e) {
+          e.preventDefault();
+          window.focus();
+          if (url) {
+            window.location.href = url;
+          }
+          notif.close();
+        };
+      } catch (err) {
+        console.warn('Native notification error:', err);
+      }
+    }
+  };
+
   // Listen for order changes and status transitions
   useEffect(() => {
     if (!user || orders.length === 0) {
@@ -149,31 +179,62 @@ function Layout() {
     if (prevOrders && prevOrders.length > 0) {
       orders.forEach(currentOrder => {
         const matchingPrev = prevOrders.find(o => o.id === currentOrder.id);
+        const serviceName = currentOrder.vehicle?.name || 'Service Request';
+        const workerName = currentOrder.operator?.name || 'Assigned Worker';
+        
         if (matchingPrev) {
           if (matchingPrev.status !== currentOrder.status) {
             // Status changed!
             if (user.role === 'customer' && currentOrder.customer?.id === user.id) {
-              const statusLabel = currentOrder.status === 'assigned' ? 'Accepted by worker' : currentOrder.status;
-              addToast(`Order #${currentOrder.id} status updated to: ${statusLabel.toUpperCase()}`, 'success');
-              playChime();
-            } else if (user.role === 'worker' && currentOrder.operator?.id === user.id) {
-              if (currentOrder.status === 'cancelled') {
-                addToast(`⚠️ Customer has cancelled Order #${currentOrder.id}`, 'danger');
-                playChime();
-              } else if (currentOrder.status === 'assigned' && matchingPrev.status === 'pending') {
-                addToast(`🎉 New Order Assigned: #${currentOrder.id}!`, 'success');
-                playChime();
-              } else {
-                addToast(`Order #${currentOrder.id} status is now: ${currentOrder.status.toUpperCase()}`, 'info');
-                playChime();
+              let title = `Parrow Skills Order #${currentOrder.id}`;
+              let body = `Status updated to ${currentOrder.status.toUpperCase()}`;
+              if (currentOrder.status === 'assigned') {
+                title = `🎉 Worker Assigned - Order #${currentOrder.id}`;
+                body = `${workerName} accepted your ${serviceName} request. Tap to track!`;
+              } else if (currentOrder.status === 'active') {
+                title = `🚗 Worker En Route - Order #${currentOrder.id}`;
+                body = `${workerName} is on the way for ${serviceName}.`;
+              } else if (currentOrder.status === 'arrived') {
+                title = `📍 Worker Arrived - Order #${currentOrder.id}`;
+                body = `${workerName} has reached your location for ${serviceName}.`;
+              } else if (currentOrder.status === 'completed') {
+                title = `✅ Service Completed - Order #${currentOrder.id}`;
+                body = `Your ${serviceName} was completed successfully!`;
+              } else if (currentOrder.status === 'cancelled') {
+                title = `⚠️ Booking Cancelled - Order #${currentOrder.id}`;
+                body = `Your booking for ${serviceName} was cancelled.`;
               }
+
+              const deepLinkUrl = `https://parrowskills.com/track/${currentOrder.id}`;
+              addToast(`${title}: ${body}`, 'success');
+              playChime();
+              sendBrowserNotification(title, body, deepLinkUrl);
+            } else if (user.role === 'worker' && currentOrder.operator?.id === user.id) {
+              let title = `Worker Update - Order #${currentOrder.id}`;
+              let body = `Order status is now ${currentOrder.status.toUpperCase()}`;
+              if (currentOrder.status === 'cancelled') {
+                title = `⚠️ Booking Cancelled - Order #${currentOrder.id}`;
+                body = `Customer cancelled request for ${serviceName}.`;
+              } else if (currentOrder.status === 'assigned' && matchingPrev.status === 'pending') {
+                title = `🎉 New Job Assigned - #${currentOrder.id}`;
+                body = `New ${serviceName} job assigned to you. Tap to view details!`;
+              }
+
+              const deepLinkUrl = `https://parrowskills.com/worker/orders`;
+              addToast(`${title}: ${body}`, currentOrder.status === 'cancelled' ? 'danger' : 'info');
+              playChime();
+              sendBrowserNotification(title, body, deepLinkUrl);
             }
           }
         } else {
           // A brand new order was found in list
           if (user.role === 'worker' && currentOrder.status === 'pending') {
-            addToast(`🔔 New Pending Job Available in your Area: #${currentOrder.id}!`, 'warning');
+            const title = `🔔 New Dispatch Request Available!`;
+            const body = `Order #${currentOrder.id}: ${serviceName} in your area. Tap to accept!`;
+            const deepLinkUrl = `https://parrowskills.com/worker`;
+            addToast(body, 'warning');
             playChime();
+            sendBrowserNotification(title, body, deepLinkUrl);
           }
         }
       });

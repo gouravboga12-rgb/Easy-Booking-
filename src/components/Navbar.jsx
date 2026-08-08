@@ -170,7 +170,7 @@ export default function Navbar() {
   }) : [];
   const unreadCount = myNotifs.filter(n => !n.read).length;
 
-  const handleLogout = () => { logout(); navigate('/'); setDropOpen(false); };
+  const handleLogout = () => { logout(); navigate('/login-select'); setDropOpen(false); };
 
   useEffect(() => {
     setNavSearchVal(params.get('q') || '');

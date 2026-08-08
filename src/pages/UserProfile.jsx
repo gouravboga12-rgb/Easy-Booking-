@@ -44,7 +44,7 @@ export default function UserProfile() {
 
   const handleLogoutClick = () => {
     logout();
-    navigate('/');
+    navigate('/login-select');
   };
 
   return (

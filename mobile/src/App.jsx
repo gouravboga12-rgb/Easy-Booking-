@@ -8,7 +8,8 @@ import {
   BackHandler,
   Platform,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  Linking
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -40,6 +41,26 @@ export default function App() {
     }
   };
 
+  const handleShouldStartLoadWithRequest = (request) => {
+    const { url } = request;
+    if (!url) return true;
+
+    // Intercept phone calls, WhatsApp messages, emails, SMS
+    if (
+      url.startsWith('tel:') ||
+      url.startsWith('mailto:') ||
+      url.startsWith('whatsapp:') ||
+      url.startsWith('sms:') ||
+      url.startsWith('intent:') ||
+      url.includes('api.whatsapp.com') ||
+      url.includes('wa.me')
+    ) {
+      Linking.openURL(url).catch(err => console.warn('Could not open external URL:', err));
+      return false;
+    }
+    return true;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -62,6 +83,7 @@ export default function App() {
         allowUniversalAccessFromFileURLs={true}
         mixedContentMode="always"
         originWhitelist={['*']}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={(navState) => {
           setCanGoBack(navState.canGoBack);
         }}
