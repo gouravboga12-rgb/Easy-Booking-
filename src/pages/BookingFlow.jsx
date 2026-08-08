@@ -9,11 +9,11 @@ import {
 } from 'react-icons/hi';
 import { MdOutlineVerified, MdGpsFixed } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
-import Map from 'react-map-gl/mapbox';
+import Map, { NavigationControl } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './BookingFlow.css';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
 const FALLBACK = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
 
 export default function BookingFlow() {
@@ -534,7 +534,9 @@ export default function BookingFlow() {
                       style={{ width: '100%', height: '100%' }}
                       mapStyle="mapbox://styles/mapbox/streets-v12"
                       mapboxAccessToken={MAPBOX_TOKEN}
-                    />
+                    >
+                      <NavigationControl position="top-right" />
+                    </Map>
                     <div className={`map-pin-container ${isMoving ? 'is-moving' : ''}`}>
                       <div className="map-address-bubble">
                         {addressLoading ? (
