@@ -21,22 +21,35 @@ export default function UserProfile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [viewAllOrders, setViewAllOrders] = useState(false);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+        <h2>Session Expired</h2>
+        <p>Please login to view your customer account.</p>
+        <button onClick={() => navigate('/login-select')} style={{ padding: '10px 20px', background: '#ff8c00', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Go to Login</button>
+      </div>
+    );
+  }
+
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U');
+  const userName = user?.name || user?.email?.split('@')[0] || 'Customer Account';
 
   // Correct live stats using customer ID instead of email
-  const customerOrders = orders.filter(o => o.customer?.id === user.id || o.customerId === user.id);
-  const activeOrders = customerOrders.filter(o => ['pending', 'assigned', 'active', 'arrived'].includes(o.status));
-  const completedOrders = customerOrders.filter(o => o.status === 'completed');
+  const customerOrders = (orders || []).filter(o => o && (o.customer?.id === user?.id || o.customerId === user?.id));
+  const activeOrders = customerOrders.filter(o => o && ['pending', 'assigned', 'active', 'arrived'].includes(o.status));
+  const completedOrders = customerOrders.filter(o => o && o.status === 'completed');
 
   const visibleOrders = viewAllOrders ? customerOrders : customerOrders.slice(0, 3);
 
   const handleSave = (e) => {
     e.preventDefault();
-    updateUserProfile(user.id, {
-      name: form.name,
-      phone: form.phone,
-      address: form.address
-    });
+    if (user?.id) {
+      updateUserProfile(user.id, {
+        name: form.name,
+        phone: form.phone,
+        address: form.address
+      });
+    }
     setIsEditing(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
@@ -80,11 +93,11 @@ export default function UserProfile() {
       {/* Hero Section */}
       <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', textAlign: 'center', marginBottom: '24px' }}>
         <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%)', color: '#fff', fontSize: '32px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }}>
-          {user.name.charAt(0).toUpperCase()}
+          {userInitial}
         </div>
-        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a', margin: '0 0 4px' }}>{user.name}</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a', margin: '0 0 4px' }}>{userName}</h2>
         <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '700', padding: '2px 10px', borderRadius: '20px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {user.role} Member
+          {user?.role || 'Customer'} Member
         </span>
       </div>
 

@@ -93,6 +93,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Fast startup timer to prevent long orange spinner overlay
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS === 'android') {
       const onBackPress = () => {
         if (webViewRef.current && canGoBack) {

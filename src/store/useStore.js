@@ -253,7 +253,12 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  services: [],
+  services: (() => {
+    try {
+      const cached = localStorage.getItem('cached_services');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) { return []; }
+  })(),
 
   fetchServices: async () => {
     try {
@@ -276,6 +281,9 @@ export const useStore = create((set, get) => ({
           show_price: s.show_price !== 0 && s.show_price !== false && s.show_price !== '0'
         }));
         set({ services: normalized });
+        try {
+          localStorage.setItem('cached_services', JSON.stringify(normalized));
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Fetch services error:', err);
