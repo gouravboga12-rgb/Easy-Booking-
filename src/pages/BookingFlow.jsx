@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -78,6 +78,85 @@ export default function BookingFlow() {
 
   const [isMoving, setIsMoving] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
+
+  const mapContainerRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const leafletMarkerRef = useRef(null);
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const initMap = () => {
+      if (!window.L) return;
+
+      if (!leafletMapRef.current) {
+        const map = window.L.map(mapContainerRef.current, {
+          center: [coords.lat, coords.lng],
+          zoom: 15,
+          zoomControl: false,
+          scrollWheelZoom: true,
+          touchZoom: true,
+          dragging: true
+        });
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const cyanIcon = window.L.divIcon({
+          className: 'leaflet-cyan-marker',
+          html: `
+            <div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
+              <svg width="34" height="42" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0Z" fill="#06b6d4"/>
+                <circle cx="18" cy="18" r="6" fill="#ffffff"/>
+              </svg>
+            </div>
+          `,
+          iconSize: [36, 44],
+          iconAnchor: [18, 44]
+        });
+
+        const marker = window.L.marker([coords.lat, coords.lng], {
+          icon: cyanIcon,
+          draggable: true
+        }).addTo(map);
+
+        marker.on('dragend', function() {
+          const pos = marker.getLatLng();
+          setCoords({ lat: pos.lat, lng: pos.lng });
+          reverseGeocode(pos.lat, pos.lng);
+        });
+
+        map.on('click', function(e) {
+          marker.setLatLng(e.latlng);
+          setCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
+          reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+
+        leafletMapRef.current = map;
+        leafletMarkerRef.current = marker;
+      } else {
+        leafletMapRef.current.setView([coords.lat, coords.lng], leafletMapRef.current.getZoom());
+        if (leafletMarkerRef.current) {
+          leafletMarkerRef.current.setLatLng([coords.lat, coords.lng]);
+        }
+      }
+    };
+
+    if (window.L) {
+      initMap();
+    } else {
+      const timer = setInterval(() => {
+        if (window.L) {
+          clearInterval(timer);
+          initMap();
+        }
+      }, 100);
+      return () => clearInterval(timer);
+    }
+  }, [coords.lat, coords.lng]);
 
   // Selected tier for tiered / custom pricing
   const [selectedTier, setSelectedTier] = useState(null);
@@ -537,25 +616,18 @@ export default function BookingFlow() {
                   style={{
                     position: 'relative',
                     width: '100%',
-                    height: '240px',
+                    height: '250px',
                     borderRadius: '16px',
                     overflow: 'hidden',
                     border: '1.5px solid #cbd5e1',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                    background: '#e5e7eb',
+                    background: '#e2e8f0',
                     marginTop: '6px'
                   }}
                 >
-                  <iframe
-                    title="Interactive Location Map"
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    scrolling="no"
-                    marginHeight="0"
-                    marginWidth="0"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.008}%2C${coords.lat - 0.005}%2C${coords.lng + 0.008}%2C${coords.lat + 0.005}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`}
-                    style={{ border: 0, width: '100%', height: '100%', pointerEvents: 'auto', filter: 'contrast(1.03) saturate(1.05)' }}
+                  <div
+                    ref={mapContainerRef}
+                    style={{ width: '100%', height: '100%', zIndex: 1 }}
                   />
 
                   {/* Top-Left Dark Badge */}
@@ -563,7 +635,7 @@ export default function BookingFlow() {
                     position: 'absolute',
                     top: '12px',
                     left: '12px',
-                    zIndex: 10,
+                    zIndex: 1000,
                     background: '#1e293b',
                     color: '#ffffff',
                     padding: '7px 14px',
@@ -577,39 +649,7 @@ export default function BookingFlow() {
                     alignItems: 'center',
                     gap: '6px'
                   }}>
-                    <span>PIN LOCATION (CLICK MAP OR LOCATE)</span>
-                  </div>
-
-                  {/* Address Bubble on Center Pin */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '44%',
-                    left: '50%',
-                    transform: 'translate(-50%, -100%)',
-                    zIndex: 12,
-                    pointerEvents: 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <div style={{
-                      background: '#1e293b',
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      padding: '5px 12px',
-                      borderRadius: '6px',
-                      marginBottom: '4px',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                      border: '1px solid #334155'
-                    }}>
-                      {addressLoading ? '⌛ Locating address...' : (form.location ? getShortAddress(form.location) : 'Selected Pin')}
-                    </div>
-                    <svg width="34" height="42" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0Z" fill="#06b6d4"/>
-                      <circle cx="18" cy="18" r="6" fill="#ffffff"/>
-                    </svg>
+                    <span>PIN LOCATION (TOUCH ZOOM / CLICK MAP / DRAG)</span>
                   </div>
                 </div>
               </label>
