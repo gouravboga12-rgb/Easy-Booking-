@@ -524,44 +524,8 @@ export default function WorkerHome() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
 
-  useEffect(() => {
-    // Watch location if worker is available/online OR has an active job
-    if (!user.available && !activeJob) return;
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setWorkerCoords({ lat: latitude, lng: longitude });
-          updateWorkerLocation(latitude, longitude);
-        },
-        (err) => console.warn(err)
-      );
-    }
 
-    let lastLocUpdate = 0;
-    const handleSuccess = (position) => {
-      const { latitude, longitude } = position.coords;
-      const now = Date.now();
-      if (now - lastLocUpdate > 8000) {
-        lastLocUpdate = now;
-        setWorkerCoords({ lat: latitude, lng: longitude });
-        updateWorkerLocation(latitude, longitude);
-      }
-    };
-
-    const handleError = (err) => {
-      console.error("Worker watch position error:", err);
-    };
-
-    const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
-      enableHighAccuracy: true,
-      maximumAge: 10000,
-      timeout: 10000
-    });
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [user.available, user.live_tracking, activeJob?.id, activeJob?.stage]);
 
   useEffect(() => {
     if (!isSimulating || !customerCoords) return;
@@ -1061,18 +1025,234 @@ export default function WorkerHome() {
         </div>
       ))}
 
-      {/* Stats Cockpit */}
-      <div className="worker-stats">
-        {STATS.map(({ Icon, val, label, color }) => (
-          <div key={label} className="ws-card" style={{ padding: '16px', borderRadius: '12px', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div className="ws-icon-wrap" style={{ background: color + '12', color, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
-              <Icon style={{ width: '18px', height: '18px' }} />
-            </div>
-            <strong style={{ fontSize: '18px', fontWeight: '800', color: '#1a1a1a' }}>{val}</strong>
-            <span style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{label}</span>
+      {/* ── PENDING DISPATCHED REQUESTS POOL (RAPIDO-STYLE) ── */}
+      {!activeJob && (
+        <div className="worker-section" style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h2>Pending Dispatch Orders ({pendingRequests.length})</h2>
+            <span style={{ fontSize: '11px', color: '#888', background: '#f3f4f6', padding: '2px 8px', borderRadius: '10px' }}>
+              Matches your operational category
+            </span>
           </div>
-        ))}
-      </div>
+
+          {!user.available ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
+              <span style={{ fontSize: '32px' }}>💤</span>
+              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+                You are currently <strong>Offline</strong>. Set duty status to <strong>Online</strong> at the top to display and receive incoming booking requests.
+              </p>
+            </div>
+          ) : !isSubscribed ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '32px' }}>🔒</span>
+              <p style={{ margin: '8px 0 0', color: '#dc2626', fontSize: '14px', fontWeight: '700' }}>
+                Your activation plan has expired. Please renew your subscription to start receiving new service requests and continue growing your business with our platform.
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Link to="/worker/subscription" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Renew Subscription</Link>
+                <Link to="/worker/subscription" style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>View Plans</Link>
+              </div>
+            </div>
+          ) : pendingRequests.length === 0 ? (
+            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
+              <span style={{ fontSize: '32px' }}>🛰️</span>
+              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+                Listening for dispatch requests... New jobs within your radius will appear here instantly.
+              </p>
+            </div>
+          ) : (
+            <div className="txn-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {pendingRequests.map(req => {
+                const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
+                const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
+                const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
+                const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                const isInstant = req.bookingType === 'instant';
+
+                return (
+                  <div key={req.id} style={{
+                    background: '#fff',
+                    borderRadius: '16px',
+                    boxShadow: isInstant ? '0 4px 20px rgba(59,130,246,0.15)' : '0 4px 20px rgba(245,158,11,0.15)',
+                    border: `2px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+
+                    {/* ── COLOUR BANNER HEADER ── */}
+                    <div style={{
+                      background: isInstant
+                        ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)'
+                        : 'linear-gradient(135deg, #92400e 0%, #d97706 100%)',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+                          {isInstant ? '⚡' : '📅'}
+                        </div>
+                        <div>
+                          <div style={{ color: '#fff', fontWeight: '900', fontSize: '13.5px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                            {isInstant ? 'Instant Service Order' : 'Scheduled Service Order'}
+                          </div>
+                          <div style={{ color: 'rgba(255,255,255,0.88)', fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>
+                            {isInstant
+                              ? '⚡ Customer needs service RIGHT NOW — Act fast!'
+                              : `📅 Planned for: ${req.booking?.date || 'Date TBD'}${req.booking?.timeSlot ? ' at ' + req.booking.timeSlot : ' — time TBD'}`
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ color: '#fff', fontWeight: '900', fontSize: '22px', lineHeight: 1 }}>₹{req.booking?.total?.toLocaleString()}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '10.5px', fontWeight: '700', marginTop: '2px' }}>
+                          {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── BODY ── */}
+                    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+                      {/* Service name row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '20px' }}>🛠️</span>
+                        <div>
+                          <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a' }}>{req.vehicle?.name}</div>
+                          {req.vehicle?.categoryLabel && (
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{req.vehicle.categoryLabel}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Type callout box */}
+                      {isInstant ? (
+                        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>⚡</span>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '900', color: '#1d4ed8' }}>INSTANT — Report immediately</div>
+                            <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>Once accepted, navigate and reach the customer right away</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📅</span> SCHEDULED — Planned Booking
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>📆 Service Date:</span>
+                              <strong style={{ fontSize: '13px', color: '#92400e' }}>{req.booking?.date || 'TBD'}</strong>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>⏰ Service Start Time:</span>
+                              {req.booking?.timeSlot
+                                ? <strong style={{ fontSize: '13px', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px' }}>{req.booking.timeSlot}</strong>
+                                : <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '700' }}>⚠️ Confirm with customer</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Info pills */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
+                          📍 {formattedDistance} away
+                        </span>
+                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
+                          🕐 Booked at {bookingTimeStr}
+                        </span>
+                      </div>
+
+                      {/* Address */}
+                      {req.booking?.location && (
+                        <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '8px 12px', fontSize: '12.5px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                          <span style={{ marginTop: '1px', flexShrink: 0 }}>📍</span>
+                          <span style={{ fontWeight: '600', lineHeight: 1.4 }}>{req.booking.location}</span>
+                        </div>
+                      )}
+
+                      {/* Booking Notes */}
+                      {req.booking?.notes && (
+                        <div style={{ background: '#fff9f0', border: '1px solid #ffe0b2', padding: '8px 12px', borderRadius: '10px' }}>
+                          <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>📋 Customer Notes</span>
+                          <div style={{ fontSize: '12px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{req.booking.notes}</div>
+                        </div>
+                      )}
+
+                      {/* Custom Fields */}
+                      {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
+                        <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements</span>
+                          {req.vehicle.custom_fields.map(f => {
+                            const val = req.customAnswers?.[f.id];
+                            if (val && val.startsWith('data:image/')) {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <img src={val} alt="Spec" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #ddd' }} />
+                                </div>
+                              );
+                            } else if (val && val.startsWith('data:application/pdf')) {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <span style={{ color: 'var(--primary)', fontWeight: '700' }}>📁 PDF Attached</span>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
+                                  <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
+                                </div>
+                              );
+                            }
+                          })}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="popup-actions-row" style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
+                        <button
+                          onClick={() => handleRejectRequest(req.id)}
+                          style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
+                        >
+                          <HiX /> Reject
+                        </button>
+                        <button
+                          onClick={() => setSelectedDetailsRequest(req)}
+                          style={{ flex: 1.5, border: `1.5px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`, color: isInstant ? '#1d4ed8' : '#92400e', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
+                        >
+                          🔍 View Details
+                        </button>
+                        <button
+                          onClick={() => handleAcceptRequest(req.id)}
+                          disabled={!!activeJob}
+                          style={{
+                            flex: 1.5,
+                            background: !!activeJob ? '#cbd5e1' : isInstant ? 'linear-gradient(135deg,#1d4ed8,#3b82f6)' : 'linear-gradient(135deg,#92400e,#d97706)',
+                            color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px',
+                            cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px',
+                            boxShadow: !!activeJob ? 'none' : `0 4px 12px ${isInstant ? 'rgba(59,130,246,0.35)' : 'rgba(217,119,6,0.35)'}`
+                          }}
+                        >
+                          <HiCheck /> Accept
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── UPCOMING ACCEPTED SCHEDULED SERVICES WIDGET ── */}
       <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
@@ -1150,6 +1330,109 @@ export default function WorkerHome() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Stats Cockpit */}
+      <div className="worker-stats" style={{ marginBottom: '28px' }}>
+        {STATS.map(({ Icon, val, label, color }) => (
+          <div key={label} className="ws-card" style={{ padding: '16px', borderRadius: '12px', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="ws-icon-wrap" style={{ background: color + '12', color, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+              <Icon style={{ width: '18px', height: '18px' }} />
+            </div>
+            <strong style={{ fontSize: '18px', fontWeight: '800', color: '#1a1a1a' }}>{val}</strong>
+            <span style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── LOCATION & DISPATCH SETTINGS CARD ── */}
+      <div className="worker-section" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+          <HiMap style={{ width: '24px', height: '24px', color: 'var(--primary)' }} />
+          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Location & Dispatch Settings</h2>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '480px', margin: '0 auto' }}>
+          {/* GPS updates */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '13.5px', color: '#334155', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ marginBottom: '8px' }}>
+                📍 <strong>Operational City:</strong>{' '}
+                {isEditingCity ? (
+                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <input
+                      placeholder="City (e.g. Hyderabad)"
+                      value={cityInput}
+                      onChange={e => setCityInput(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
+                    />
+                    <input
+                      placeholder="State (e.g. Telangana)"
+                      value={stateInput}
+                      onChange={e => setStateInput(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await updateWorkerProfile(user.id, { city: cityInput.trim(), state: stateInput.trim() });
+                        setIsEditingCity(false);
+                      }}
+                      style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCityInput(user.city || '');
+                        setStateInput(user.state || '');
+                        setIsEditingCity(false);
+                      }}
+                      style={{ background: '#cbd5e1', color: '#475569', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span>{user.city || 'Not set'}, {user.state || 'Not set'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCity(true)}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', marginLeft: '8px', textDecoration: 'underline', padding: 0 }}
+                    >
+                      ✏️ Edit City
+                    </button>
+                  </>
+                )}
+              </div>
+              <div style={{ marginBottom: '8px', fontSize: '12px', color: '#64748b' }}>
+                📍 <strong>Last Coords:</strong> {workerCoords.lat.toFixed(6)}, {workerCoords.lng.toFixed(6)}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                🕒 <strong>Last Synced:</strong> {new Date().toLocaleTimeString()}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={handleFetchGpsLocation}
+                style={{
+                  background: 'var(--primary)', color: '#fff', border: 'none',
+                  padding: '12px 16px', borderRadius: '10px', fontSize: '13.5px',
+                  fontWeight: '700', cursor: 'pointer', flex: 1, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                🔄 Refresh GPS Location
+              </button>
+            </div>
+            
+            {locMessage && <div style={{ fontSize: '12.5px', color: '#10b981', fontWeight: '600', marginTop: '6px', textAlign: 'center' }}>{locMessage}</div>}
+          </div>
+        </div>
       </div>
 
       {completeSuccess && (
@@ -1959,398 +2242,7 @@ export default function WorkerHome() {
         </div>
       )}
 
-      {/* ── LOCATION & DISPATCH SETTINGS CARD ── */}
-      <div className="worker-section" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-          <HiMap style={{ width: '24px', height: '24px', color: 'var(--primary)' }} />
-          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Location & Dispatch Settings</h2>
-        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '480px', margin: '0 auto' }}>
-          {/* GPS updates */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ fontSize: '13.5px', color: '#334155', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <div style={{ marginBottom: '8px' }}>
-                📍 <strong>Operational City:</strong>{' '}
-                {isEditingCity ? (
-                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
-                    <input
-                      placeholder="City (e.g. Hyderabad)"
-                      value={cityInput}
-                      onChange={e => setCityInput(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
-                    />
-                    <input
-                      placeholder="State (e.g. Telangana)"
-                      value={stateInput}
-                      onChange={e => setStateInput(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await updateWorkerProfile(user.id, { city: cityInput.trim(), state: stateInput.trim() });
-                        setIsEditingCity(false);
-                      }}
-                      style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCityInput(user.city || '');
-                        setStateInput(user.state || '');
-                        setIsEditingCity(false);
-                      }}
-                      style={{ background: '#cbd5e1', color: '#475569', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <span>{user.city || 'Not set'}, {user.state || 'Not set'}</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingCity(true)}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', marginLeft: '8px', textDecoration: 'underline', padding: 0 }}
-                    >
-                      ✏️ Edit City
-                    </button>
-                  </>
-                )}
-              </div>
-              <div style={{ marginBottom: '8px', fontSize: '12px', color: '#64748b' }}>
-                📍 <strong>Last Coords:</strong> {workerCoords.lat.toFixed(6)}, {workerCoords.lng.toFixed(6)}
-              </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                🕒 <strong>Last Synced:</strong> {new Date().toLocaleTimeString()}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button
-                type="button"
-                onClick={handleFetchGpsLocation}
-                style={{
-                  background: 'var(--primary)', color: '#fff', border: 'none',
-                  padding: '12px 16px', borderRadius: '10px', fontSize: '13.5px',
-                  fontWeight: '700', cursor: 'pointer', flex: 1, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', gap: '6px'
-                }}
-              >
-                🔄 Refresh GPS Location
-              </button>
-            </div>
-            
-            {locMessage && <div style={{ fontSize: '12.5px', color: '#10b981', fontWeight: '600', marginTop: '6px', textAlign: 'center' }}>{locMessage}</div>}
-          </div>
-        </div>
-      </div>
-
-      {/* ── PENDING DISPATCHED REQUESTS POOL (RAPIDO-STYLE) ── */}
-      {!activeJob && (
-        <div className="worker-section" style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h2>Pending Dispatch Orders ({pendingRequests.length})</h2>
-            <span style={{ fontSize: '11px', color: '#888', background: '#f3f4f6', padding: '2px 8px', borderRadius: '10px' }}>
-              Matches your operational category
-            </span>
-          </div>
-
-          {!user.available ? (
-            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
-              <span style={{ fontSize: '32px' }}>💤</span>
-              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
-                You are currently <strong>Offline</strong>. Set duty status to <strong>Online</strong> at the top to display and receive incoming booking requests.
-              </p>
-            </div>
-          ) : !isSubscribed ? (
-            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '32px' }}>🔒</span>
-              <p style={{ margin: '8px 0 0', color: '#dc2626', fontSize: '14px', fontWeight: '700' }}>
-                Your activation plan has expired. Please renew your subscription to start receiving new service requests and continue growing your business with our platform.
-              </p>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <Link to="/worker/subscription" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Renew Subscription</Link>
-                <Link to="/worker/subscription" style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>View Plans</Link>
-              </div>
-            </div>
-          ) : pendingRequests.length === 0 ? (
-            <div className="no-active-job" style={{ padding: '30px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1.5px solid #eee' }}>
-              <span style={{ fontSize: '32px' }}>🛰️</span>
-              <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
-                Listening for dispatch requests... New jobs within your radius will appear here instantly.
-              </p>
-            </div>
-          ) : (
-            <div className="txn-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {pendingRequests.map(req => {
-                const distanceVal = calculateDistance(workerCoords.lat, workerCoords.lng, req.booking?.lat, req.booking?.lng);
-                const formattedDistance = distanceVal !== null ? `${distanceVal.toFixed(1)} km` : '3.2 km';
-                const formattedTravel = distanceVal !== null ? `${(distanceVal * 1.3).toFixed(1)} km` : '4.1 km';
-                const bookingTimeStr = req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-                const isInstant = req.bookingType === 'instant';
-
-                return (
-                  <div key={req.id} style={{
-                    background: '#fff',
-                    borderRadius: '16px',
-                    boxShadow: isInstant ? '0 4px 20px rgba(59,130,246,0.15)' : '0 4px 20px rgba(245,158,11,0.15)',
-                    border: `2px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                  }}>
-
-                    {/* ── COLOUR BANNER HEADER ── */}
-                    <div style={{
-                      background: isInstant
-                        ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)'
-                        : 'linear-gradient(135deg, #92400e 0%, #d97706 100%)',
-                      padding: '12px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '8px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
-                          {isInstant ? '⚡' : '📅'}
-                        </div>
-                        <div>
-                          <div style={{ color: '#fff', fontWeight: '900', fontSize: '13.5px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                            {isInstant ? 'Instant Service Order' : 'Scheduled Service Order'}
-                          </div>
-                          <div style={{ color: 'rgba(255,255,255,0.88)', fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>
-                            {isInstant
-                              ? '⚡ Customer needs service RIGHT NOW — Act fast!'
-                              : `📅 Planned for: ${req.booking?.date || 'Date TBD'}${req.booking?.timeSlot ? ' at ' + req.booking.timeSlot : ' — time TBD'}`
-                            }
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ color: '#fff', fontWeight: '900', fontSize: '22px', lineHeight: 1 }}>₹{req.booking?.total?.toLocaleString()}</div>
-                        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '10.5px', fontWeight: '700', marginTop: '2px' }}>
-                          {req.booking?.duration} {req.vehicle?.unit === 'hr' ? 'hrs' : 'trips'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── BODY ── */}
-                    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-
-                      {/* Service name row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '20px' }}>🛠️</span>
-                        <div>
-                          <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a' }}>{req.vehicle?.name}</div>
-                          {req.vehicle?.categoryLabel && (
-                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{req.vehicle.categoryLabel}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Type callout box */}
-                      {isInstant ? (
-                        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '18px' }}>⚡</span>
-                          <div>
-                            <div style={{ fontSize: '12px', fontWeight: '900', color: '#1d4ed8' }}>INSTANT — Report immediately</div>
-                            <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>Once accepted, navigate and reach the customer right away</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ fontSize: '12px', fontWeight: '900', color: '#92400e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>📅</span> SCHEDULED — Planned Booking
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>📆 Service Date:</span>
-                              <strong style={{ fontSize: '13px', color: '#92400e' }}>{req.booking?.date || 'TBD'}</strong>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '700' }}>⏰ Service Start Time:</span>
-                              {req.booking?.timeSlot
-                                ? <strong style={{ fontSize: '13px', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px' }}>{req.booking.timeSlot}</strong>
-                                : <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '700' }}>⚠️ Confirm with customer</span>
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Info pills */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
-                          📍 {formattedDistance} away
-                        </span>
-                        <span style={{ background: '#f1f5f9', color: '#334155', fontSize: '11.5px', fontWeight: '700', padding: '4px 10px', borderRadius: '20px' }}>
-                          🕐 Booked at {bookingTimeStr}
-                        </span>
-                      </div>
-
-                      {/* Address */}
-                      {req.booking?.location && (
-                        <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '8px 12px', fontSize: '12.5px', color: '#475569', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                          <span style={{ marginTop: '1px', flexShrink: 0 }}>📍</span>
-                          <span style={{ fontWeight: '600', lineHeight: 1.4 }}>{req.booking.location}</span>
-                        </div>
-                      )}
-
-                      {/* Booking Notes */}
-                      {req.booking?.notes && (
-                        <div style={{ background: '#fff9f0', border: '1px solid #ffe0b2', padding: '8px 12px', borderRadius: '10px' }}>
-                          <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>📋 Customer Notes</span>
-                          <div style={{ fontSize: '12px', color: '#78350f', fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{req.booking.notes}</div>
-                        </div>
-                      )}
-
-                      {/* Custom Fields */}
-                      {req.vehicle?.custom_fields && req.vehicle.custom_fields.length > 0 && (
-                        <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Requirements</span>
-                          {req.vehicle.custom_fields.map(f => {
-                            const val = req.customAnswers?.[f.id];
-                            if (val && val.startsWith('data:image/')) {
-                              return (
-                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
-                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                  <img src={val} alt="Spec" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #ddd' }} />
-                                </div>
-                              );
-                            } else if (val && val.startsWith('data:application/pdf')) {
-                              return (
-                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
-                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                  <span style={{ color: 'var(--primary)', fontWeight: '700' }}>📁 PDF Attached</span>
-                                </div>
-                              );
-                            } else {
-                              return (
-                                <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
-                                  <span style={{ color: '#475569', fontWeight: '600' }}>{f.name}:</span>
-                                  <strong style={{ color: '#0f172a' }}>{val || '—'}</strong>
-                                </div>
-                              );
-                            }
-                          })}
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="popup-actions-row" style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
-                        <button
-                          onClick={() => handleRejectRequest(req.id)}
-                          style={{ flex: 1, border: '1.5px solid #fca5a5', color: '#dc2626', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
-                        >
-                          <HiX /> Reject
-                        </button>
-                        <button
-                          onClick={() => setSelectedDetailsRequest(req)}
-                          style={{ flex: 1.5, border: `1.5px solid ${isInstant ? '#3b82f6' : '#f59e0b'}`, color: isInstant ? '#1d4ed8' : '#92400e', background: '#fff', padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px' }}
-                        >
-                          🔍 View Details
-                        </button>
-                        <button
-                          onClick={() => handleAcceptRequest(req.id)}
-                          disabled={!!activeJob}
-                          style={{
-                            flex: 1.5,
-                            background: !!activeJob ? '#cbd5e1' : isInstant ? 'linear-gradient(135deg,#1d4ed8,#3b82f6)' : 'linear-gradient(135deg,#92400e,#d97706)',
-                            color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: '800', fontSize: '12px',
-                            cursor: !!activeJob ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4.5px',
-                            boxShadow: !!activeJob ? 'none' : `0 4px 12px ${isInstant ? 'rgba(59,130,246,0.35)' : 'rgba(217,119,6,0.35)'}`
-                          }}
-                        >
-                          <HiCheck /> Accept
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── AVAILABILITY & DUTY SETTINGS ── */}
-      <div className="worker-section" style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-        <h2>Duty & Schedule Management</h2>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '14px' }}>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f9f9f9', paddingBottom: '12px' }}>
-            <div>
-              <strong style={{ fontSize: '14px', color: '#333', display: 'block' }}>Vacation Mode</strong>
-              <span style={{ fontSize: '12px', color: '#888' }}>Temporarily pause duty listings</span>
-            </div>
-            <button
-              className={`toggle-btn ${vacation ? 'on' : 'off'}`}
-              onClick={handleToggleVacation}
-              style={{ background: vacation ? '#ef4444' : '#ccc' }}
-            >
-              {vacation ? 'ON' : 'OFF'}
-            </button>
-          </div>
-
-
-
-          {/* Block Dates */}
-          <div>
-            <strong style={{ fontSize: '14px', color: '#333', display: 'block', marginBottom: '8px' }}>Block Specific Dates</strong>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-              <input
-                type="date"
-                value={blockDate}
-                onChange={e => setBlockDate(e.target.value)}
-                style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px' }}
-              />
-              <button
-                type="button"
-                onClick={handleAddBlockedDate}
-                style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
-              >
-                Block Date
-              </button>
-            </div>
-            {blockedDates.length > 0 && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {blockedDates.map(d => (
-                  <span
-                    key={d}
-                    style={{
-                      background: '#f3f4f6',
-                      border: '1px solid #e5e5e5',
-                      padding: '4px 10px',
-                      borderRadius: '16px',
-                      fontSize: '11px',
-                      color: '#4b5563',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <span>{d}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveBlockedDate(d)}
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, color: '#dc2626', fontWeight: '700' }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-      </div>
 
       {showCancelModal && (
         <div style={{
