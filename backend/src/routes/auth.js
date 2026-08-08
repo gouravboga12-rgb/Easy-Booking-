@@ -324,10 +324,13 @@ router.post('/google', async (req, res) => {
       if (user.blocked || user.disabled) {
         return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
       }
-      // Ensure google_id is saved for existing user
       if (!user.google_id) {
         await pool.query('UPDATE users SET google_id = ?, photo = COALESCE(photo, ?) WHERE id = ?', [googleId, picture || null, user.id]);
         user.google_id = googleId;
+      }
+      // Block workers/admins from using Google login
+      if (user.role !== 'customer') {
+        return res.status(403).json({ message: 'Google login is only available for customers. Please use email & password.' });
       }
     } else {
       // New user — create account automatically
