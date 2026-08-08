@@ -62,7 +62,13 @@ export default function Cart() {
                 </div>
               </div>
               <div className="ci-price">
-                <div className="ci-rate">₹{(item.vehicle.rate * item.booking.duration).toLocaleString()}</div>
+                <div className="ci-rate">
+                  {item.vehicle?.show_price !== false ? (
+                    `₹${(item.vehicle.rate * item.booking.duration).toLocaleString()}`
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '800' }}>Price on Completion</span>
+                  )}
+                </div>
                 <button className="ci-remove" onClick={() => removeFromCart(item.cartId)}>
                   <HiTrash /> Remove
                 </button>

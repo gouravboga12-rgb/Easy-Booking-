@@ -23,6 +23,7 @@ const formatDbOrder = (dbOrder, services) => {
   const vehicle = {
     ...baseVehicle,
     category,
+    show_price: baseVehicle.show_price !== undefined ? baseVehicle.show_price : true,
     custom_fields: dbCustomFields || baseVehicle.custom_fields || []
   };
   const customer = { 
@@ -572,7 +573,7 @@ export const useStore = create((set, get) => ({
     });
   },
 
-  advanceStage: async (orderId, paymentMode) => {
+  advanceStage: async (orderId, paymentMode, customAmount) => {
     const order = get().orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -589,6 +590,9 @@ export const useStore = create((set, get) => ({
       }
       if (nextStatus === 'completed' && paymentMode) {
         body.paymentMode = paymentMode;
+      }
+      if (nextStatus === 'completed' && customAmount) {
+        body.customAmount = customAmount;
       }
 
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {

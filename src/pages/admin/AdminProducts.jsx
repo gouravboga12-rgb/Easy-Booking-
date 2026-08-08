@@ -84,6 +84,7 @@ export default function AdminProducts() {
       unit: 'day',
       image: '',
       available: true,
+      show_price: true,
     });
     setCustomFields([]);
     setNewFieldName('');
@@ -107,6 +108,7 @@ export default function AdminProducts() {
       unit: v.unit,
       image: v.image || '',
       available: v.available !== false,
+      show_price: v.show_price !== false,
     });
     setCustomFields(v.custom_fields || []);
     setNewFieldName('');
@@ -198,7 +200,8 @@ export default function AdminProducts() {
       custom_fields: finalCustomFields,
       pricing_type: pricingType,
       pricing_rules: pricingRules,
-      available: form.available !== false
+      available: form.available !== false,
+      show_price: form.show_price !== false,
     };
 
     if (editingId) {
@@ -348,6 +351,35 @@ export default function AdminProducts() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Pricing Display ON / OFF Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: form.show_price ? '#f0fdf4' : '#fff1f2', border: `1.5px solid ${form.show_price ? '#bbf7d0' : '#fecdd3'}`, padding: '12px 14px', borderRadius: '10px', margin: '4px 0' }}>
+                <div>
+                  <strong style={{ fontSize: '13px', color: form.show_price ? '#166534' : '#991b1b', display: 'block' }}>
+                    {form.show_price ? 'Fixed Pricing Enabled' : 'Pricing Turned OFF (Custom Quote / Price on Completion)'}
+                  </strong>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    {form.show_price ? 'Prices will be displayed to customers on app & website.' : 'Prices are hidden from customers. Worker enters final payment upon completion.'}
+                  </span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setForm(p => ({ ...p, show_price: !p.show_price }))}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    background: form.show_price ? '#22c55e' : '#f43f5e',
+                    color: '#fff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  {form.show_price ? 'ON (Visible)' : 'OFF (Turned Off)'}
+                </button>
               </div>
 
               {pricingType === 'direct' && (

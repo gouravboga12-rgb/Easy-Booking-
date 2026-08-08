@@ -71,6 +71,7 @@ export default function WorkerHome() {
   const [messageSentStatus, setMessageSentStatus] = useState('');
   const [currentLocInput, setCurrentLocInput] = useState('');
   const [locMessage, setLocMessage] = useState('');
+  const [customAmountInput, setCustomAmountInput] = useState('');
 
   // Manual city/state editing states
   const [isEditingCity, setIsEditingCity] = useState(false);
@@ -537,10 +538,15 @@ export default function WorkerHome() {
       );
     }
 
+    let lastLocUpdate = 0;
     const handleSuccess = (position) => {
       const { latitude, longitude } = position.coords;
-      setWorkerCoords({ lat: latitude, lng: longitude });
-      updateWorkerLocation(latitude, longitude);
+      const now = Date.now();
+      if (now - lastLocUpdate > 8000) {
+        lastLocUpdate = now;
+        setWorkerCoords({ lat: latitude, lng: longitude });
+        updateWorkerLocation(latitude, longitude);
+      }
     };
 
     const handleError = (err) => {
@@ -826,17 +832,29 @@ export default function WorkerHome() {
   const handleCompleteJob = () => {
     if (!activeJob) return;
     
-    // 1. Credit earnings (amount is total price)
-    const amount = activeJob.booking.total || 0;
-    addWorkerEarning(user.id, amount, `Completed Project #${activeJob.id} - Paid via ${paymentMode.toUpperCase()}`);
+    const isCustomPrice = activeJob.vehicle?.show_price === false || !activeJob.booking?.total;
+    let finalAmount = activeJob.booking?.total || 0;
+
+    if (isCustomPrice) {
+      const entered = Number(customAmountInput);
+      if (!customAmountInput || isNaN(entered) || entered <= 0) {
+        alert("Please enter the total payment amount charged to customer for this service.");
+        return;
+      }
+      finalAmount = entered;
+    }
+
+    // 1. Credit earnings (no GST added)
+    addWorkerEarning(user.id, finalAmount, `Completed Project #${activeJob.id} - Paid via ${paymentMode.toUpperCase()}`);
     
-    // 2. Advance stage to completed, passing payment mode
-    advanceStage(activeJob.id, paymentMode);
+    // 2. Advance stage to completed, passing payment mode and custom amount
+    advanceStage(activeJob.id, paymentMode, finalAmount);
     setCompleteSuccess(true);
     setSimulatedFiles([]);
     setOtpVerified(false);
     setOtpInput('');
     setPaymentMode(null);
+    setCustomAmountInput('');
     setTimeout(() => setCompleteSuccess(false), 5000);
   };
 
@@ -1711,7 +1729,36 @@ export default function WorkerHome() {
 
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>💵 Record Payment Received:</div>
+                    {(activeJob.vehicle?.show_price === false || !activeJob.booking?.total) && (
+                      <div style={{ marginBottom: '12px', background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '12px', borderRadius: '8px' }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '800', color: '#92400e' }}>
+                          💰 Enter Total Payment Amount (₹) — Custom Quote / Work Completed
+                          <span style={{ fontSize: '11px', color: '#b45309', fontWeight: '600' }}>
+                            Service pricing is turned off. Enter the exact total amount charged to customer (No GST added).
+                          </span>
+                          <input
+                            type="text"
+                            value={customAmountInput}
+                            onChange={e => setCustomAmountInput(e.target.value.replace(/\D/g, ''))}
+                            placeholder="e.g. 1500"
+                            style={{
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #f59e0b',
+                              fontSize: '16px',
+                              fontWeight: '800',
+                              color: '#0f172a',
+                              outline: 'none',
+                              width: '100%',
+                              boxSizing: 'border-box'
+                            }}
+                            required
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>💵 Record Payment Mode Received:</div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button
                         type="button"
@@ -1827,10 +1874,18 @@ export default function WorkerHome() {
             <button
               className="aj-advance"
               onClick={handleCompleteJob}
-              disabled={!otpVerified || !paymentMode}
+              disabled={
+                !otpVerified || 
+                !paymentMode || 
+                ((activeJob.vehicle?.show_price === false || !activeJob.booking?.total) && (!customAmountInput || Number(customAmountInput) <= 0))
+              }
               style={{
                 width: '100%',
-                background: (otpVerified && paymentMode) ? '#10b981' : '#ccc',
+                background: (
+                  otpVerified && 
+                  paymentMode && 
+                  ((activeJob.vehicle?.show_price !== false && activeJob.booking?.total > 0) || (customAmountInput && Number(customAmountInput) > 0))
+                ) ? '#10b981' : '#ccc',
                 color: '#fff',
                 padding: '14px',
                 borderRadius: '10px',
@@ -1841,10 +1896,14 @@ export default function WorkerHome() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                cursor: (otpVerified && paymentMode) ? 'pointer' : 'not-allowed'
+                cursor: (
+                  otpVerified && 
+                  paymentMode && 
+                  ((activeJob.vehicle?.show_price !== false && activeJob.booking?.total > 0) || (customAmountInput && Number(customAmountInput) > 0))
+                ) ? 'pointer' : 'not-allowed'
               }}
             >
-              <span>Complete Service Job</span>
+              <span>Complete Service Job & Generate Invoice</span>
               <HiCheckCircle style={{ width: 18, height: 18 }} />
             </button>
           )}

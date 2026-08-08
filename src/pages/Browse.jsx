@@ -136,8 +136,14 @@ export default function Browse() {
               </div>
               <div className="vc-footer">
                 <div className="vc-rate">
-                  <strong>₹{v.rate.toLocaleString()}</strong>
-                  <span>/{v.unit}</span>
+                  {v.show_price !== false ? (
+                    <>
+                      <strong>₹{v.rate.toLocaleString()}</strong>
+                      <span>/{v.unit}</span>
+                    </>
+                  ) : (
+                    <strong style={{ fontSize: '13px', color: '#d97706', fontWeight: '800' }}>Price on Completion</strong>
+                  )}
                 </div>
                 <div className="vc-actions">
                   {v.available !== false ? (

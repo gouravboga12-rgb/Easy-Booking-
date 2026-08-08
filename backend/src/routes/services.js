@@ -19,20 +19,20 @@ const ensureImageLongText = async () => {
 };
 ensureImageLongText().catch(err => console.error('ensureImageLongText error:', err));
 
-// Ensure services.available column exists
-const ensureAvailableColumn = async () => {
+// Ensure services.show_price column exists
+const ensureShowPriceColumn = async () => {
   try {
     const [cols] = await pool.query('SHOW COLUMNS FROM services');
-    const hasAvail = cols.some(c => c.Field === 'available');
-    if (!hasAvail) {
-      await pool.query('ALTER TABLE services ADD COLUMN available TINYINT(1) DEFAULT 1');
-      console.log("Column 'available' added to services table.");
+    const hasShowPrice = cols.some(c => c.Field === 'show_price');
+    if (!hasShowPrice) {
+      await pool.query('ALTER TABLE services ADD COLUMN show_price TINYINT(1) DEFAULT 1');
+      console.log("Column 'show_price' added to services table.");
     }
   } catch (err) {
-    console.warn("Adding services available column failed/skipped:", err.message);
+    console.warn("Adding services show_price column failed/skipped:", err.message);
   }
 };
-ensureAvailableColumn().catch(err => console.error('ensureAvailableColumn error:', err));
+ensureShowPriceColumn().catch(err => console.error('ensureShowPriceColumn error:', err));
 
 // GET /api/services — Public: fetch all services
 router.get('/', async (req, res) => {
@@ -57,6 +57,7 @@ router.get('/', async (req, res) => {
       }
       r.pricing_type = r.pricing_type || 'direct';
       r.pricing_rules = r.pricing_rules || null;
+      r.show_price = r.show_price !== undefined ? Boolean(r.show_price !== 0) : true;
     });
     res.json(rows);
   } catch (err) {
@@ -71,7 +72,7 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ message: 'Forbidden. Admin access required' });
   }
 
-  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available } = req.body;
+  const { id, name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, show_price } = req.body;
   if (!id || !name || !category || !rate || !unit) {
     return res.status(400).json({ message: 'Missing required fields: id, name, category, rate, unit' });
   }
@@ -81,11 +82,12 @@ router.post('/', authenticateToken, async (req, res) => {
     const pricingRulesJson = pricing_rules ? JSON.stringify(pricing_rules) : null;
     const finalPricingType = pricing_type || 'direct';
     const finalAvailable = available !== undefined ? (available ? 1 : 0) : 1;
+    const finalShowPrice = show_price !== undefined ? (show_price ? 1 : 0) : 1;
 
     await pool.query(
-      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
-      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable]
+      `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, show_price, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
+      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, finalShowPrice]
     );
     const [created] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = created[0];
@@ -95,6 +97,7 @@ router.post('/', authenticateToken, async (req, res) => {
     if (typeof service.pricing_rules === 'string') {
       try { service.pricing_rules = JSON.parse(service.pricing_rules); } catch (e) { service.pricing_rules = null; }
     }
+    service.show_price = service.show_price !== undefined ? Boolean(service.show_price !== 0) : true;
     res.status(201).json(service);
   } catch (err) {
     console.error('Create service error:', err);
@@ -109,7 +112,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available } = req.body;
+  const { name, desc, category, categoryLabel, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, show_price } = req.body;
 
   try {
     const [existing] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
@@ -127,6 +130,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const finalUnit = unit !== undefined ? unit : currentService.unit;
     const finalImage = image !== undefined ? image : currentService.image;
     const finalAvailable = available !== undefined ? (available ? 1 : 0) : (currentService.available !== 0 ? 1 : 0);
+    const finalShowPrice = show_price !== undefined ? (show_price ? 1 : 0) : (currentService.show_price !== 0 ? 1 : 0);
 
     let finalCustomFields = custom_fields !== undefined ? custom_fields : currentService.custom_fields;
     if (typeof finalCustomFields === 'string') {
@@ -161,9 +165,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
         custom_fields = ?,
         pricing_type = ?,
         pricing_rules = ?,
-        available = ?
+        available = ?,
+        show_price = ?
        WHERE id = ?`,
-      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, id]
+      [finalName, finalDesc, finalCategory, finalCategoryLabel, finalRate, finalUnit, finalImage, customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, finalShowPrice, id]
     );
 
     const [updated] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
@@ -174,6 +179,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (typeof service.pricing_rules === 'string') {
       try { service.pricing_rules = JSON.parse(service.pricing_rules); } catch (e) { service.pricing_rules = null; }
     }
+    service.show_price = service.show_price !== undefined ? Boolean(service.show_price !== 0) : true;
     res.json(service);
   } catch (err) {
     console.error('Update service error:', err);

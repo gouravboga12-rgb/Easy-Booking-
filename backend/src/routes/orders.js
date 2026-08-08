@@ -509,9 +509,13 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       }
 
       const photos = req.body.completionPhotos ? JSON.stringify(req.body.completionPhotos) : null;
+      let finalAmount = order.total_amount;
+      if (req.body.customAmount && Number(req.body.customAmount) > 0) {
+        finalAmount = Number(req.body.customAmount);
+      }
       await pool.query(
-        'UPDATE bookings SET status = ?, completion_photos = ?, payment_mode = ?, payment_status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['completed', photos, paymentMode, 'paid', id]
+        'UPDATE bookings SET status = ?, completion_photos = ?, payment_mode = ?, payment_status = ?, total_amount = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['completed', photos, paymentMode, 'paid', finalAmount, id]
       );
       // Set worker available status back to 1
       await pool.query('UPDATE users SET available = 1 WHERE id = ?', [order.worker_id]);

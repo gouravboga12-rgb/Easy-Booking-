@@ -445,8 +445,14 @@ export default function Home() {
                       <div className="hs-desc">{v.desc}</div>
                       <div className="hs-footer">
                         <div>
-                          <span className="hs-rate">₹{v.rate.toLocaleString()}</span>
-                          <span className="hs-unit">/{v.unit}</span>
+                          {v.show_price !== false ? (
+                            <>
+                              <span className="hs-rate">₹{v.rate.toLocaleString()}</span>
+                              <span className="hs-unit">/{v.unit}</span>
+                            </>
+                          ) : (
+                            <span className="hs-rate" style={{ fontSize: '12px', color: '#d97706', fontWeight: '800' }}>Price on Completion</span>
+                          )}
                         </div>
                         <button className="hs-book" style={{ background: color }} onClick={e => { e.stopPropagation(); navigate(`/book/${v.id}`); }}>Book</button>
                       </div>

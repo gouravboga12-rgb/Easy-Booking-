@@ -883,7 +883,11 @@ export default function BookingFlow() {
 
               <div className="payment-info">
                 <h3><HiCurrencyRupee style={{ width: 16, height: 16, verticalAlign: 'middle' }} /> Payment Summary</h3>
-                {vehicle.pricing_type === 'dynamic' ? (
+                {vehicle.show_price === false ? (
+                  <div style={{ padding: '10px 0', color: '#d97706', fontSize: '13px', fontWeight: '700' }}>
+                    💡 Price on Completion: Total payment will be determined and requested by the service provider upon completing the work.
+                  </div>
+                ) : vehicle.pricing_type === 'dynamic' ? (
                   selectedTier ? (
                     <>
                       <div className="pay-row">
@@ -906,7 +910,10 @@ export default function BookingFlow() {
                     )}
                   </>
                 )}
-                <div className="pay-row total"><span>Total</span><span>₹{total.toLocaleString()}</span></div>
+                <div className="pay-row total">
+                  <span>Total</span>
+                  <span>{vehicle.show_price === false ? 'Price on Completion' : `₹${total.toLocaleString()}`}</span>
+                </div>
               </div>
 
               <div className="confirm-actions">
@@ -938,7 +945,9 @@ export default function BookingFlow() {
             <h3>{vehicle.name}</h3>
             <p>{vehicle.desc}</p>
             <div className="vs-rate">
-              {vehicle.pricing_type === 'dynamic' ? (
+              {vehicle.show_price === false ? (
+                <span style={{ color: '#d97706', fontWeight: '800' }}>Price on Completion</span>
+              ) : vehicle.pricing_type === 'dynamic' ? (
                 vehicle.pricing_rules?.type === 'person' ? (
                   <>Tiered <span>(Workers)</span></>
                 ) : vehicle.pricing_rules?.type === 'tier' ? (
