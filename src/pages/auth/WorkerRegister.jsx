@@ -599,13 +599,13 @@ export default function WorkerRegister() {
                     >
                       {verificationForm.profilePhoto ? 'Change Photo' : 'Upload Profile Photo'}
                     </label>
-                    <span style={{ display: 'block', fontSize: '11px', color: '#888', marginTop: '4px' }}>PNG, JPG or WEBP formats</span>
+                    <span style={{ display: 'block', fontSize: '11px', color: '#666', marginTop: '4px', fontWeight: 500 }}>PNG, JPG or WEBP (Max 2MB)</span>
                   </div>
                 </div>
               </label>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
-                <label>Aadhaar Card Copy (Upload Image/PDF)
+                <label>Aadhaar Card Copy (Upload Image/PDF, Max 2MB)
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <input
                       type="file"
@@ -638,7 +638,7 @@ export default function WorkerRegister() {
                   </div>
                 </label>
 
-                <label>PAN Card Copy (Upload Image/PDF)
+                <label>PAN Card Copy (Upload Image/PDF, Max 2MB)
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <input
                       type="file"
