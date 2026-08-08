@@ -146,6 +146,21 @@ function Layout() {
   }, [user]);
 
   const sendBrowserNotification = (title, body, url) => {
+    // 1. Send native notification to React Native WebView wrapper (Mobile APK)
+    if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'SHOW_NOTIFICATION',
+          title,
+          body,
+          extraData: { url }
+        }));
+      } catch (e) {
+        console.warn('postMessage error:', e);
+      }
+    }
+
+    // 2. Fallback to Web Notification API
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         const notif = new Notification(title, {

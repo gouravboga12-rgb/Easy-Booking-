@@ -12,12 +12,41 @@ import {
   Linking
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import * as Notifications from 'expo-notifications';
+
+// Set notification handler to present notification even when app is open or in background
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function App() {
   const webViewRef = useRef(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    async function requestNotifPermissions() {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          console.log('Notification permission status:', finalStatus);
+        }
+      } catch (err) {
+        console.warn('Error requesting notification permissions:', err);
+      }
+    }
+    requestNotifPermissions();
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -38,6 +67,25 @@ export default function App() {
     setLoading(true);
     if (webViewRef.current) {
       webViewRef.current.reload();
+    }
+  };
+
+  const handleMessage = async (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data && (data.type === 'SHOW_NOTIFICATION' || data.type === 'DEVICE_NOTIFICATION')) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: data.title || 'Parrow Skills Alert',
+            body: data.body || 'New order status update',
+            data: data.extraData || {},
+            sound: 'default',
+          },
+          trigger: null,
+        });
+      }
+    } catch (e) {
+      // Ignore non-JSON messages
     }
   };
 
@@ -86,6 +134,7 @@ export default function App() {
         allowUniversalAccessFromFileURLs={true}
         mixedContentMode="always"
         originWhitelist={['*']}
+        onMessage={handleMessage}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={(navState) => {
           setCanGoBack(navState.canGoBack);
