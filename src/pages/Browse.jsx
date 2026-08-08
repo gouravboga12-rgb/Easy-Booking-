@@ -136,7 +136,7 @@ export default function Browse() {
               </div>
               <div className="vc-footer">
                 <div className="vc-rate">
-                  {v.show_price !== false ? (
+                  {v.show_price !== false && v.show_price !== 0 && v.show_price !== '0' ? (
                     <>
                       <strong>₹{v.rate.toLocaleString()}</strong>
                       <span>/{v.unit}</span>

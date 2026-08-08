@@ -883,7 +883,7 @@ export default function BookingFlow() {
 
               <div className="payment-info">
                 <h3><HiCurrencyRupee style={{ width: 16, height: 16, verticalAlign: 'middle' }} /> Payment Summary</h3>
-                {vehicle.show_price === false ? (
+                {(vehicle.show_price === false || vehicle.show_price === 0 || vehicle.show_price === '0') ? (
                   <div style={{ padding: '10px 0', color: '#d97706', fontSize: '13px', fontWeight: '700' }}>
                     💡 Price on Completion: Total payment will be determined and requested by the service provider upon completing the work.
                   </div>
@@ -912,7 +912,7 @@ export default function BookingFlow() {
                 )}
                 <div className="pay-row total">
                   <span>Total</span>
-                  <span>{vehicle.show_price === false ? 'Price on Completion' : `₹${total.toLocaleString()}`}</span>
+                  <span>{(vehicle.show_price === false || vehicle.show_price === 0 || vehicle.show_price === '0') ? 'Price on Completion' : `₹${total.toLocaleString()}`}</span>
                 </div>
               </div>
 
@@ -945,7 +945,7 @@ export default function BookingFlow() {
             <h3>{vehicle.name}</h3>
             <p>{vehicle.desc}</p>
             <div className="vs-rate">
-              {vehicle.show_price === false ? (
+              {(vehicle.show_price === false || vehicle.show_price === 0 || vehicle.show_price === '0') ? (
                 <span style={{ color: '#d97706', fontWeight: '800' }}>Price on Completion</span>
               ) : vehicle.pricing_type === 'dynamic' ? (
                 vehicle.pricing_rules?.type === 'person' ? (

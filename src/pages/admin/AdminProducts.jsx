@@ -107,8 +107,8 @@ export default function AdminProducts() {
       rate: String(v.rate),
       unit: v.unit,
       image: v.image || '',
-      available: v.available !== false,
-      show_price: v.show_price !== false,
+      available: v.available !== false && v.available !== 0 && v.available !== '0',
+      show_price: v.show_price !== false && v.show_price !== 0 && v.show_price !== '0',
     });
     setCustomFields(v.custom_fields || []);
     setNewFieldName('');

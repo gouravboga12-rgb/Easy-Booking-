@@ -445,7 +445,7 @@ export default function Home() {
                       <div className="hs-desc">{v.desc}</div>
                       <div className="hs-footer">
                         <div>
-                          {v.show_price !== false ? (
+                          {v.show_price !== false && v.show_price !== 0 && v.show_price !== '0' ? (
                             <>
                               <span className="hs-rate">₹{v.rate.toLocaleString()}</span>
                               <span className="hs-unit">/{v.unit}</span>

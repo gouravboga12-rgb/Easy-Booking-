@@ -265,14 +265,15 @@ export const useStore = create((set, get) => ({
           name: s.name,
           desc: s.desc,
           category: s.category,
-          categoryLabel: s.category_label,
+          categoryLabel: s.category_label || s.categoryLabel,
           rate: parseFloat(s.rate),
           unit: s.unit,
           image: s.image,
           custom_fields: s.custom_fields ? (typeof s.custom_fields === 'string' ? JSON.parse(s.custom_fields) : s.custom_fields) : [],
-          pricing_type: s.pricing_type || 'direct',
-          pricing_rules: s.pricing_rules ? (typeof s.pricing_rules === 'string' ? JSON.parse(s.pricing_rules) : s.pricing_rules) : null,
-          available: s.available !== 0 && s.available !== false
+          pricing_type: s.pricing_type || s.pricingType || 'direct',
+          pricing_rules: s.pricing_rules ? (typeof s.pricing_rules === 'string' ? JSON.parse(s.pricing_rules) : s.pricing_rules) : (s.pricingRules || null),
+          available: s.available !== 0 && s.available !== false && s.available !== '0',
+          show_price: s.show_price !== 0 && s.show_price !== false && s.show_price !== '0'
         }));
         set({ services: normalized });
       }
@@ -296,14 +297,15 @@ export const useStore = create((set, get) => ({
           name: data.name, 
           desc: data.desc, 
           category: data.category, 
-          categoryLabel: data.category_label, 
+          categoryLabel: data.category_label || data.categoryLabel, 
           rate: parseFloat(data.rate), 
           unit: data.unit, 
           image: data.image,
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : [],
-          pricing_type: data.pricing_type || 'direct',
-          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null,
-          available: data.available !== 0 && data.available !== false
+          pricing_type: data.pricing_type || data.pricingType || 'direct',
+          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : (data.pricingRules || null),
+          available: data.available !== 0 && data.available !== false && data.available !== '0',
+          show_price: data.show_price !== 0 && data.show_price !== false && data.show_price !== '0'
         };
         set(s => ({ services: [...s.services, normalized] }));
         return true;
@@ -330,14 +332,15 @@ export const useStore = create((set, get) => ({
           name: data.name, 
           desc: data.desc, 
           category: data.category, 
-          categoryLabel: data.category_label, 
+          categoryLabel: data.category_label || data.categoryLabel, 
           rate: parseFloat(data.rate), 
           unit: data.unit, 
           image: data.image,
           custom_fields: data.custom_fields ? (typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields) : [],
-          pricing_type: data.pricing_type || 'direct',
-          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : null,
-          available: data.available !== 0 && data.available !== false
+          pricing_type: data.pricing_type || data.pricingType || 'direct',
+          pricing_rules: data.pricing_rules ? (typeof data.pricing_rules === 'string' ? JSON.parse(data.pricing_rules) : data.pricing_rules) : (data.pricingRules || null),
+          available: data.available !== 0 && data.available !== false && data.available !== '0',
+          show_price: data.show_price !== 0 && data.show_price !== false && data.show_price !== '0'
         };
         set(s => ({ services: s.services.map(v => v.id === id ? normalized : v) }));
         return true;

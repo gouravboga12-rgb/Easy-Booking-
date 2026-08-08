@@ -1729,7 +1729,7 @@ export default function WorkerHome() {
 
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
-                    {(activeJob.vehicle?.show_price === false || !activeJob.booking?.total) && (
+                    {(activeJob.vehicle?.show_price === false || activeJob.vehicle?.show_price === 0 || activeJob.vehicle?.show_price === '0' || !activeJob.booking?.total) && (
                       <div style={{ marginBottom: '12px', background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '12px', borderRadius: '8px' }}>
                         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '800', color: '#92400e' }}>
                           💰 Enter Total Payment Amount (₹) — Custom Quote / Work Completed
