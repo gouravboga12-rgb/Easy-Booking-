@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendInvoiceEmail } from '../utils/mailer.js';
+import { sendPushNotificationToUser } from '../utils/pushNotifications.js';
 
 const router = express.Router();
 
@@ -526,6 +527,31 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
     } else {
       // General status transition (active, arrived, completed, cancelled)
       await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
+    }
+
+    // Send Native Expo Push Notifications (Zomato/Swiggy style on lockscreen/background)
+    try {
+      const custId = order.customer_id;
+      const wrkId = order.worker_id || workerId;
+      const orderTag = `Booking #${id.slice(-6).toUpperCase()}`;
+
+      if (status === 'assigned') {
+        sendPushNotificationToUser(custId, `👷 Worker Accepted (${orderTag})`, `Your service booking has been accepted! Worker is assigned.`, { orderId: id });
+      } else if (status === 'en_route') {
+        sendPushNotificationToUser(custId, `🛵 Worker Started Journey (${orderTag})`, `Your worker is on the way to your location!`, { orderId: id });
+      } else if (status === 'arrived') {
+        sendPushNotificationToUser(custId, `📍 Worker Reached (${orderTag})`, `Worker has reached your location. Please share your OTP when ready.`, { orderId: id });
+      } else if (status === 'started' || status === 'active') {
+        sendPushNotificationToUser(custId, `⚡ Service Started (${orderTag})`, `Your service has started!`, { orderId: id });
+      } else if (status === 'completed') {
+        sendPushNotificationToUser(custId, `✅ Service Completed (${orderTag})`, `Your service is complete. Thank you for using Parrow Skills!`, { orderId: id });
+        if (wrkId) sendPushNotificationToUser(wrkId, `🎉 Payment Confirmed (${orderTag})`, `Order completed successfully. Payment added to your wallet!`, { orderId: id });
+      } else if (status === 'cancelled') {
+        sendPushNotificationToUser(custId, `❌ Booking Cancelled (${orderTag})`, `Your booking has been cancelled.`, { orderId: id });
+        if (wrkId) sendPushNotificationToUser(wrkId, `❌ Booking Cancelled (${orderTag})`, `Order #${id} was cancelled.`, { orderId: id });
+      }
+    } catch (pushErr) {
+      console.error('Push notification dispatch error:', pushErr);
     }
 
     // Trigger Invoice Email if status is completed

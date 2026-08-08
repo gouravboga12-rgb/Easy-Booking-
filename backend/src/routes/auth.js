@@ -77,6 +77,9 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     if (!columnNames.includes('target_locations')) {
       await pool.query('ALTER TABLE users ADD COLUMN target_locations JSON NULL');
     }
+    if (!columnNames.includes('expo_push_token')) {
+      await pool.query('ALTER TABLE users ADD COLUMN expo_push_token VARCHAR(255) NULL');
+    }
     if (!columnNames.includes('live_tracking')) {
       await pool.query('ALTER TABLE users ADD COLUMN live_tracking TINYINT(1) DEFAULT 1');
     }
@@ -931,6 +934,20 @@ router.put('/users/:userId/password', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Admin password reset error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Store / update Expo Push Token for device push notifications
+router.post('/expo-push-token', authenticateToken, async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (token) {
+      await pool.query('UPDATE users SET expo_push_token = ? WHERE id = ?', [token, req.user.id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Expo push token save error:', err);
+    res.status(500).json({ message: 'Server error saving token' });
   }
 });
 

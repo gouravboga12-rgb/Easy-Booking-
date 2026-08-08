@@ -50,7 +50,31 @@ export default function App() {
           const { status } = await Notifications.requestPermissionsAsync();
           finalStatus = status;
         }
-        console.log('Notification permission status:', finalStatus);
+
+        // Fetch Expo push token and send to WebView
+        try {
+          const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
+          });
+          const pushToken = tokenData.data;
+          if (pushToken && webViewRef.current) {
+            const sendTokenJS = `
+              try {
+                const authToken = localStorage.getItem('token');
+                if (authToken) {
+                  fetch('https://api.parrowskills.com/api/auth/expo-push-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                    body: JSON.stringify({ token: '${pushToken}' })
+                  });
+                }
+              } catch (e) {}
+            `;
+            webViewRef.current.injectJavaScript(sendTokenJS);
+          }
+        } catch (tokenErr) {
+          console.warn('Expo Push token fetch error:', tokenErr);
+        }
       } catch (err) {
         console.warn('Error setting up notifications:', err);
       }
@@ -85,18 +109,28 @@ export default function App() {
       const data = JSON.parse(event.nativeEvent.data);
       if (!data) return;
 
-      if (data.type === 'OPEN_GOOGLE_AUTH' && data.url) {
+      if (data.type === 'GET_PUSH_TOKEN') {
         try {
-          const result = await WebBrowser.openAuthSessionAsync(data.url, 'https://parrowskills.com/login');
-          if (result.type === 'success' && result.url && webViewRef.current) {
-            webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
+          const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
+          });
+          const pushToken = tokenData.data;
+          if (pushToken && webViewRef.current) {
+            const sendTokenJS = `
+              try {
+                const authToken = localStorage.getItem('token');
+                if (authToken) {
+                  fetch('https://api.parrowskills.com/api/auth/expo-push-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                    body: JSON.stringify({ token: '${pushToken}' })
+                  });
+                }
+              } catch (e) {}
+            `;
+            webViewRef.current.injectJavaScript(sendTokenJS);
           }
-        } catch (err) {
-          console.warn('WebBrowser auth error:', err);
-          if (webViewRef.current) {
-            webViewRef.current.injectJavaScript(`window.location.href = "${data.url}";`);
-          }
-        }
+        } catch (e) {}
       } else if (data.type === 'SHOW_NOTIFICATION' || data.type === 'DEVICE_NOTIFICATION') {
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -117,29 +151,31 @@ export default function App() {
     const { url } = request;
     if (!url) return true;
 
-    // Intercept Google OAuth requests to open in Chrome Custom Tabs
+    // Allow accounts.google.com to load directly within app WebView
     if (url.includes('accounts.google.com')) {
-      WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com/login').then(result => {
-        if (result.type === 'success' && result.url && webViewRef.current) {
-          webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
-        }
-      }).catch(err => {
-        console.warn('Google auth browser error:', err);
-      });
-      return false;
+      return true;
     }
 
-    // Intercept phone calls, WhatsApp messages, emails, SMS
-    if (
+    // Intercept phone calls, WhatsApp messages, emails, SMS, UPI & payment gateway intent links
+    const isExternalScheme = 
       url.startsWith('tel:') ||
       url.startsWith('mailto:') ||
       url.startsWith('whatsapp:') ||
       url.startsWith('sms:') ||
       url.startsWith('intent:') ||
+      url.startsWith('upi:') ||
+      url.startsWith('phonepe:') ||
+      url.startsWith('paytmmp:') ||
+      url.startsWith('gpay:') ||
+      url.startsWith('tez:') ||
+      url.startsWith('razorpay:') ||
+      url.startsWith('cred:') ||
+      url.startsWith('paytm:') ||
       url.includes('api.whatsapp.com') ||
-      url.includes('wa.me')
-    ) {
-      Linking.openURL(url).catch(err => console.warn('Could not open external URL:', err));
+      url.includes('wa.me');
+
+    if (isExternalScheme) {
+      Linking.openURL(url).catch(err => console.warn('Could not open external URL:', url, err));
       return false;
     }
     return true;
