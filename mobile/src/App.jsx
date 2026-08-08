@@ -161,6 +161,21 @@ export default function App() {
           },
           trigger: null,
         });
+      } else if (data.type === 'OPEN_GOOGLE_AUTH' && data.url) {
+        try {
+          const result = await WebBrowser.openAuthSessionAsync(
+            data.url,
+            'https://parrowskills.com/login'
+          );
+          if (result.type === 'success' && result.url && webViewRef.current) {
+            const redirectUrl = result.url;
+            webViewRef.current.injectJavaScript(`
+              window.location.href = "${redirectUrl}";
+            `);
+          }
+        } catch (authErr) {
+          console.warn('Google Auth Session Error:', authErr);
+        }
       }
     } catch (e) {
       // Ignore non-JSON messages
