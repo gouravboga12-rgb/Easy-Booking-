@@ -1,9 +1,24 @@
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { HiUser, HiBriefcase, HiUserAdd, HiIdentification, HiArrowRight } from 'react-icons/hi';
+import { useAuthStore } from '../../store/useAuthStore';
 import './Auth.css';
 
 export default function UnifiedLoginSelect() {
   const navigate = useNavigate();
+  const user = useAuthStore(s => s.user);
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'worker') {
+        navigate('/worker', { replace: true });
+      } else if (user.role === 'customer') {
+        navigate('/', { replace: true });
+      } else if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   return (
     <div className="auth-page mobile-unified-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>

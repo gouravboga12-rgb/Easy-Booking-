@@ -87,7 +87,9 @@ function AdminRouteWrapper() {
 
 function Layout() {
   const { pathname } = useLocation();
+  const isLoginSelect = pathname === '/login-select' || pathname === '/login_select' || pathname === '/login-type';
   const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
+  const hideHeaderFooter = isAdminOrWorker || isLoginSelect;
 
   const user = useAuthStore(s => s.user);
   const fetchWorkers = useAuthStore(s => s.fetchWorkers);
@@ -225,8 +227,8 @@ function Layout() {
         ))}
       </div>
 
-      {!isAdminOrWorker && <Navbar />}
-      <main style={{ paddingBottom: isAdminOrWorker ? '0' : '72px', paddingTop: isAdminOrWorker ? '0' : '68px' }}>
+      {!hideHeaderFooter && <Navbar />}
+      <main style={{ paddingBottom: hideHeaderFooter ? '0' : '72px', paddingTop: hideHeaderFooter ? '0' : '68px' }}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />
@@ -298,8 +300,8 @@ function Layout() {
           </Route>
         </Routes>
       </main>
-      {!isAdminOrWorker && <PopupAdModal />}
-      {!isAdminOrWorker && <BottomNav />}
+      {!hideHeaderFooter && <PopupAdModal />}
+      {!hideHeaderFooter && <BottomNav />}
     </>
   );
 }
