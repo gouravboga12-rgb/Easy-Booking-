@@ -79,84 +79,7 @@ export default function BookingFlow() {
   const [isMoving, setIsMoving] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
 
-  const mapContainerRef = useRef(null);
-  const leafletMapRef = useRef(null);
-  const leafletMarkerRef = useRef(null);
 
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    const initMap = () => {
-      if (!window.L) return;
-
-      if (!leafletMapRef.current) {
-        const map = window.L.map(mapContainerRef.current, {
-          center: [coords.lat, coords.lng],
-          zoom: 15,
-          zoomControl: false,
-          scrollWheelZoom: true,
-          touchZoom: true,
-          dragging: true
-        });
-
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const cyanIcon = window.L.divIcon({
-          className: 'leaflet-cyan-marker',
-          html: `
-            <div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
-              <svg width="34" height="42" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0Z" fill="#06b6d4"/>
-                <circle cx="18" cy="18" r="6" fill="#ffffff"/>
-              </svg>
-            </div>
-          `,
-          iconSize: [36, 44],
-          iconAnchor: [18, 44]
-        });
-
-        const marker = window.L.marker([coords.lat, coords.lng], {
-          icon: cyanIcon,
-          draggable: true
-        }).addTo(map);
-
-        marker.on('dragend', function() {
-          const pos = marker.getLatLng();
-          setCoords({ lat: pos.lat, lng: pos.lng });
-          reverseGeocode(pos.lat, pos.lng);
-        });
-
-        map.on('click', function(e) {
-          marker.setLatLng(e.latlng);
-          setCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
-          reverseGeocode(e.latlng.lat, e.latlng.lng);
-        });
-
-        leafletMapRef.current = map;
-        leafletMarkerRef.current = marker;
-      } else {
-        leafletMapRef.current.setView([coords.lat, coords.lng], leafletMapRef.current.getZoom());
-        if (leafletMarkerRef.current) {
-          leafletMarkerRef.current.setLatLng([coords.lat, coords.lng]);
-        }
-      }
-    };
-
-    if (window.L) {
-      initMap();
-    } else {
-      const timer = setInterval(() => {
-        if (window.L) {
-          clearInterval(timer);
-          initMap();
-        }
-      }, 100);
-      return () => clearInterval(timer);
-    }
-  }, [coords.lat, coords.lng]);
 
   // Selected tier for tiered / custom pricing
   const [selectedTier, setSelectedTier] = useState(null);
@@ -580,11 +503,7 @@ export default function BookingFlow() {
                   onBlur={handleAddressLookup}
                   onKeyDown={e => { if (e.key === 'Enter') handleAddressLookup(); }}
                 />
-                {/* ── Map Header Bar ── */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                  <span style={{ color: '#ea580c', fontSize: '12.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    ⚠️ Click map or capture location to fetch coordinates
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                   <button
                     type="button"
                     onClick={handleLocateMe}
@@ -592,66 +511,53 @@ export default function BookingFlow() {
                     style={{
                       border: 'none',
                       background: 'none',
-                      color: '#ff8c00',
-                      fontSize: '12.5px',
-                      fontWeight: '800',
+                      color: 'var(--primary)',
+                      fontSize: '12px',
+                      fontWeight: '600',
                       cursor: 'pointer',
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      gap: '4px'
                     }}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-                    </svg>
-                    {locLoading ? 'LOCATING...' : 'USE CURRENT LOCATION'}
+                    {locLoading ? '⌛ Locating...' : '🎯 Use Current Location'}
                   </button>
                 </div>
-
-                {/* ── Map Container ── */}
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '250px',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    border: '1.5px solid #cbd5e1',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                    background: '#e2e8f0',
-                    marginTop: '6px'
-                  }}
-                >
-                  <div
-                    ref={mapContainerRef}
-                    style={{ width: '100%', height: '100%', zIndex: 1 }}
-                  />
-
-                  {/* Top-Left Dark Badge */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '12px',
-                    zIndex: 1000,
-                    background: '#1e293b',
-                    color: '#ffffff',
-                    padding: '7px 14px',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    letterSpacing: '0.6px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    pointerEvents: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <span>PIN LOCATION (TOUCH ZOOM / CLICK MAP / DRAG)</span>
+                {MAPBOX_TOKEN && (
+                  <div style={{ position: 'relative', width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginTop: '10px', border: '1.5px solid #eee' }}>
+                    <Map
+                      {...viewState}
+                      onMoveStart={() => setIsMoving(true)}
+                      onMove={e => setViewState(e.viewState)}
+                      onMoveEnd={(e) => {
+                        setIsMoving(false);
+                        handleMapMoveEnd(e);
+                      }}
+                      style={{ width: '100%', height: '100%' }}
+                      mapStyle="mapbox://styles/mapbox/streets-v12"
+                      mapboxAccessToken={MAPBOX_TOKEN}
+                    />
+                    <div className={`map-pin-container ${isMoving ? 'is-moving' : ''}`}>
+                      <div className="map-address-bubble">
+                        {addressLoading ? (
+                          <>
+                            <span className="map-spinner" />
+                            <span>Locating...</span>
+                          </>
+                        ) : (
+                          <span>{form.location ? getShortAddress(form.location) : 'Pin location'}</span>
+                        )}
+                      </div>
+                      <div className="map-pin-wrapper">
+                        <svg width="36" height="46" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg" className="map-svg-pin">
+                          <path d="M18 0C8.05888 0 0 8.05888 0 18C0 29.8235 15.8824 44.8235 17.1176 45.9412C17.6471 46.4118 18.3529 46.4118 18.8824 45.9412C20.1176 44.8235 36 29.8235 36 18C36 8.05888 27.9411 0 18 0Z" fill="var(--primary)"/>
+                          <circle cx="18" cy="18" r="4.5" fill="#ffffff"/>
+                        </svg>
+                        <div className="map-pin-shadow" />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </label>
 
               <label style={{ marginTop: '10px' }}>
