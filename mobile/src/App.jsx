@@ -151,6 +151,25 @@ export default function App() {
             webViewRef.current.injectJavaScript(sendTokenJS);
           }
         } catch (e) {}
+      } else if (data.type === 'OPEN_GOOGLE_AUTH') {
+        try {
+          const authUrl = data.url;
+          const redirectUri = 'https://parrowskills.com/login';
+          const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+          if (result.type === 'success' && result.url && webViewRef.current) {
+            const redirectUrl = result.url;
+            const injectJS = `
+              (function() {
+                try {
+                  window.location.href = "${redirectUrl}";
+                } catch(e) {}
+              })();
+            `;
+            webViewRef.current.injectJavaScript(injectJS);
+          }
+        } catch (authErr) {
+          console.warn('Google Auth Session Error:', authErr);
+        }
       } else if (data.type === 'SHOW_NOTIFICATION' || data.type === 'DEVICE_NOTIFICATION') {
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -161,21 +180,6 @@ export default function App() {
           },
           trigger: null,
         });
-      } else if (data.type === 'OPEN_GOOGLE_AUTH' && data.url) {
-        try {
-          const result = await WebBrowser.openAuthSessionAsync(
-            data.url,
-            'https://parrowskills.com/login'
-          );
-          if (result.type === 'success' && result.url && webViewRef.current) {
-            const redirectUrl = result.url;
-            webViewRef.current.injectJavaScript(`
-              window.location.href = "${redirectUrl}";
-            `);
-          }
-        } catch (authErr) {
-          console.warn('Google Auth Session Error:', authErr);
-        }
       }
     } catch (e) {
       // Ignore non-JSON messages
@@ -186,9 +190,14 @@ export default function App() {
     const { url } = request;
     if (!url) return true;
 
-    // Allow accounts.google.com to load directly within app WebView
+    // Intercept accounts.google.com to open in native WebBrowser Custom Tab (prevents Google 400 error in WebView)
     if (url.includes('accounts.google.com')) {
-      return true;
+      WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com/login').then((result) => {
+        if (result.type === 'success' && result.url && webViewRef.current) {
+          webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
+        }
+      }).catch(e => console.warn('Google auth load err:', e));
+      return false;
     }
 
     // Intercept phone calls, WhatsApp messages, emails, SMS, UPI & payment gateway intent links
