@@ -83,7 +83,11 @@ export default function Orders() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <strong style={{ fontSize: '16px', color: '#0f172a' }}>₹{order.booking.total?.toLocaleString()}</strong>
+                  <strong style={{ fontSize: '15px', color: '#0f172a' }}>
+                    {order.vehicle?.show_price !== false || order.status === 'completed' || (order.booking?.total && order.booking.total > 0)
+                      ? `₹${order.booking.total?.toLocaleString()}`
+                      : <span style={{ color: '#d97706', fontSize: '12px' }}>Price on Completion</span>}
+                  </strong>
                   <span className={`status-chip ${order.status}`} style={{ fontSize: '9px', padding: '3px 8px', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '800' }}>
                     {order.status === 'pending' ? 'Searching Partner' : order.status === 'assigned' ? 'Partner Assigned' : order.status}
                   </span>
@@ -137,7 +141,11 @@ export default function Orders() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                    <strong style={{ fontSize: '16px', color: '#0f172a' }}>₹{order.booking.total?.toLocaleString()}</strong>
+                    <strong style={{ fontSize: '16px', color: '#0f172a' }}>
+                      {order.vehicle?.show_price !== false || (order.booking?.total && order.booking.total > 0)
+                        ? `₹${order.booking.total?.toLocaleString()}`
+                        : <span style={{ color: '#d97706', fontSize: '12px' }}>Price on Completion</span>}
+                    </strong>
                     <span style={{ fontSize: '10px', background: order.status === 'cancelled' ? '#fee2e2' : '#d1fae5', color: order.status === 'cancelled' ? '#b91c1c' : '#065f46', padding: '3px 8px', borderRadius: '20px', textTransform: 'uppercase', fontWeight: '800' }}>
                       {order.status}
                     </span>

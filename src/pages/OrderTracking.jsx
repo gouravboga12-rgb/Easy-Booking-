@@ -382,11 +382,24 @@ export default function OrderTracking() {
                   </div>
                 </div>
               )}
-              <div className="bs-row" style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px' }}><span>Base Rate</span><strong>₹{(order.vehicle.rate || 0).toLocaleString()} / {order.vehicle.unit}</strong></div>
-              <div className="bs-row total" style={{ fontSize: '18px', color: '#10b981', marginTop: '8px' }}>
-                <span>Total Amount</span>
-                <strong>₹{order.booking.total?.toLocaleString()}</strong>
-              </div>
+              {order.vehicle?.show_price !== false ? (
+                <>
+                  <div className="bs-row" style={{ borderTop: '1px dashed #ddd', paddingTop: '10px', marginTop: '10px' }}><span>Base Rate</span><strong>₹{(order.vehicle.rate || 0).toLocaleString()} / {order.vehicle.unit}</strong></div>
+                  <div className="bs-row total" style={{ fontSize: '18px', color: '#10b981', marginTop: '8px' }}>
+                    <span>Total Amount</span>
+                    <strong>₹{order.booking.total?.toLocaleString()}</strong>
+                  </div>
+                </>
+              ) : (
+                <div className="bs-row total" style={{ fontSize: '15px', color: '#d97706', marginTop: '8px', borderTop: '1px dashed #ddd', paddingTop: '10px' }}>
+                  <span>Payment Amount</span>
+                  <strong>
+                    {order.status === 'completed' || (order.booking?.total && order.booking.total > 0)
+                      ? `₹${order.booking.total?.toLocaleString()}`
+                      : 'Price on Completion'}
+                  </strong>
+                </div>
+              )}
             </div>
           )}
           {/* Feedback/Review Submission */}

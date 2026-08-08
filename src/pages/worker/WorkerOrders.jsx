@@ -182,7 +182,13 @@ export default function WorkerOrders() {
                     <div className="oc-row"><HiUser className="oc-icon" />{o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
                   </div>
                   <div className="oc-footer">
-                    <div className="oc-amount">₹{o.booking?.total?.toLocaleString()}</div>
+                    <div className="oc-amount">
+                      {o.vehicle?.show_price !== false || (o.booking?.total && o.booking.total > 0) ? (
+                        `₹${o.booking?.total?.toLocaleString()}`
+                      ) : (
+                        <span style={{ color: '#d97706', fontSize: '12px', fontWeight: '800' }}>Price on Completion</span>
+                      )}
+                    </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="aj-advance" style={{ background: '#f8fafc', color: '#475569', border: '1.5px solid #cbd5e1' }} onClick={() => setSelectedDetailsOrder(o)}>
                         🔍 View Details
@@ -230,7 +236,13 @@ export default function WorkerOrders() {
                     <div className="oc-row"><HiUser className="oc-icon" />{o.customer?.name} {o.customer?.phone && <span className="oc-phone">{o.customer.phone}</span>}</div>
                   </div>
                   <div className="oc-footer">
-                    <div className="oc-amount">₹{o.booking?.total?.toLocaleString()}</div>
+                    <div className="oc-amount">
+                      {o.vehicle?.show_price !== false || (o.booking?.total && o.booking.total > 0) ? (
+                        `₹${o.booking?.total?.toLocaleString()}`
+                      ) : (
+                        <span style={{ color: '#d97706', fontSize: '12px', fontWeight: '800' }}>Price on Completion</span>
+                      )}
+                    </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="aj-advance" style={{ background: '#f8fafc', color: '#475569', border: '1.5px solid #cbd5e1' }} onClick={() => setSelectedDetailsOrder(o)}>
                         🔍 View Details

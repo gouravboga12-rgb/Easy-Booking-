@@ -81,7 +81,7 @@ export default function Cart() {
           <h3>Order Summary</h3>
           <div className="cs-row">
             <span>Items ({cart.length})</span>
-            <span>₹{total.toLocaleString()}</span>
+            <span>{cart.some(i => i.vehicle?.show_price === false) ? 'Price on Completion' : `₹${total.toLocaleString()}`}</span>
           </div>
           <div className="cs-row">
             <span>Service Fee</span>
@@ -89,7 +89,7 @@ export default function Cart() {
           </div>
           <div className="cs-row total">
             <span>Total</span>
-            <span>₹{total.toLocaleString()}</span>
+            <span>{cart.some(i => i.vehicle?.show_price === false) ? 'Price on Completion' : `₹${total.toLocaleString()}`}</span>
           </div>
           <button className="btn-checkout" onClick={handleCheckout}>
             Proceed to Checkout <HiArrowRight />
