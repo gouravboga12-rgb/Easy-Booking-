@@ -109,7 +109,18 @@ export const useAuthStore = create((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      const data = await response.json();
+
+      let data;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('[GoogleLogin] Non-JSON response from backend:', text.slice(0, 300));
+        set({ loading: false });
+        return { error: `Backend error (${response.status}): ${text.slice(0, 100)}` };
+      }
+
       set({ loading: false });
 
       if (!response.ok) {
@@ -124,8 +135,9 @@ export const useAuthStore = create((set, get) => ({
 
       return { success: true, role: data.user?.role };
     } catch (err) {
+      console.error('[GoogleLogin] Fetch error:', err);
       set({ loading: false });
-      return { error: 'Connection error' };
+      return { error: err?.message || 'Connection error' };
     }
   },
 
