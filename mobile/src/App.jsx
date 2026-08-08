@@ -116,7 +116,8 @@ export default function App() {
         ref={webViewRef}
         source={{ uri: 'https://parrowskills.com/login-select' }}
         style={styles.webview}
-        userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
         javaScriptEnabled={true}
         javaScriptCanOpenWindowsAutomatically={true}
         setSupportMultipleWindows={false}
@@ -124,6 +125,9 @@ export default function App() {
         thirdPartyCookiesEnabled={true}
         sharedCookiesEnabled={true}
         cacheEnabled={true}
+        cacheMode="LOAD_DEFAULT"
+        androidHardwareAccelerationDisabled={false}
+        overScrollMode="never"
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
         geolocationEnabled={true}

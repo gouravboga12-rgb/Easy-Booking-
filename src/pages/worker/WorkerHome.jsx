@@ -164,7 +164,18 @@ export default function WorkerHome() {
             osc.stop(audioCtx.currentTime + 0.35);
           } catch (e) {}
 
-          alert(`⏰ REMINDER: You have a scheduled service order today at ${timeSlotStr || '5:30 PM'} (${diffMinutes} minutes remaining). Please attend the customer on time.`);
+          const msgTitle = `⏰ Order Reminder (#${o.id})`;
+          const msgBody = `Scheduled order today at ${timeSlotStr || '5:30 PM'} (${diffMinutes}m remaining). Please attend customer on time.`;
+          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'SHOW_NOTIFICATION',
+                title: msgTitle,
+                body: msgBody,
+                extraData: { url: 'https://parrowskills.com/worker/orders' }
+              }));
+            } catch (e) {}
+          }
         }
       });
     };
