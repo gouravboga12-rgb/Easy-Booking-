@@ -51,29 +51,39 @@ export default function App() {
           finalStatus = status;
         }
 
-        // Fetch Expo push token and send to WebView
+        // Fetch Expo push token or native device push token and send to backend
         try {
-          const tokenData = await Notifications.getExpoPushTokenAsync({
-            projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
-          });
-          const pushToken = tokenData.data;
+          let pushToken = '';
+          try {
+            const tokenData = await Notifications.getExpoPushTokenAsync({
+              projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
+            });
+            pushToken = tokenData.data;
+          } catch (e) {
+            // Fallback to native device token
+            const deviceTokenData = await Notifications.getDevicePushTokenAsync();
+            pushToken = deviceTokenData.data;
+          }
+
           if (pushToken && webViewRef.current) {
             const sendTokenJS = `
-              try {
-                const authToken = localStorage.getItem('token');
-                if (authToken) {
-                  fetch('https://api.parrowskills.com/api/auth/expo-push-token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-                    body: JSON.stringify({ token: '${pushToken}' })
-                  });
-                }
-              } catch (e) {}
+              (function() {
+                try {
+                  const authToken = localStorage.getItem('token');
+                  if (authToken) {
+                    fetch('https://parrowskills.com/api/auth/expo-push-token', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                      body: JSON.stringify({ token: '${pushToken}' })
+                    }).then(r => r.json()).catch(err => console.error('Push token sync err:', err));
+                  }
+                } catch (e) {}
+              })();
             `;
             webViewRef.current.injectJavaScript(sendTokenJS);
           }
         } catch (tokenErr) {
-          console.warn('Expo Push token fetch error:', tokenErr);
+          console.warn('Push token fetch error:', tokenErr);
         }
       } catch (err) {
         console.warn('Error setting up notifications:', err);
@@ -109,24 +119,34 @@ export default function App() {
       const data = JSON.parse(event.nativeEvent.data);
       if (!data) return;
 
-      if (data.type === 'GET_PUSH_TOKEN') {
+      if (data.type === 'GET_PUSH_TOKEN' || data.type === 'SYNC_PUSH_TOKEN' || data.type === 'USER_LOGGED_IN') {
         try {
-          const tokenData = await Notifications.getExpoPushTokenAsync({
-            projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
-          });
-          const pushToken = tokenData.data;
+          let pushToken = '';
+          try {
+            const tokenData = await Notifications.getExpoPushTokenAsync({
+              projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
+            });
+            pushToken = tokenData.data;
+          } catch (e) {
+            const deviceTokenData = await Notifications.getDevicePushTokenAsync();
+            pushToken = deviceTokenData.data;
+          }
+
+          const userAuthToken = data.token;
           if (pushToken && webViewRef.current) {
             const sendTokenJS = `
-              try {
-                const authToken = localStorage.getItem('token');
-                if (authToken) {
-                  fetch('https://api.parrowskills.com/api/auth/expo-push-token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-                    body: JSON.stringify({ token: '${pushToken}' })
-                  });
-                }
-              } catch (e) {}
+              (function() {
+                try {
+                  const authToken = '${userAuthToken || ''}' || localStorage.getItem('token');
+                  if (authToken) {
+                    fetch('https://parrowskills.com/api/auth/expo-push-token', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                      body: JSON.stringify({ token: '${pushToken}' })
+                    }).then(r => r.json()).catch(err => console.error('Push token sync err:', err));
+                  }
+                } catch (e) {}
+              })();
             `;
             webViewRef.current.injectJavaScript(sendTokenJS);
           }

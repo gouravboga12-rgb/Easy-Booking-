@@ -39,6 +39,38 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
 
+    // Trigger push notification alerts for workers
+    (async () => {
+      try {
+        const orderTag = `#${id.slice(-6)}`;
+        const [services] = await pool.query('SELECT name, category FROM services WHERE id = ?', [vehicleId]);
+        const serviceName = services.length > 0 ? services[0].name : 'Service Request';
+
+        if (workerId) {
+          sendPushNotificationToUser(
+            workerId,
+            `📢 New Direct Booking (${orderTag})`,
+            `You have been assigned a new service request: ${serviceName}!`,
+            { orderId: id }
+          );
+        } else {
+          const [workers] = await pool.query("SELECT id, city, categories, skills, vehicle_details, available, subscription, expo_push_token FROM users WHERE role = 'worker' AND available = 1 AND expo_push_token IS NOT NULL");
+          for (const w of workers) {
+            if (isSubscriptionActive(w) && workerMatchesRole(w, vehicleId, serviceName, services[0]?.category || '')) {
+              sendPushNotificationToUser(
+                w.id,
+                `⚡ New Dispatch Job (${orderTag})`,
+                `New ${serviceName} order available in ${location.split(',')[0]} (₹${totalAmount})!`,
+                { orderId: id }
+              );
+            }
+          }
+        }
+      } catch (pushErr) {
+        console.error('Order creation push notification error:', pushErr);
+      }
+    })();
+
     // Fetch the newly created order
     const [orders] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
     res.status(201).json(orders[0]);

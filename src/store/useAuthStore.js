@@ -27,6 +27,16 @@ export const useAuthStore = create((set, get) => ({
       sessionStorage.removeItem('popup_ad_dismissed');
       set({ user: data.user });
 
+      // Send token sync message to mobile WebView wrapper
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'USER_LOGGED_IN',
+            token: data.token
+          }));
+        } catch (e) {}
+      }
+
       // Load all users if logged in as Admin
       if (data.user.role === 'admin') {
         get().fetchWorkers();

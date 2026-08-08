@@ -7,8 +7,9 @@ export async function sendPushNotificationToUser(userId, title, body, data = {})
     const [rows] = await pool.query('SELECT expo_push_token FROM users WHERE id = ?', [userId]);
     if (!rows || rows.length === 0) return;
     const token = rows[0].expo_push_token;
-    if (!token || !token.startsWith('ExponentPushToken[')) return;
+    if (!token || typeof token !== 'string' || token.trim().length < 10) return;
 
+    // Send via Expo Push API
     await axios.post('https://exp.host/--/api/v2/push/send', {
       to: token,
       sound: 'default',
@@ -26,6 +27,6 @@ export async function sendPushNotificationToUser(userId, title, body, data = {})
     });
     console.log(`[PUSH NOTIF SUCCESS] User #${userId} | Title: ${title}`);
   } catch (e) {
-    console.error('[PUSH NOTIF ERROR]', e.message);
+    console.error('[PUSH NOTIF ERROR]', e.response?.data || e.message);
   }
 }
