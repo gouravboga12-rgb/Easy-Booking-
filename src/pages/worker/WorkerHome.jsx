@@ -832,7 +832,13 @@ export default function WorkerHome() {
   const handleCompleteJob = () => {
     if (!activeJob) return;
     
-    const isCustomPrice = activeJob.vehicle?.show_price === false || !activeJob.booking?.total;
+    const serviceObj = services.find(s => s.id === activeJob.vehicle_id || s.id === activeJob.vehicle?.id);
+    const isCustomPrice = 
+      (serviceObj && (serviceObj.show_price === false || serviceObj.show_price === 0 || serviceObj.show_price === '0')) ||
+      (activeJob.vehicle && (activeJob.vehicle.show_price === false || activeJob.vehicle.show_price === 0 || activeJob.vehicle.show_price === '0')) ||
+      activeJob.show_price === false || activeJob.show_price === 0 || activeJob.show_price === '0' ||
+      !activeJob.booking?.total;
+
     let finalAmount = activeJob.booking?.total || 0;
 
     if (isCustomPrice) {
@@ -1729,34 +1735,43 @@ export default function WorkerHome() {
 
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
-                    {(activeJob.vehicle?.show_price === false || activeJob.vehicle?.show_price === 0 || activeJob.vehicle?.show_price === '0' || !activeJob.booking?.total) && (
-                      <div style={{ marginBottom: '12px', background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '12px', borderRadius: '8px' }}>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '800', color: '#92400e' }}>
-                          💰 Enter Total Payment Amount (₹) — Custom Quote / Work Completed
-                          <span style={{ fontSize: '11px', color: '#b45309', fontWeight: '600' }}>
-                            Service pricing is turned off. Enter the exact total amount charged to customer (No GST added).
-                          </span>
-                          <input
-                            type="text"
-                            value={customAmountInput}
-                            onChange={e => setCustomAmountInput(e.target.value.replace(/\D/g, ''))}
-                            placeholder="e.g. 1500"
-                            style={{
-                              padding: '12px',
-                              borderRadius: '8px',
-                              border: '1.5px solid #f59e0b',
-                              fontSize: '16px',
-                              fontWeight: '800',
-                              color: '#0f172a',
-                              outline: 'none',
-                              width: '100%',
-                              boxSizing: 'border-box'
-                            }}
-                            required
-                          />
-                        </label>
-                      </div>
-                    )}
+                    {(() => {
+                      const serviceObj = services.find(s => s.id === activeJob.vehicle_id || s.id === activeJob.vehicle?.id);
+                      const isCustomPriceService = 
+                        (serviceObj && (serviceObj.show_price === false || serviceObj.show_price === 0 || serviceObj.show_price === '0')) ||
+                        (activeJob.vehicle && (activeJob.vehicle.show_price === false || activeJob.vehicle.show_price === 0 || activeJob.vehicle.show_price === '0')) ||
+                        activeJob.show_price === false || activeJob.show_price === 0 || activeJob.show_price === '0' ||
+                        !activeJob.booking?.total;
+
+                      return isCustomPriceService ? (
+                        <div style={{ marginBottom: '12px', background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '12px', borderRadius: '8px' }}>
+                          <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '800', color: '#92400e' }}>
+                            💰 Enter Total Payment Amount (₹) — Custom Quote / Work Completed
+                            <span style={{ fontSize: '11px', color: '#b45309', fontWeight: '600' }}>
+                              Service pricing is turned off. Enter the exact total amount charged to customer (No GST added).
+                            </span>
+                            <input
+                              type="text"
+                              value={customAmountInput}
+                              onChange={e => setCustomAmountInput(e.target.value.replace(/\D/g, ''))}
+                              placeholder="e.g. 1500"
+                              style={{
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1.5px solid #f59e0b',
+                                fontSize: '16px',
+                                fontWeight: '800',
+                                color: '#0f172a',
+                                outline: 'none',
+                                width: '100%',
+                                boxSizing: 'border-box'
+                              }}
+                              required
+                            />
+                          </label>
+                        </div>
+                      ) : null;
+                    })()}
 
                     <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>💵 Record Payment Mode Received:</div>
                     <div style={{ display: 'flex', gap: '10px' }}>
