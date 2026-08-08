@@ -69,6 +69,18 @@ export default function AdminSubscriptions() {
     return sum + (sub.price !== undefined ? (parseFloat(sub.price) || 0) : (parseFloat(plan?.price) || 0));
   }, 0);
 
+  const handleErrorResponse = (errMessage, fallback = 'Operation failed') => {
+    const msg = errMessage || fallback;
+    if (msg.includes('token') || msg.includes('Forbidden') || msg.includes('Access token')) {
+      alert('🔒 Your Admin session has expired or is unauthorized. Redirecting to Admin Login...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/admin/login';
+    } else {
+      alert(msg);
+    }
+  };
+
   const handleCreatePlan = async (e) => {
     e.preventDefault();
     if (!newPlan.name || newPlan.price === undefined || newPlan.duration === undefined) return;
@@ -101,7 +113,7 @@ export default function AdminSubscriptions() {
       });
       showSuccess('Subscription plan created successfully!');
     } else {
-      alert(res?.error || 'Failed to create plan');
+      handleErrorResponse(res?.error, 'Failed to create plan');
     }
   };
 
@@ -128,7 +140,7 @@ export default function AdminSubscriptions() {
       setEditingPlan(null);
       showSuccess('Subscription plan updated successfully!');
     } else {
-      alert(res?.error || 'Failed to update plan');
+      handleErrorResponse(res?.error, 'Failed to update plan');
     }
   };
 
@@ -139,7 +151,7 @@ export default function AdminSubscriptions() {
     if (res && res.success) {
       showSuccess(`Subscription plan ${plan.active ? 'disabled' : 'enabled'} successfully!`);
     } else {
-      alert(res?.error || 'Failed to toggle status');
+      handleErrorResponse(res?.error, 'Failed to toggle status');
     }
   };
 
@@ -149,7 +161,7 @@ export default function AdminSubscriptions() {
     if (res && res.success) {
       showSuccess('Subscription plan deleted successfully!');
     } else {
-      alert(res?.error || 'Failed to delete plan');
+      handleErrorResponse(res?.error, 'Failed to delete plan');
     }
   };
 
