@@ -25,10 +25,7 @@ import WorkerForgotPassword from './pages/auth/WorkerForgotPassword';
 
 function RootIndex() {
   const user = useAuthStore(s => s.user);
-  if (!user) {
-    return <UnifiedLoginSelect />;
-  }
-  if (user.role === 'worker') {
+  if (user && user.role === 'worker') {
     return <Navigate to="/worker" replace />;
   }
   return <Home />;
@@ -88,7 +85,7 @@ function AdminRouteWrapper() {
 function Layout() {
   const { pathname } = useLocation();
   const user = useAuthStore(s => s.user);
-  const isLoginSelect = pathname === '/login-select' || pathname === '/login_select' || pathname === '/login-type' || (!user && (pathname === '/' || pathname === '/home'));
+  const isLoginSelect = pathname === '/login-select' || pathname === '/login_select' || pathname === '/login-type';
   const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
   const hideHeaderFooter = isAdminOrWorker || isLoginSelect;
 
