@@ -474,6 +474,11 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
+  // Reject any massive base64 file payloads (> 3MB base64 string)
+  if ((photo && photo.length > 3000000) || (aadharPhoto && aadharPhoto.length > 3000000) || (panPhoto && panPhoto.length > 3000000)) {
+    return res.status(400).json({ message: 'Uploaded file size exceeds 2MB limit. Please select a smaller file.' });
+  }
+
   try {
     // Check if user already exists
     const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);

@@ -136,28 +136,64 @@ export default function WorkerRegister() {
     }
   };
 
+  const compressImage = (file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(event.target.result);
+        img.src = event.target.result;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Change handlers
   const handleBasicChange = (key, value) => setForm(p => ({ ...p, [key]: value }));
   const handleProfChange = (key, value) => setProfessionalForm(p => ({ ...p, [key]: value }));
   const handleVerifChange = (key, value) => setVerificationForm(p => ({ ...p, [key]: value }));
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setError('');
       if (file.size > 2 * 1024 * 1024) {
-        setError('Profile photograph must be under 2MB');
+        setError('Profile photograph file must be under 2MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        handleVerifChange('profilePhoto', reader.result);
-      };
-      reader.readAsDataURL(file);
+      const compressedDataUrl = await compressImage(file);
+      handleVerifChange('profilePhoto', compressedDataUrl);
     }
   };
 
-  const handleAadharCopyUpload = (e) => {
+  const handleAadharCopyUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setError('');
@@ -165,19 +201,16 @@ export default function WorkerRegister() {
         setError('Aadhaar copy file must be under 2MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setVerificationForm(p => ({
-          ...p,
-          aadharCopy: reader.result,
-          aadharCopyName: file.name
-        }));
-      };
-      reader.readAsDataURL(file);
+      const compressedDataUrl = await compressImage(file);
+      setVerificationForm(p => ({
+        ...p,
+        aadharCopy: compressedDataUrl,
+        aadharCopyName: file.name
+      }));
     }
   };
 
-  const handlePanCopyUpload = (e) => {
+  const handlePanCopyUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setError('');
@@ -185,15 +218,12 @@ export default function WorkerRegister() {
         setError('PAN copy file must be under 2MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setVerificationForm(p => ({
-          ...p,
-          panCopy: reader.result,
-          panCopyName: file.name
-        }));
-      };
-      reader.readAsDataURL(file);
+      const compressedDataUrl = await compressImage(file);
+      setVerificationForm(p => ({
+        ...p,
+        panCopy: compressedDataUrl,
+        panCopyName: file.name
+      }));
     }
   };
 
