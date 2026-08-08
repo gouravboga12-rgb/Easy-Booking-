@@ -200,7 +200,7 @@ export default function App() {
 
     // Intercept accounts.google.com to open in native WebBrowser Custom Tab (prevents Google 400 error in WebView)
     if (url.includes('accounts.google.com')) {
-      WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com/login').then((result) => {
+      WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com').then((result) => {
         if (result.type === 'success' && result.url && webViewRef.current) {
           webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
         }

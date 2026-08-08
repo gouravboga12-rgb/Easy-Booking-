@@ -138,6 +138,24 @@ function Layout() {
     }
   };
 
+  // Global Google OAuth Redirect Hash Listener
+  const googleLogin = useAuthStore(s => s.googleLogin);
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const token = params.get('access_token');
+      if (token) {
+        window.history.replaceState(null, '', window.location.pathname);
+        googleLogin(token, 'access_token').then((result) => {
+          if (!result.error) {
+            window.location.href = '/';
+          }
+        });
+      }
+    }
+  }, [googleLogin]);
+
   // Request Notification permission prompt when app opens or user logs in
   useEffect(() => {
     if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
