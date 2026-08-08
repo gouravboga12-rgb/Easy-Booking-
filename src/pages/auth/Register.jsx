@@ -57,20 +57,6 @@ export default function Register() {
     }
   };
 
-  const handleGoogleSignUp = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      setError('');
-      const result = await googleLogin(tokenResponse.access_token, 'access_token');
-      setGoogleLoading(false);
-      if (result.error) { setError(result.error); return; }
-      navigate('/');
-    },
-    onError: () => {
-      triggerDirectGoogleOAuth();
-    },
-  });
-
   const onGoogleBtnClick = () => {
     triggerDirectGoogleOAuth();
   };
