@@ -1,9 +1,32 @@
-import { create } from 'zustand';
-import { API_BASE_URL } from '../config';
-import { useStore } from './useStore';
+const safeSetUserLocalStorage = (userObj) => {
+  if (!userObj) {
+    try { localStorage.removeItem('user'); } catch (e) {}
+    return;
+  }
+  try {
+    const cleanUser = { ...userObj };
+    for (const key in cleanUser) {
+      if (typeof cleanUser[key] === 'string' && cleanUser[key].length > 50000 && cleanUser[key].startsWith('data:')) {
+        cleanUser[key] = ''; // Truncate giant base64 image strings to prevent QuotaExceededError in localStorage
+      }
+    }
+    localStorage.setItem('user', JSON.stringify(cleanUser));
+  } catch (err) {
+    console.warn('localStorage setItem user skipped (quota exceeded):', err);
+  }
+};
+
+const getInitialUser = () => {
+  try {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 export const useAuthStore = create((set, get) => ({
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: getInitialUser(),
   users: [],
   loading: false,
 
@@ -22,9 +45,14 @@ export const useAuthStore = create((set, get) => ({
         return { error: data.message || 'Login failed' };
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      sessionStorage.removeItem('popup_ad_dismissed');
+      try {
+        if (data.token) localStorage.setItem('token', data.token);
+        safeSetUserLocalStorage(data.user);
+        sessionStorage.removeItem('popup_ad_dismissed');
+      } catch (storageErr) {
+        console.warn('Storage save warning:', storageErr);
+      }
+
       set({ user: data.user });
 
       // Send token sync message to mobile WebView wrapper
@@ -38,14 +66,15 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // Load all users if logged in as Admin
-      if (data.user.role === 'admin') {
+      if (data.user?.role === 'admin') {
         get().fetchWorkers();
       }
 
-      return { success: true, role: data.user.role };
+      return { success: true, role: data.user?.role };
     } catch (err) {
+      console.error('Login error:', err);
       set({ loading: false });
-      return { error: 'Connection error' };
+      return { error: err.message && !err.message.includes('Fetch') && !err.message.includes('JSON') ? err.message : 'Connection error' };
     }
   },
 
@@ -85,11 +114,13 @@ export const useAuthStore = create((set, get) => ({
         return { error: data.message || 'Google login failed' };
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      try {
+        if (data.token) localStorage.setItem('token', data.token);
+        safeSetUserLocalStorage(data.user);
+      } catch (e) {}
       set({ user: data.user });
 
-      return { success: true, role: data.user.role };
+      return { success: true, role: data.user?.role };
     } catch (err) {
       set({ loading: false });
       return { error: 'Connection error' };
@@ -225,7 +256,7 @@ export const useAuthStore = create((set, get) => ({
       });
       const updatedUser = await response.json();
       if (response.ok) {
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        safeSetUserLocalStorage(updatedUser);
         set({ user: updatedUser });
       }
     } catch (err) {
@@ -277,7 +308,7 @@ export const useAuthStore = create((set, get) => ({
           availability: { ...user.availability, ...availabilityData },
           available: isOnlineNow ? 1 : 0
         };
-        localStorage.setItem('user', JSON.stringify(updated));
+        safeSetUserLocalStorage(updated);
         set({ user: updated });
 
         // Trigger order refresh immediately if worker came online
@@ -313,7 +344,7 @@ export const useAuthStore = create((set, get) => ({
     };
 
     const updatedUser = { ...user, wallet: nextWallet };
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    safeSetUserLocalStorage(updatedUser);
     set({ user: updatedUser });
 
     try {
@@ -391,7 +422,7 @@ export const useAuthStore = create((set, get) => ({
       });
       const updatedUser = await response.json();
       if (response.ok) {
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        safeSetUserLocalStorage(updatedUser);
         set({ user: updatedUser });
       }
     } catch (err) {

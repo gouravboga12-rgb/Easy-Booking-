@@ -576,8 +576,10 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(user);
     
-    // Remove password hash from response
+    // Remove password hash and heavy document photos from response
     delete user.password_hash;
+    delete user.aadhar_photo;
+    delete user.pan_photo;
     
     // Parse JSON columns
     user.skills = user.skills || [];
