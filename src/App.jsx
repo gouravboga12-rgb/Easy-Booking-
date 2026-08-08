@@ -87,11 +87,11 @@ function AdminRouteWrapper() {
 
 function Layout() {
   const { pathname } = useLocation();
-  const isLoginSelect = pathname === '/login-select' || pathname === '/login_select' || pathname === '/login-type';
+  const user = useAuthStore(s => s.user);
+  const isLoginSelect = pathname === '/login-select' || pathname === '/login_select' || pathname === '/login-type' || (!user && (pathname === '/' || pathname === '/home'));
   const isAdminOrWorker = pathname.startsWith('/admin') || pathname.startsWith('/worker') || pathname.includes('worker');
   const hideHeaderFooter = isAdminOrWorker || isLoginSelect;
 
-  const user = useAuthStore(s => s.user);
   const fetchWorkers = useAuthStore(s => s.fetchWorkers);
   const fetchOrdersForCustomer = useStore(s => s.fetchOrdersForCustomer);
   const fetchOrdersForWorker = useStore(s => s.fetchOrdersForWorker);

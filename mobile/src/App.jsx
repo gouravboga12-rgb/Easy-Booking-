@@ -49,6 +49,12 @@ export default function App() {
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        sharedCookiesEnabled={true}
+        cacheEnabled={true}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        geolocationEnabled={true}
         startInLoadingState={true}
         allowFileAccess={true}
         allowContentAccess={true}
