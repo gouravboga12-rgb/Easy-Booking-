@@ -162,7 +162,7 @@ export default function App() {
       } else if (data.type === 'OPEN_GOOGLE_AUTH') {
         try {
           const authUrl = data.url;
-          const redirectUri = 'https://parrowskills.com/login';
+          const redirectUri = 'https://parrowskills.com';
           const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
           if (result.type === 'success' && result.url && webViewRef.current) {
             const redirectUrl = result.url;

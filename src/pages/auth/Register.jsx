@@ -47,7 +47,7 @@ export default function Register() {
 
   const triggerDirectGoogleOAuth = () => {
     const GOOGLE_CLIENT_ID = "372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com";
-    const redirectUri = "https://parrowskills.com/login";
+    const redirectUri = "https://parrowskills.com";
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('openid email profile')}&prompt=select_account`;
     
     if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
