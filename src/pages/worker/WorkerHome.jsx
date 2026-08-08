@@ -1736,12 +1736,12 @@ export default function WorkerHome() {
                   {/* Payment Collection Selection */}
                   <div style={{ border: '1.5px dashed #ddd', padding: '12px', borderRadius: '8px', background: '#fff' }}>
                     {(() => {
-                      const serviceObj = services.find(s => s.id === activeJob.vehicle_id || s.id === activeJob.vehicle?.id);
+                      const serviceObj = (services || []).find(s => s.id === activeJob?.vehicle_id || s.id === activeJob?.vehicle?.id);
                       const isCustomPriceService = 
                         (serviceObj && (serviceObj.show_price === false || serviceObj.show_price === 0 || serviceObj.show_price === '0')) ||
-                        (activeJob.vehicle && (activeJob.vehicle.show_price === false || activeJob.vehicle.show_price === 0 || activeJob.vehicle.show_price === '0')) ||
-                        activeJob.show_price === false || activeJob.show_price === 0 || activeJob.show_price === '0' ||
-                        !activeJob.booking?.total;
+                        (activeJob?.vehicle && (activeJob.vehicle.show_price === false || activeJob.vehicle.show_price === 0 || activeJob.vehicle.show_price === '0')) ||
+                        activeJob?.show_price === false || activeJob?.show_price === 0 || activeJob?.show_price === '0' ||
+                        !activeJob?.booking?.total;
 
                       return isCustomPriceService ? (
                         <div style={{ marginBottom: '12px', background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '12px', borderRadius: '8px' }}>
@@ -1885,21 +1885,28 @@ export default function WorkerHome() {
             </div>
           )}
 
-          {activeJob.stage === 3 && (
+          {activeJob?.stage === 3 && (
             <button
               className="aj-advance"
               onClick={handleCompleteJob}
               disabled={
                 !otpVerified || 
                 !paymentMode || 
-                ((activeJob.vehicle?.show_price === false || !activeJob.booking?.total) && (!customAmountInput || Number(customAmountInput) <= 0))
+                ((
+                  ((services || []).find(s => s.id === activeJob?.vehicle_id || s.id === activeJob?.vehicle?.id)?.show_price === false) ||
+                  (activeJob?.vehicle && (activeJob.vehicle.show_price === false || activeJob.vehicle.show_price === 0 || activeJob.vehicle.show_price === '0')) ||
+                  !activeJob?.booking?.total
+                ) && (!customAmountInput || Number(customAmountInput) <= 0))
               }
               style={{
                 width: '100%',
                 background: (
                   otpVerified && 
                   paymentMode && 
-                  ((activeJob.vehicle?.show_price !== false && activeJob.booking?.total > 0) || (customAmountInput && Number(customAmountInput) > 0))
+                  (
+                    (((services || []).find(s => s.id === activeJob?.vehicle_id || s.id === activeJob?.vehicle?.id)?.show_price !== false) && activeJob?.booking?.total > 0) ||
+                    (customAmountInput && Number(customAmountInput) > 0)
+                  )
                 ) ? '#10b981' : '#ccc',
                 color: '#fff',
                 padding: '14px',
