@@ -7,8 +7,14 @@ import './Auth.css';
 export default function UnifiedLoginSelect() {
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
+  const isInApp = !!(window.ReactNativeWebView);
 
   useEffect(() => {
+    // If not inside the mobile app, redirect website users directly to /login
+    if (!isInApp) {
+      navigate('/login', { replace: true });
+      return;
+    }
     if (user) {
       if (user.role === 'worker') {
         navigate('/worker', { replace: true });
@@ -18,7 +24,8 @@ export default function UnifiedLoginSelect() {
         navigate('/admin', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, isInApp]);
+
 
   return (
     <div className="auth-page mobile-unified-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>

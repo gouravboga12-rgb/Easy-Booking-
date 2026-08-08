@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useGoogleLogin } from '@react-oauth/google';
 import { HiMail, HiLockClosed, HiArrowRight } from 'react-icons/hi';
-import { MdConstruction } from 'react-icons/md';
 import './Auth.css';
 
 export default function Login() {
@@ -27,27 +25,7 @@ export default function Login() {
     navigate(from);
   };
 
-  useEffect(() => {
-    // Check if returning from Google OAuth redirect (URL hash contains #access_token=...)
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-      const params = new URLSearchParams(hash.replace('#', '?'));
-      const token = params.get('access_token');
-      if (token) {
-        setGoogleLoading(true);
-        window.history.replaceState(null, '', window.location.pathname);
-        googleLogin(token, 'access_token').then((result) => {
-          setGoogleLoading(false);
-          if (result.error) {
-            setError(result.error);
-          } else {
-            const from = location.state?.from || '/';
-            navigate(from);
-          }
-        });
-      }
-    }
-  }, [googleLogin, location.state, navigate]);
+  // Google OAuth is handled globally in App.jsx Layout — no local hash listener needed
 
   const triggerDirectGoogleOAuth = () => {
     const GOOGLE_CLIENT_ID = "372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com";
