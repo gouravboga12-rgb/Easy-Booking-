@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Notifications from 'expo-notifications';
+import * as WebBrowser from 'expo-web-browser';
 
 // Set notification handler to present notification even when app is open or in background
 Notifications.setNotificationHandler({
@@ -30,22 +31,31 @@ export default function App() {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    async function requestNotifPermissions() {
+    async function setupNotifications() {
       try {
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Order Updates',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF8C00',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+          });
+        }
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
           finalStatus = status;
         }
-        if (finalStatus !== 'granted') {
-          console.log('Notification permission status:', finalStatus);
-        }
+        console.log('Notification permission status:', finalStatus);
       } catch (err) {
-        console.warn('Error requesting notification permissions:', err);
+        console.warn('Error setting up notifications:', err);
       }
     }
-    requestNotifPermissions();
+    setupNotifications();
   }, []);
 
   useEffect(() => {
@@ -73,7 +83,21 @@ export default function App() {
   const handleMessage = async (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data && (data.type === 'SHOW_NOTIFICATION' || data.type === 'DEVICE_NOTIFICATION')) {
+      if (!data) return;
+
+      if (data.type === 'OPEN_GOOGLE_AUTH' && data.url) {
+        try {
+          const result = await WebBrowser.openAuthSessionAsync(data.url, 'https://parrowskills.com/login');
+          if (result.type === 'success' && result.url && webViewRef.current) {
+            webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
+          }
+        } catch (err) {
+          console.warn('WebBrowser auth error:', err);
+          if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(`window.location.href = "${data.url}";`);
+          }
+        }
+      } else if (data.type === 'SHOW_NOTIFICATION' || data.type === 'DEVICE_NOTIFICATION') {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: data.title || 'Parrow Skills Alert',
@@ -92,6 +116,18 @@ export default function App() {
   const handleShouldStartLoadWithRequest = (request) => {
     const { url } = request;
     if (!url) return true;
+
+    // Intercept Google OAuth requests to open in Chrome Custom Tabs
+    if (url.includes('accounts.google.com')) {
+      WebBrowser.openAuthSessionAsync(url, 'https://parrowskills.com/login').then(result => {
+        if (result.type === 'success' && result.url && webViewRef.current) {
+          webViewRef.current.injectJavaScript(`window.location.href = "${result.url}";`);
+        }
+      }).catch(err => {
+        console.warn('Google auth browser error:', err);
+      });
+      return false;
+    }
 
     // Intercept phone calls, WhatsApp messages, emails, SMS
     if (

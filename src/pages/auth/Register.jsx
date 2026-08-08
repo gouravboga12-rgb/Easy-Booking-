@@ -47,9 +47,14 @@ export default function Register() {
 
   const triggerDirectGoogleOAuth = () => {
     const GOOGLE_CLIENT_ID = "372352207561-lg7bl7r84ktcrne90i3cblgjif8titvq.apps.googleusercontent.com";
-    const redirectUri = window.location.origin + window.location.pathname;
+    const redirectUri = "https://parrowskills.com/login";
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('openid email profile')}&prompt=select_account`;
-    window.location.href = authUrl;
+    
+    if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_GOOGLE_AUTH', url: authUrl }));
+    } else {
+      window.location.href = authUrl;
+    }
   };
 
   const handleGoogleSignUp = useGoogleLogin({
@@ -67,15 +72,7 @@ export default function Register() {
   });
 
   const onGoogleBtnClick = () => {
-    if (window.ReactNativeWebView || /wv|Android.*Version\/[0-9]/i.test(navigator.userAgent)) {
-      triggerDirectGoogleOAuth();
-    } else {
-      try {
-        handleGoogleSignUp();
-      } catch (e) {
-        triggerDirectGoogleOAuth();
-      }
-    }
+    triggerDirectGoogleOAuth();
   };
 
 
