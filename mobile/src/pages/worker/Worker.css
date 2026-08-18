@@ -190,13 +190,14 @@
   position: fixed;
   bottom: 0; left: 0; right: 0;
   height: auto;
-  min-height: 70px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  min-height: 72px;
+  background: #ffffff;
+  border-top: 1px solid #eaeaea;
   display: flex;
+  align-items: stretch;
   z-index: 300;
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
-  padding-bottom: max(env(safe-area-inset-bottom), 18px);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  padding: 6px 0 max(env(safe-area-inset-bottom), 16px) 0;
   box-sizing: border-box;
 }
 .wbn-item {
@@ -204,32 +205,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 3px;
   text-decoration: none;
-  color: #aaa;
-  font-size: 9.5px;
+  color: #64748b;
+  font-size: 10px;
   font-weight: 600;
   transition: color 0.18s;
-  padding: 8px 2px 10px;
+  padding: 4px 2px 6px;
   text-align: center;
   line-height: 1.2;
   min-width: 0;
-  overflow: hidden;
+  box-sizing: border-box;
 }
 .wbn-item span {
   display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #64748b;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  overflow: visible;
+  line-height: 1.2;
 }
 .wbn-item.active { color: var(--primary); }
-.wbn-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.wbn-item.active span { color: var(--primary); font-weight: 700; }
+.wbn-icon { width: 22px; height: 22px; flex-shrink: 0; }
 
 @media (max-width: 380px) {
-  .wbn-item { font-size: 8px; }
-  .wbn-icon { width: 18px; height: 18px; }
+  .wbn-item span { font-size: 8.5px; }
+  .wbn-icon { width: 20px; height: 20px; }
 }
 
 /* Desktop & Tablet Sidebar Styles */

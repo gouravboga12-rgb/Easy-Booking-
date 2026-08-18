@@ -5,13 +5,13 @@
   right: 0;
   z-index: 300;
   background: #fff;
-  border-top: 1px solid #efefef;
+  border-top: 1px solid #eaeaea;
   display: flex;
   align-items: stretch;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
   height: auto;
-  min-height: 68px;
-  padding-bottom: max(env(safe-area-inset-bottom), 18px);
+  min-height: 72px;
+  padding: 6px 0 max(env(safe-area-inset-bottom), 16px) 0;
   box-sizing: border-box;
 }
 
@@ -20,13 +20,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 3px;
   text-decoration: none;
-  color: #aaa;
+  color: #64748b;
   position: relative;
   transition: color 0.18s;
-  padding: 8px 4px 10px;
+  padding: 4px 4px 6px;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -37,21 +37,21 @@
 }
 
 .bn-icon {
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
   transition: transform 0.18s;
   flex-shrink: 0;
 }
 
 .bn-tab.active .bn-icon {
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .bn-label {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
   white-space: nowrap;
 }
 

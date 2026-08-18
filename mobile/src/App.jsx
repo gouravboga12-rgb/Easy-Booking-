@@ -318,13 +318,110 @@ export default function App() {
     return true;
   };
 
+  const injectedSafeLayoutJS = `
+    (function() {
+      function injectStyles() {
+        var styleEl = document.getElementById('mobile-app-safe-area-fix');
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = 'mobile-app-safe-area-fix';
+          document.head.appendChild(styleEl);
+        }
+        styleEl.innerHTML = \`
+          .navbar {
+            padding-top: max(32px, env(safe-area-inset-top, 32px)) !important;
+            height: auto !important;
+            min-height: 84px !important;
+          }
+          .worker-top-header {
+            padding-top: max(32px, env(safe-area-inset-top, 32px)) !important;
+            padding-bottom: 10px !important;
+            height: auto !important;
+            min-height: 78px !important;
+          }
+          .bottom-nav {
+            padding-top: 6px !important;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            height: auto !important;
+            min-height: 72px !important;
+            align-items: stretch !important;
+            background: #ffffff !important;
+            border-top: 1px solid #eaeaea !important;
+          }
+          .worker-bottom-nav {
+            padding-top: 6px !important;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            height: auto !important;
+            min-height: 72px !important;
+            align-items: stretch !important;
+            background: #ffffff !important;
+            border-top: 1px solid #eaeaea !important;
+          }
+          .bn-tab {
+            justify-content: flex-start !important;
+            padding: 4px 4px 6px !important;
+          }
+          .bn-icon {
+            font-size: 22px !important;
+            width: 22px !important;
+            height: 22px !important;
+            transform: none !important;
+          }
+          .bn-label {
+            font-size: 10.5px !important;
+            font-weight: 600 !important;
+          }
+          .wbn-item {
+            justify-content: flex-start !important;
+            padding: 4px 2px 6px !important;
+            overflow: visible !important;
+          }
+          .wbn-item span {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-size: 9.5px !important;
+            font-weight: 600 !important;
+            color: #64748b !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            line-height: 1.2 !important;
+          }
+          .wbn-item.active span {
+            color: #ff8c00 !important;
+            font-weight: 700 !important;
+          }
+          .wbn-icon {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .worker-content {
+            padding-bottom: 110px !important;
+          }
+          .brand-footer {
+            margin-bottom: 110px !important;
+          }
+        \`;
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectStyles);
+      } else {
+        injectStyles();
+      }
+      setInterval(injectStyles, 1500);
+    })();
+    true;
+  `;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
       <WebView
         ref={webViewRef}
         source={{ uri: 'https://parrowskills.com/login-select' }}
         style={styles.webview}
+        injectedJavaScriptBeforeContentLoaded={injectedSafeLayoutJS}
+        injectedJavaScript={injectedSafeLayoutJS}
         userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
         applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
         javaScriptEnabled={true}
@@ -374,7 +471,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -382,6 +479,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    paddingTop: Platform.OS === 'android' ? Math.max(StatusBar.currentHeight || 0, 36) : 36,
+    paddingBottom: Platform.OS === 'android' ? 20 : 12,
   },
   webview: {
     flex: 1,
