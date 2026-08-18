@@ -24,7 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.parrowskills.app",
-      "versionCode": 5,
+      "versionCode": 10,
       "targetSdkVersion": 35
     },
     "web": {
