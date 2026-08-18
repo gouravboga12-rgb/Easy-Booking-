@@ -329,15 +329,15 @@ export default function App() {
         }
         styleEl.innerHTML = \`
           .navbar {
-            padding-top: 0px !important;
+            padding-top: 18px !important;
             height: auto !important;
-            min-height: 60px !important;
+            min-height: 58px !important;
           }
           .nav-inner {
-            height: 60px !important;
+            height: 54px !important;
           }
           .worker-top-header {
-            padding-top: 8px !important;
+            padding-top: 18px !important;
             padding-bottom: 8px !important;
             height: auto !important;
             min-height: 56px !important;
