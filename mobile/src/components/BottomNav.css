@@ -9,8 +9,10 @@
   display: flex;
   align-items: stretch;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
-  height: 64px;
-  padding-bottom: env(safe-area-inset-bottom);
+  height: auto;
+  min-height: 68px;
+  padding-bottom: max(env(safe-area-inset-bottom), 18px);
+  box-sizing: border-box;
 }
 
 .bn-tab {
@@ -24,7 +26,7 @@
   color: #aaa;
   position: relative;
   transition: color 0.18s;
-  padding: 8px 4px 6px;
+  padding: 8px 4px 10px;
   -webkit-tap-highlight-color: transparent;
 }
 

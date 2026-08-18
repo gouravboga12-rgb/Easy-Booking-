@@ -7,6 +7,7 @@
   right: 0;
   z-index: 200;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding-top: max(env(safe-area-inset-top), 14px);
 }
 
 .nav-inner {

@@ -23,7 +23,9 @@
         "foregroundImage": "./public/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.parrowskills.app"
+      "package": "com.parrowskills.app",
+      "versionCode": 5,
+      "targetSdkVersion": 35
     },
     "web": {
       "favicon": "./public/favicon.png"
@@ -39,9 +41,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "00895646-8211-4199-8d63-cd0f8729f80f"
+        "projectId": "e3018ddc-d9eb-43d9-811c-c41a7ee93232"
       }
     },
-    "owner": "zoro05"
+    "owner": "zoro45"
   }
 }
