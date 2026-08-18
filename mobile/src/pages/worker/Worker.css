@@ -593,9 +593,9 @@
   z-index: 200;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
-  padding: max(env(safe-area-inset-top), 14px) 20px 10px 20px;
+  padding: 8px 16px;
   height: auto;
-  min-height: 64px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;

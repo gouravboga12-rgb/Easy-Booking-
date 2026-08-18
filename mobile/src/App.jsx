@@ -329,15 +329,18 @@ export default function App() {
         }
         styleEl.innerHTML = \`
           .navbar {
-            padding-top: max(32px, env(safe-area-inset-top, 32px)) !important;
+            padding-top: 0px !important;
             height: auto !important;
-            min-height: 84px !important;
+            min-height: 60px !important;
+          }
+          .nav-inner {
+            height: 60px !important;
           }
           .worker-top-header {
-            padding-top: max(32px, env(safe-area-inset-top, 32px)) !important;
-            padding-bottom: 10px !important;
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
             height: auto !important;
-            min-height: 78px !important;
+            min-height: 56px !important;
           }
           .bottom-nav {
             padding-top: 6px !important;
@@ -479,7 +482,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingTop: Platform.OS === 'android' ? Math.max(StatusBar.currentHeight || 0, 36) : 36,
+    paddingTop: 0,
     paddingBottom: Platform.OS === 'android' ? 20 : 12,
   },
   webview: {

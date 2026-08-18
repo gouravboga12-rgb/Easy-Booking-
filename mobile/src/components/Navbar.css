@@ -7,14 +7,14 @@
   right: 0;
   z-index: 200;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  padding-top: max(env(safe-area-inset-top), 14px);
+  padding-top: 0;
 }
 
 .nav-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 24px;
-  height: 68px;
+  padding: 0 20px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
