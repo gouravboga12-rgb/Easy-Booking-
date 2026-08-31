@@ -1,8 +1,30 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function PrivacyPolicy() {
+  const navigate = useNavigate();
+
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', color: '#333', lineHeight: '1.7' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px 20px 40px', fontFamily: 'sans-serif', color: '#333', lineHeight: '1.7' }}>
+      <button 
+        onClick={() => navigate(-1)} 
+        style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: '6px', 
+          background: '#f1f5f9', 
+          border: '1px solid #cbd5e1', 
+          borderRadius: '6px', 
+          padding: '6px 14px', 
+          fontSize: '13px', 
+          fontWeight: '600', 
+          color: '#334155', 
+          cursor: 'pointer',
+          marginBottom: '16px' 
+        }}
+      >
+        ← Back
+      </button>
       <h1 style={{ color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>Privacy Policy</h1>
       <p style={{ color: '#64748b' }}>Last updated: July 23, 2026</p>
 

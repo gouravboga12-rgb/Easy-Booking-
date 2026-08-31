@@ -237,19 +237,19 @@ export default function WorkerLayout() {
 
           <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
             <span style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 12px', display: 'block', marginBottom: '6px' }}>Help & Policies</span>
-            <Link to="/terms-conditions" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+            <Link to="/terms-conditions" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
               <HiDocumentText className="ws-nav-icon" />
               <span>Terms & Conditions</span>
             </Link>
-            <Link to="/privacy-policy" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+            <Link to="/privacy-policy" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
               <HiShieldCheck className="ws-nav-icon" />
               <span>Privacy Policy</span>
             </Link>
-            <Link to="/refund-policy" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+            <Link to="/refund-policy" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
               <HiRefresh className="ws-nav-icon" />
               <span>Refund Policy</span>
             </Link>
-            <Link to="/contact-us" target="_blank" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+            <Link to="/contact-us" className="ws-nav-item" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
               <HiMail className="ws-nav-icon" />
               <span>Contact Support</span>
             </Link>
@@ -398,13 +398,13 @@ export default function WorkerLayout() {
             </p>
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', margin: '6px 0', fontSize: '12px' }}>
-              <Link to="/terms-conditions" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Terms & Conditions</Link>
+              <Link to="/terms-conditions" style={{ color: '#93c5fd', textDecoration: 'none' }}>Terms & Conditions</Link>
               <span style={{ color: '#475569' }}>•</span>
-              <Link to="/privacy-policy" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Privacy Policy</Link>
+              <Link to="/privacy-policy" style={{ color: '#93c5fd', textDecoration: 'none' }}>Privacy Policy</Link>
               <span style={{ color: '#475569' }}>•</span>
-              <Link to="/refund-policy" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Refund Policy</Link>
+              <Link to="/refund-policy" style={{ color: '#93c5fd', textDecoration: 'none' }}>Refund Policy</Link>
               <span style={{ color: '#475569' }}>•</span>
-              <Link to="/contact-us" target="_blank" style={{ color: '#93c5fd', textDecoration: 'none' }}>Contact Us</Link>
+              <Link to="/contact-us" style={{ color: '#93c5fd', textDecoration: 'none' }}>Contact Us</Link>
             </div>
 
             <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid #334155', paddingTop: '8px', width: '100%', maxWidth: '320px', margin: '4px auto 0' }}>
