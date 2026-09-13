@@ -3,7 +3,7 @@
     "name": "Parrow Skills",
     "slug": "easylabourfinder-mobile",
     "scheme": "parrowskills",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./public/logo.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.parrowskills.app",
-      "versionCode": 11,
+      "versionCode": 12,
       "targetSdkVersion": 35
     },
     "web": {

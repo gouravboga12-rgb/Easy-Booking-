@@ -27,7 +27,14 @@
   margin-bottom: 12px;
 }
 .footer-logo b { color: var(--primary); }
-.footer-logo-img { height: 60px; width: auto; object-fit: contain; }
+.footer-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 3px;
+}
 
 .footer-brand p {
   font-size: 14px;
