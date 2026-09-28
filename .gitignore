@@ -40,5 +40,13 @@ mobile/android/app/.cxx
 **/.gradle
 *.pem
 
-
-
+# Appeal and legal signature documents
+~$*
+ParrowSkills_Signed_*
+build_signed_documents.py
+generate_perfect_pdfs.py
+preview_*.png
+rotated_*.png
+sig_*.png
+image copy 47.png
+image copy 48.png

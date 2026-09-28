@@ -35,6 +35,21 @@ const ensureShowPriceColumn = async () => {
 };
 ensureShowPriceColumn().catch(err => console.error('ensureShowPriceColumn error:', err));
 
+// Ensure services.available column exists
+const ensureAvailableColumn = async () => {
+  try {
+    const [cols] = await pool.query('SHOW COLUMNS FROM services');
+    const hasAvailable = cols.some(c => c.Field === 'available');
+    if (!hasAvailable) {
+      await pool.query('ALTER TABLE services ADD COLUMN available TINYINT(1) DEFAULT 1');
+      console.log("Column 'available' added to services table.");
+    }
+  } catch (err) {
+    console.warn("Adding services available column failed/skipped:", err.message);
+  }
+};
+ensureAvailableColumn().catch(err => console.error('ensureAvailableColumn error:', err));
+
 // GET /api/services — Public: fetch all services
 router.get('/', async (req, res) => {
   try {
