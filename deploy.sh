@@ -12,7 +12,7 @@ git pull origin main
 echo "=== Frontend: npm install ==="
 npm install
 echo "=== Frontend: npm run build ==="
-npm run build
+NODE_OPTIONS="--max-old-space-size=1536" npm run build
 
 # 3. Update and restart Backend
 cd /home/ubuntu/Easy-Booking-/backend
