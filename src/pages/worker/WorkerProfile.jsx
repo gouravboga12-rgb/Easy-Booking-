@@ -22,7 +22,6 @@ export default function WorkerProfile() {
   
   const navigate = useNavigate();
   
-  const [showLogout, setShowLogout] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -421,22 +420,9 @@ export default function WorkerProfile() {
 
       {/* Logout */}
       {!isEditing && (
-        <button className="logout-btn" onClick={() => setShowLogout(true)} style={{ width: '100%', marginTop: '24px', background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+        <button className="logout-btn" onClick={handleLogout} style={{ width: '100%', marginTop: '24px', background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <HiLogout style={{ width: 18, height: 18 }} /> Logout Account
         </button>
-      )}
-
-      {showLogout && (
-        <div className="modal-overlay" onClick={() => setShowLogout(false)}>
-          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-            <h3>Logout?</h3>
-            <p>Are you sure you want to logout from your worker account?</p>
-            <div className="cm-actions">
-              <button className="cm-cancel" onClick={() => setShowLogout(false)}>Cancel</button>
-              <button className="cm-confirm" onClick={handleLogout}>Logout</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
