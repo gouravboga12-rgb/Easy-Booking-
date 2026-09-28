@@ -86,12 +86,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.parrowskills.app'
+    namespace 'com.parrowskills.finder'
     defaultConfig {
-        applicationId 'com.parrowskills.app'
+        applicationId 'com.parrowskills.finder'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
+        versionCode 1
         versionName "1.0.1"
     }
     signingConfigs {
@@ -147,7 +147,6 @@ android {
 }
 
 dependencies {
-    implementation project(':react-native-webview')
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

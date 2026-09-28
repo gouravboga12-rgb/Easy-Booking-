@@ -23,8 +23,8 @@
         "foregroundImage": "./public/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.parrowskills.app",
-      "versionCode": 12,
+      "package": "com.parrowskills.finder",
+      "versionCode": 1,
       "targetSdkVersion": 35
     },
     "web": {
@@ -41,9 +41,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "e3018ddc-d9eb-43d9-811c-c41a7ee93232"
+        "projectId": "07b4751b-97e0-4699-af89-7f2b01ca32ea"
       }
     },
-    "owner": "zoro45"
+    "owner": "gouravboga12"
   }
 }

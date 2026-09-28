@@ -55,9 +55,7 @@ export default function App() {
         try {
           let pushToken = '';
           try {
-            const tokenData = await Notifications.getExpoPushTokenAsync({
-              projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
-            });
+            const tokenData = await Notifications.getExpoPushTokenAsync();
             pushToken = tokenData.data;
           } catch (e) {
             // Fallback to native device token
@@ -165,9 +163,7 @@ export default function App() {
         try {
           let pushToken = '';
           try {
-            const tokenData = await Notifications.getExpoPushTokenAsync({
-              projectId: '5224f65b-1ac1-47a6-9adf-f6441a6268e1'
-            });
+            const tokenData = await Notifications.getExpoPushTokenAsync();
             pushToken = tokenData.data;
           } catch (e) {
             const deviceTokenData = await Notifications.getDevicePushTokenAsync();
@@ -326,43 +322,43 @@ export default function App() {
           styleEl = document.createElement('style');
           styleEl.id = 'mobile-app-safe-area-fix';
           document.head.appendChild(styleEl);
-        }
         styleEl.innerHTML = \`
           .navbar {
-            padding-top: 18px !important;
-            height: auto !important;
-            min-height: 58px !important;
-          }
-          .nav-inner {
-            height: 54px !important;
-          }
-          .worker-top-header {
-            padding-top: 18px !important;
+            padding-top: 8px !important;
             padding-bottom: 8px !important;
             height: auto !important;
             min-height: 56px !important;
           }
+          .nav-inner {
+            height: 50px !important;
+          }
+          .worker-top-header {
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+            height: auto !important;
+            min-height: 52px !important;
+          }
           .bottom-nav {
             padding-top: 6px !important;
-            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            padding-bottom: 8px !important;
             height: auto !important;
-            min-height: 72px !important;
-            align-items: stretch !important;
+            min-height: 60px !important;
+            align-items: center !important;
             background: #ffffff !important;
             border-top: 1px solid #eaeaea !important;
           }
           .worker-bottom-nav {
             padding-top: 6px !important;
-            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            padding-bottom: 8px !important;
             height: auto !important;
-            min-height: 72px !important;
-            align-items: stretch !important;
+            min-height: 60px !important;
+            align-items: center !important;
             background: #ffffff !important;
             border-top: 1px solid #eaeaea !important;
           }
           .bn-tab {
-            justify-content: flex-start !important;
-            padding: 4px 4px 6px !important;
+            justify-content: center !important;
+            padding: 4px 4px !important;
           }
           .bn-icon {
             font-size: 22px !important;
@@ -375,8 +371,8 @@ export default function App() {
             font-weight: 600 !important;
           }
           .wbn-item {
-            justify-content: flex-start !important;
-            padding: 4px 2px 6px !important;
+            justify-content: center !important;
+            padding: 4px 2px !important;
             overflow: visible !important;
           }
           .wbn-item span {
@@ -399,10 +395,10 @@ export default function App() {
             height: 22px !important;
           }
           .worker-content {
-            padding-bottom: 110px !important;
+            padding-bottom: 90px !important;
           }
           .brand-footer {
-            margin-bottom: 110px !important;
+            margin-bottom: 90px !important;
           }
         \`;
       }
@@ -417,73 +413,83 @@ export default function App() {
   `;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
-      <WebView
-        ref={webViewRef}
-        source={{ uri: 'https://parrowskills.com/login-select' }}
-        style={styles.webview}
-        injectedJavaScriptBeforeContentLoaded={injectedSafeLayoutJS}
-        injectedJavaScript={injectedSafeLayoutJS}
-        userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
-        applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
-        javaScriptEnabled={true}
-        javaScriptCanOpenWindowsAutomatically={true}
-        setSupportMultipleWindows={false}
-        domStorageEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        sharedCookiesEnabled={true}
-        cacheEnabled={true}
-        cacheMode="LOAD_DEFAULT"
-        androidHardwareAccelerationDisabled={false}
-        overScrollMode="never"
-        allowsInlineMediaPlayback={true}
-        mediaPlaybackRequiresUserAction={false}
-        geolocationEnabled={true}
-        startInLoadingState={true}
-        allowFileAccess={true}
-        allowContentAccess={true}
-        allowFileAccessFromFileURLs={true}
-        allowUniversalAccessFromFileURLs={true}
-        mixedContentMode="always"
-        originWhitelist={['*']}
-        onMessage={handleMessage}
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-        onNavigationStateChange={(navState) => {
-          setCanGoBack(navState.canGoBack);
-        }}
-        onLoadEnd={() => setLoading(false)}
-        onError={(syntheticEvent) => {
-          const { nativeEvent } = syntheticEvent;
-          console.warn('WebView error: ', nativeEvent);
-          setHasError(true);
-          setLoading(false);
-        }}
-        renderLoading={() => (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ff8c00" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#ffffff"
+        translucent={Platform.OS === 'android'}
+      />
+      <View style={styles.container}>
+        <WebView
+          ref={webViewRef}
+          source={{ uri: 'https://parrowskills.com/login-select' }}
+          style={styles.webview}
+          injectedJavaScriptBeforeContentLoaded={injectedSafeLayoutJS}
+          injectedJavaScript={injectedSafeLayoutJS}
+          userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+          applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
+          javaScriptEnabled={true}
+          javaScriptCanOpenWindowsAutomatically={true}
+          setSupportMultipleWindows={false}
+          domStorageEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          sharedCookiesEnabled={true}
+          cacheEnabled={true}
+          cacheMode="LOAD_DEFAULT"
+          androidHardwareAccelerationDisabled={false}
+          overScrollMode="never"
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          geolocationEnabled={true}
+          startInLoadingState={true}
+          allowFileAccess={true}
+          allowContentAccess={true}
+          allowFileAccessFromFileURLs={true}
+          allowUniversalAccessFromFileURLs={true}
+          mixedContentMode="always"
+          originWhitelist={['*']}
+          onMessage={handleMessage}
+          onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+          onNavigationStateChange={(navState) => {
+            setCanGoBack(navState.canGoBack);
+          }}
+          onLoadEnd={() => setLoading(false)}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+            setHasError(true);
+            setLoading(false);
+          }}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#ff8c00" />
+            </View>
+          )}
+        />
+        {hasError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Connection Issue</Text>
+            <Text style={styles.errorSub}>Unable to connect to Parrow Skills service. Please check your internet connection.</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={reloadApp}>
+              <Text style={styles.retryText}>Reload App</Text>
+            </TouchableOpacity>
           </View>
         )}
-      />
-      {hasError && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Connection Issue</Text>
-          <Text style={styles.errorSub}>Unable to connect to Parrow Skills service. Please check your internet connection.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={reloadApp}>
-            <Text style={styles.retryText}>Reload App</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingTop: 0,
-    paddingBottom: Platform.OS === 'android' ? 20 : 12,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 8 : 0,
+    paddingBottom: Platform.OS === 'android' ? 24 : 0,
   },
   webview: {
     flex: 1,

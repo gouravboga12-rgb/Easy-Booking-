@@ -1,4 +1,4 @@
-package com.parrowskills.app
+package com.parrowskills.finder
 
 import android.app.Application
 import android.content.res.Configuration
