@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { HiSpeakerphone, HiMail, HiPhone, HiBell, HiPlus, HiCheckCircle, HiX, HiStar } from 'react-icons/hi';
+import { uploadFileToS3 } from '../../utils/s3Upload';
 import './Admin.css';
 
 const isVideo = (url) => {
@@ -65,18 +66,28 @@ export default function AdminCMS() {
   const [newBanner, setNewBanner] = useState({ title: '', subtitle: '', image: '', cta: '', page: 'Home Slide 1', active: true, vehicleId: '', redirectUrl: '', showCta: true, showBrowseAll: true });
   const [successMsg, setSuccessMsg] = useState('');
 
-  const handleImageUpload = (e, isEdit = false) => {
+  const handleImageUpload = async (e, isEdit = false) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      try {
+        const s3Url = await uploadFileToS3(file, 'banners');
         if (isEdit) {
-          setEditingBanner(prev => ({ ...prev, image: reader.result }));
+          setEditingBanner(prev => ({ ...prev, image: s3Url }));
         } else {
-          setNewBanner(prev => ({ ...prev, image: reader.result }));
+          setNewBanner(prev => ({ ...prev, image: s3Url }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('S3 banner upload error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (isEdit) {
+            setEditingBanner(prev => ({ ...prev, image: reader.result }));
+          } else {
+            setNewBanner(prev => ({ ...prev, image: reader.result }));
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -163,18 +174,28 @@ export default function AdminCMS() {
     showSuccess('FAQ updated!');
   };
 
-  const handlePopupMediaUpload = (e, isEdit = false) => {
+  const handlePopupMediaUpload = async (e, isEdit = false) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      try {
+        const s3Url = await uploadFileToS3(file, 'popup-ads');
         if (isEdit) {
-          setEditingPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+          setEditingPopupAd(prev => ({ ...prev, mediaUrl: s3Url }));
         } else {
-          setNewPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+          setNewPopupAd(prev => ({ ...prev, mediaUrl: s3Url }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('S3 popup media upload error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (isEdit) {
+            setEditingPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+          } else {
+            setNewPopupAd(prev => ({ ...prev, mediaUrl: reader.result }));
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

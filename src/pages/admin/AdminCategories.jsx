@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { HiPlus, HiPencil, HiTrash, HiCheckCircle } from 'react-icons/hi';
+import { uploadFileToS3 } from '../../utils/s3Upload';
 import './Admin.css';
 
 const PRESET_ICONS = [
@@ -27,17 +28,27 @@ export default function AdminCategories() {
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
 
-  const handleImageUpload = (file, isEdit = false) => {
+  const handleImageUpload = async (file, isEdit = false) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      const s3Url = await uploadFileToS3(file, 'categories');
       if (isEdit) {
-        setEditingCat(p => ({ ...p, image_url: reader.result }));
+        setEditingCat(p => ({ ...p, image_url: s3Url }));
       } else {
-        setNewCat(p => ({ ...p, image_url: reader.result }));
+        setNewCat(p => ({ ...p, image_url: s3Url }));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('S3 category image upload error:', err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditingCat(p => ({ ...p, image_url: reader.result }));
+        } else {
+          setNewCat(p => ({ ...p, image_url: reader.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddCategory = async (e) => {

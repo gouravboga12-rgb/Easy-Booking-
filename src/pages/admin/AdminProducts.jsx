@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { HiCube, HiChevronLeft, HiPencil, HiPlus, HiTrash, HiCheckCircle } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
+import { uploadFileToS3 } from '../../utils/s3Upload';
 import './Admin.css';
 
 export default function AdminProducts() {
@@ -129,14 +130,20 @@ export default function AdminProducts() {
     setShowModal(true);
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm(prev => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const s3Url = await uploadFileToS3(file, 'services');
+        setForm(prev => ({ ...prev, image: s3Url }));
+      } catch (err) {
+        console.error('S3 service image upload error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setForm(prev => ({ ...prev, image: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

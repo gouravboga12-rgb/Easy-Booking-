@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadBase64ToS3 } from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -62,12 +63,13 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
+    const s3Media = await uploadBase64ToS3(mediaUrl, 'popup-ads');
     const [result] = await pool.query(
       `INSERT INTO popup_ads (title, mediaUrl, redirectUrl, active, delaySeconds)
        VALUES (?, ?, ?, ?, ?)`,
       [
         title || '',
-        mediaUrl,
+        s3Media,
         redirectUrl || '',
         active !== false ? 1 : 0,
         delaySeconds ? parseInt(delaySeconds, 10) : 15
@@ -97,13 +99,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Popup ad not found' });
     }
 
+    const s3Media = mediaUrl !== undefined ? await uploadBase64ToS3(mediaUrl, 'popup-ads') : existing[0].mediaUrl;
+
     await pool.query(
       `UPDATE popup_ads
        SET title = ?, mediaUrl = ?, redirectUrl = ?, active = ?, delaySeconds = ?
        WHERE id = ?`,
       [
         title !== undefined ? title : existing[0].title,
-        mediaUrl !== undefined ? mediaUrl : existing[0].mediaUrl,
+        s3Media,
         redirectUrl !== undefined ? redirectUrl : existing[0].redirectUrl,
         active !== undefined ? (active ? 1 : 0) : existing[0].active,
         delaySeconds !== undefined ? parseInt(delaySeconds, 10) : existing[0].delaySeconds,

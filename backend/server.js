@@ -10,6 +10,7 @@ import categoryRoutes from './src/routes/categories.js';
 import notificationRoutes from './src/routes/notifications.js';
 import bannerRoutes from './src/routes/banners.js';
 import popupAdRoutes from './src/routes/popupAds.js';
+import uploadRoutes from './src/routes/upload.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
+app.use('/api/upload', uploadRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/services', serviceRoutes);

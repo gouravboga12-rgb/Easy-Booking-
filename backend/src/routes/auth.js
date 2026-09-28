@@ -6,6 +6,7 @@ import axios from 'axios';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordResetOtpEmail, sendRegisterOtpEmail } from '../utils/mailer.js';
+import { uploadBase64ToS3 } from '../utils/s3.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -512,12 +513,17 @@ router.post('/register', async (req, res) => {
     const catJson = categories ? JSON.stringify(categories) : '[]';
     const skillsJson = skills ? JSON.stringify(skills) : '[]';
 
+    // Upload any base64 images to S3 (or keep existing S3 URLs)
+    const s3Photo = photo ? await uploadBase64ToS3(photo, 'workers') : null;
+    const s3Aadhar = aadharPhoto ? await uploadBase64ToS3(aadharPhoto, 'kyc') : null;
+    const s3Pan = panPhoto ? await uploadBase64ToS3(panPhoto, 'kyc') : null;
+
     await pool.query(
       `INSERT INTO users (id, email, password_hash, role, name, phone, categories, skills, vehicle_details, rating, aadhar, pan, bank, photo, aadhar_photo, pan_photo, approved, radius, address, lat, lng, city, state, target_locations, live_tracking)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, '[]', 1)`,
       [
         id, email, passwordHash, role, name, phone, catJson, skillsJson, vehicleDetails || null,
-        aadhar || null, pan || null, bank || null, photo || null, aadharPhoto || null, panPhoto || null,
+        aadhar || null, pan || null, bank || null, s3Photo, s3Aadhar, s3Pan,
         radius ? Number(radius) : 10, address || null, lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null, city || null, state || null
       ]
     );
@@ -659,6 +665,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     const walletJson = wallet ? JSON.stringify(wallet) : undefined;
     const subscriptionJson = subscription ? JSON.stringify(subscription) : undefined;
     const targetLocationsJson = target_locations ? JSON.stringify(target_locations) : undefined;
+    const s3Photo = photo !== undefined ? (photo ? await uploadBase64ToS3(photo, 'workers') : '') : undefined;
 
     await pool.query(
       `UPDATE users SET 
@@ -683,7 +690,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         live_tracking = COALESCE(?, live_tracking)
        WHERE id = ?`,
       [
-        name, phone, address, skillsJson, catJson, radius !== undefined ? Number(radius) : undefined, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, photo,
+        name, phone, address, skillsJson, catJson, radius !== undefined ? Number(radius) : undefined, bank, aadhar, pan, finalVehicle, walletJson, subscriptionJson, s3Photo,
         lat !== undefined ? parseFloat(lat) : undefined,
         lng !== undefined ? parseFloat(lng) : undefined,
         city, state, targetLocationsJson,

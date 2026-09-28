@@ -11,6 +11,7 @@ import { MdOutlineVerified, MdGpsFixed } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
 import Map, { NavigationControl } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { uploadFileToS3 } from '../utils/s3Upload';
 import './BookingFlow.css';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiYW5zYXIta2hhbiIsImEiOiJjbXJpbGU3aGQxcDh2Mnlxem16czZqeXRoIn0.82kFrUjOX09W8Hki5ARTkw';
@@ -744,19 +745,25 @@ export default function BookingFlow() {
                               <input
                                 type="file"
                                 accept="image/*,application/pdf"
-                                onChange={e => {
+                                onChange={async (e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = () => setVal(reader.result);
-                                    reader.readAsDataURL(file);
+                                    try {
+                                      const s3Url = await uploadFileToS3(file, 'bookings');
+                                      setVal(s3Url);
+                                    } catch (err) {
+                                      console.error('S3 booking file upload error:', err);
+                                      const reader = new FileReader();
+                                      reader.onload = () => setVal(reader.result);
+                                      reader.readAsDataURL(file);
+                                    }
                                   }
                                 }}
                                 style={{ display: 'none' }}
                               />
                             </label>
-                            {value && value.startsWith('data:image/') && (
-                              <img src={value} alt="Preview" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd' }} />
+                            {value && (
+                              <img src={value} alt="Preview" onError={(e) => { e.target.style.display = 'none'; }} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #ddd' }} />
                             )}
                           </div>
                         ) : (

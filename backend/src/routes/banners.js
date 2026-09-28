@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadBase64ToS3 } from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -91,13 +92,14 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
+    const s3Image = await uploadBase64ToS3(image, 'banners');
     const [result] = await pool.query(
       `INSERT INTO banners (title, subtitle, image, cta, page, active, vehicleId, redirectUrl, showCta, showBrowseAll)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         subtitle || '',
-        image,
+        s3Image,
         cta || 'Book Now',
         page || 'Home Slide 1',
         active !== false,
@@ -131,6 +133,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Banner not found' });
     }
 
+    const s3Image = image !== undefined ? await uploadBase64ToS3(image, 'banners') : existing[0].image;
+
     await pool.query(
       `UPDATE banners 
        SET title = ?, subtitle = ?, image = ?, cta = ?, page = ?, active = ?, vehicleId = ?, redirectUrl = ?, showCta = ?, showBrowseAll = ?
@@ -138,7 +142,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [
         title !== undefined ? title : existing[0].title,
         subtitle !== undefined ? subtitle : existing[0].subtitle,
-        image !== undefined ? image : existing[0].image,
+        s3Image,
         cta !== undefined ? cta : existing[0].cta,
         page !== undefined ? page : existing[0].page,
         active !== undefined ? active : existing[0].active,

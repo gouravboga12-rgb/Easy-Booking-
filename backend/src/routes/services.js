@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadBase64ToS3 } from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -78,6 +79,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
+    const s3Image = await uploadBase64ToS3(image, 'services');
     const customFieldsJson = custom_fields ? JSON.stringify(custom_fields) : '[]';
     const pricingRulesJson = pricing_rules ? JSON.stringify(pricing_rules) : null;
     const finalPricingType = pricing_type || 'direct';
@@ -87,7 +89,7 @@ router.post('/', authenticateToken, async (req, res) => {
     await pool.query(
       `INSERT INTO services (id, name, \`desc\`, category, category_label, rate, unit, image, custom_fields, pricing_type, pricing_rules, available, show_price, sort_order)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 99)`,
-      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, image || '', customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, finalShowPrice]
+      [id, name, desc || '', category, categoryLabel || category, Number(rate), unit, s3Image || '', customFieldsJson, finalPricingType, pricingRulesJson, finalAvailable, finalShowPrice]
     );
     const [created] = await pool.query('SELECT * FROM services WHERE id = ?', [id]);
     const service = created[0];
@@ -128,7 +130,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const finalCategoryLabel = categoryLabel !== undefined ? categoryLabel : (currentService.category_label || finalCategory);
     const finalRate = rate !== undefined ? Number(rate) : Number(currentService.rate);
     const finalUnit = unit !== undefined ? unit : currentService.unit;
-    const finalImage = image !== undefined ? image : currentService.image;
+    const finalImage = image !== undefined ? await uploadBase64ToS3(image, 'services') : currentService.image;
     const finalAvailable = available !== undefined ? (available ? 1 : 0) : (currentService.available !== 0 ? 1 : 0);
     const finalShowPrice = show_price !== undefined ? (show_price ? 1 : 0) : (currentService.show_price !== 0 ? 1 : 0);
 

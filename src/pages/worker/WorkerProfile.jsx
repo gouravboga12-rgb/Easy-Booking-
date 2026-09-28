@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore';
 import { HiUser, HiPhone, HiMail, HiStar, HiBriefcase, HiLogout, HiMap, HiFolderOpen, HiCreditCard, HiCheckCircle } from 'react-icons/hi';
 import { MdDirectionsCar, MdBuild } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
+import { uploadFileToS3 } from '../../utils/s3Upload';
 import './Worker.css';
 
 export default function WorkerProfile() {
@@ -48,14 +49,18 @@ export default function WorkerProfile() {
     }
   }, [user]);
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPhoto(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const s3Url = await uploadFileToS3(file, 'workers');
+        setPhoto(s3Url);
+      } catch (err) {
+        console.error('S3 Photo Upload error:', err);
+        const reader = new FileReader();
+        reader.onload = () => setPhoto(reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
   

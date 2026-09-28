@@ -7,6 +7,7 @@ import {
   HiIdentification, HiBriefcase, HiMap, HiFolderOpen, HiCreditCard
 } from 'react-icons/hi';
 import { MdConstruction } from 'react-icons/md';
+import { uploadFileToS3 } from '../../utils/s3Upload';
 import './Auth.css';
 
 const EXPERIENCE_OPTIONS = ['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
@@ -145,55 +146,67 @@ export default function WorkerRegister() {
     const file = e.target.files[0];
     if (file) {
       setError('');
-      if (file.size > 2 * 1024 * 1024) {
-        setError('Profile photograph must be under 2MB');
+      if (file.size > 15 * 1024 * 1024) {
+        setError('Profile photograph must be under 15MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        handleVerifChange('profilePhoto', reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const s3Url = await uploadFileToS3(file, 'workers');
+        handleVerifChange('profilePhoto', s3Url);
+      } catch (err) {
+        console.error('S3 Photo Upload error:', err);
+        const reader = new FileReader();
+        reader.onload = () => handleVerifChange('profilePhoto', reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleAadharCopyUpload = (e) => {
+  const handleAadharCopyUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setError('');
-      if (file.size > 2 * 1024 * 1024) {
-        setError('Aadhaar copy file must be under 2MB');
+      if (file.size > 15 * 1024 * 1024) {
+        setError('Aadhaar copy file must be under 15MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
+      try {
+        const s3Url = await uploadFileToS3(file, 'kyc');
         setVerificationForm(p => ({
           ...p,
-          aadharCopy: reader.result,
+          aadharCopy: s3Url,
           aadharCopyName: file.name
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('S3 Aadhaar Upload error:', err);
+        const reader = new FileReader();
+        reader.onload = () => setVerificationForm(p => ({ ...p, aadharCopy: reader.result, aadharCopyName: file.name }));
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handlePanCopyUpload = (e) => {
+  const handlePanCopyUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setError('');
-      if (file.size > 2 * 1024 * 1024) {
-        setError('PAN copy file must be under 2MB');
+      if (file.size > 15 * 1024 * 1024) {
+        setError('PAN copy file must be under 15MB');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
+      try {
+        const s3Url = await uploadFileToS3(file, 'kyc');
         setVerificationForm(p => ({
           ...p,
-          panCopy: reader.result,
+          panCopy: s3Url,
           panCopyName: file.name
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('S3 PAN Upload error:', err);
+        const reader = new FileReader();
+        reader.onload = () => setVerificationForm(p => ({ ...p, panCopy: reader.result, panCopyName: file.name }));
+        reader.readAsDataURL(file);
+      }
     }
   };
 

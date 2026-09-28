@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadBase64ToS3 } from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -27,11 +28,12 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
+    const s3Image = await uploadBase64ToS3(image_url, 'categories');
     const labourJson = labour_types ? (typeof labour_types === 'string' ? labour_types : JSON.stringify(labour_types)) : '[]';
     await pool.query(
       `INSERT INTO service_categories (id, label, icon, image_url, color, icon_name, labour_types)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, label, icon || '📦', image_url || '', color || '#6d28d9', icon_name || 'MdBuild', labourJson]
+      [id, label, icon || '📦', s3Image || '', color || '#6d28d9', icon_name || 'MdBuild', labourJson]
     );
 
     const [rows] = await pool.query('SELECT * FROM service_categories WHERE id = ?', [id]);
@@ -57,6 +59,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    const s3Image = image_url !== undefined ? await uploadBase64ToS3(image_url, 'categories') : existing[0].image_url;
     const labourJson = labour_types ? (typeof labour_types === 'string' ? labour_types : JSON.stringify(labour_types)) : undefined;
 
     await pool.query(
@@ -68,7 +71,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         icon_name = COALESCE(?, icon_name),
         labour_types = COALESCE(?, labour_types)
        WHERE id = ?`,
-      [label, icon, image_url, color, icon_name, labourJson, id]
+      [label, icon, s3Image, color, icon_name, labourJson, id]
     );
 
     const [rows] = await pool.query('SELECT * FROM service_categories WHERE id = ?', [id]);
