@@ -14,6 +14,7 @@ import { WebView } from 'react-native-webview';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as WebBrowser from 'expo-web-browser';
+import * as Location from 'expo-location';
 
 // Set notification handler to present notification even when app is open or in background
 Notifications.setNotificationHandler({
@@ -97,6 +98,21 @@ function MainApp() {
       }
     }
     setupNotifications();
+  }, []);
+
+  useEffect(() => {
+    async function setupLocation() {
+      try {
+        const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+        if (existingStatus !== 'granted') {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          console.log('Location permission requested at startup, status:', status);
+        }
+      } catch (err) {
+        console.warn('Error setting up location permission:', err);
+      }
+    }
+    setupLocation();
   }, []);
 
   useEffect(() => {
@@ -257,6 +273,84 @@ function MainApp() {
           },
           trigger: null,
         });
+      } else if (data.type === 'GET_DEVICE_LOCATION' || data.type === 'REQUEST_LOCATION') {
+        const reqId = data.reqId;
+        try {
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            const permResult = await Location.requestForegroundPermissionsAsync();
+            status = permResult.status;
+          }
+          if (status === 'granted') {
+            let loc = null;
+            try {
+              loc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High,
+                timeInterval: 4000,
+              });
+            } catch (posErr) {
+              loc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              }).catch(() => null) || await Location.getLastKnownPositionAsync({}).catch(() => null);
+            }
+
+            if (loc && loc.coords) {
+              const payload = JSON.stringify({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+                altitude: loc.coords.altitude,
+                accuracy: loc.coords.accuracy,
+                altitudeAccuracy: loc.coords.altitudeAccuracy,
+                heading: loc.coords.heading,
+                speed: loc.coords.speed,
+                timestamp: loc.timestamp
+              });
+              webViewRef.current && webViewRef.current.injectJavaScript(`
+                (function() {
+                  try {
+                    if (window.__handleNativeLocationSuccess) {
+                      window.__handleNativeLocationSuccess(${reqId}, ${payload});
+                    }
+                  } catch (e) {}
+                })();
+                true;
+              `);
+            } else {
+              webViewRef.current && webViewRef.current.injectJavaScript(`
+                (function() {
+                  try {
+                    if (window.__handleNativeLocationError) {
+                      window.__handleNativeLocationError(${reqId}, "Unable to acquire GPS fix. Please ensure device location is turned on.");
+                    }
+                  } catch (e) {}
+                })();
+                true;
+              `);
+            }
+          } else {
+            webViewRef.current && webViewRef.current.injectJavaScript(`
+              (function() {
+                try {
+                  if (window.__handleNativeLocationError) {
+                    window.__handleNativeLocationError(${reqId}, "Location permission denied. Please allow location access in your device settings.");
+                  }
+                } catch (e) {}
+              })();
+              true;
+            `);
+          }
+        } catch (e) {
+          webViewRef.current && webViewRef.current.injectJavaScript(`
+            (function() {
+              try {
+                if (window.__handleNativeLocationError) {
+                  window.__handleNativeLocationError(${reqId}, "${e.message || 'Failed to fetch GPS location'}");
+                }
+              } catch (err) {}
+            })();
+            true;
+          `);
+        }
       }
     } catch (e) {
       // Ignore non-JSON messages
@@ -298,7 +392,7 @@ function MainApp() {
       return false;
     }
 
-    // Intercept phone calls, WhatsApp messages, emails, SMS, UPI & payment gateway intent links
+    // Intercept phone calls, WhatsApp messages, emails, SMS, UPI, maps & payment gateway intent links
     const isExternalScheme = 
       url.startsWith('tel:') ||
       url.startsWith('mailto:') ||
@@ -313,6 +407,9 @@ function MainApp() {
       url.startsWith('razorpay:') ||
       url.startsWith('cred:') ||
       url.startsWith('paytm:') ||
+      url.startsWith('geo:') ||
+      url.includes('google.com/maps') ||
+      url.includes('maps.google.com') ||
       url.includes('api.whatsapp.com') ||
       url.includes('wa.me');
 
@@ -497,6 +594,82 @@ function MainApp() {
         injectStyles();
       }
       setInterval(injectStyles, 1500);
+    })();
+
+    // Native GPS Location Bridge for Mobile App WebView
+    (function() {
+      if (!window.__nativeLocationBridgeInstalled) {
+        window.__nativeLocationBridgeInstalled = true;
+        window.__nativeLocationCallbacks = {};
+        var __nativeLocationReqId = 1;
+
+        window.__handleNativeLocationSuccess = function(reqId, data) {
+          var cb = window.__nativeLocationCallbacks[reqId];
+          if (cb && cb.success) {
+            cb.success({
+              coords: {
+                latitude: data.latitude,
+                longitude: data.longitude,
+                altitude: data.altitude !== undefined ? data.altitude : null,
+                accuracy: data.accuracy || 10,
+                altitudeAccuracy: data.altitudeAccuracy !== undefined ? data.altitudeAccuracy : null,
+                heading: data.heading !== undefined ? data.heading : null,
+                speed: data.speed !== undefined ? data.speed : null
+              },
+              timestamp: data.timestamp || Date.now()
+            });
+            delete window.__nativeLocationCallbacks[reqId];
+          }
+        };
+
+        window.__handleNativeLocationError = function(reqId, errorMsg) {
+          var cb = window.__nativeLocationCallbacks[reqId];
+          if (cb && cb.error) {
+            var err = new Error(errorMsg || 'Unable to fetch GPS');
+            err.code = 1;
+            cb.error(err);
+            delete window.__nativeLocationCallbacks[reqId];
+          }
+        };
+
+        if (navigator.geolocation) {
+          var originalGetCurrentPosition = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+
+          navigator.geolocation.getCurrentPosition = function(success, error, options) {
+            var id = __nativeLocationReqId++;
+            window.__nativeLocationCallbacks[id] = { success: success, error: error };
+            try {
+              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'GET_DEVICE_LOCATION',
+                  reqId: id,
+                  options: options || {}
+                }));
+              } else if (originalGetCurrentPosition) {
+                originalGetCurrentPosition(success, error, options);
+              }
+            } catch(e) {
+              if (originalGetCurrentPosition) {
+                originalGetCurrentPosition(success, error, options);
+              } else if (error) {
+                error(e);
+              }
+            }
+          };
+
+          navigator.geolocation.watchPosition = function(success, error, options) {
+            navigator.geolocation.getCurrentPosition(success, error, options);
+            var watchTimer = setInterval(function() {
+              navigator.geolocation.getCurrentPosition(success, error, options);
+            }, 10000);
+            return watchTimer;
+          };
+
+          navigator.geolocation.clearWatch = function(watchId) {
+            clearInterval(watchId);
+          };
+        }
+      }
     })();
     true;
   `;

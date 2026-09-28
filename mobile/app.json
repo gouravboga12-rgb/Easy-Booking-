@@ -24,13 +24,23 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.parrowskills.finder",
-      "versionCode": 3,
-      "targetSdkVersion": 36
+      "versionCode": 4,
+      "targetSdkVersion": 36,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./public/favicon.png"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Parrow Skills to access your location for live dispatch, navigation, and service tracking."
+        }
+      ],
       [
         "expo-notifications",
         {

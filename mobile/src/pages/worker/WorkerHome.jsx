@@ -741,9 +741,10 @@ export default function WorkerHome() {
 
   const handleFetchGpsLocation = () => {
     if (!navigator.geolocation) {
-      alert("GPS is not supported by your browser.");
+      alert("GPS is not supported by your browser or device.");
       return;
     }
+    setLocMessage("🛰️ Fetching GPS location... Please allow permission if prompted.");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -798,10 +799,14 @@ export default function WorkerHome() {
         setTimeout(() => setLocMessage(''), 5000);
       },
       (err) => {
-        console.warn(err);
-        alert("Unable to fetch GPS. Make sure location permission is allowed and HTTPS is active.");
+        console.warn("GPS fetch error:", err);
+        const errorMsg = err && err.code === 1
+          ? "Location permission was denied. Please allow location access in your device settings."
+          : (err?.message || "Unable to fetch GPS. Make sure location permission is allowed and GPS is turned on.");
+        setLocMessage("❌ " + errorMsg);
+        alert(errorMsg);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 
