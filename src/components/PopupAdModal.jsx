@@ -74,7 +74,7 @@ export default function PopupAdModal() {
         </button>
 
         <div className="popup-ad-media-wrapper">
-          <span className="popup-ad-badge">Ad</span>
+          <span className="popup-ad-badge">Offer</span>
           {isVideo(currentAd.mediaUrl) ? (
             <video
               src={currentAd.mediaUrl}

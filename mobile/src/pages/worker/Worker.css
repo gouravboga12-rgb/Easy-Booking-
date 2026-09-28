@@ -183,36 +183,38 @@
 .worker-content {
   flex: 1;
   padding: 16px;
-  padding-bottom: 95px; /* Space for bottom nav on mobile */
+  padding-bottom: 84px; /* Space for bottom nav on mobile */
 }
 
 .worker-bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: auto;
-  min-height: 72px;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  min-height: 64px;
   background: #ffffff;
   border-top: 1px solid #eaeaea;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-around;
   z-index: 300;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
-  padding: 6px 0 max(env(safe-area-inset-bottom), 16px) 0;
+  box-shadow: 0 -3px 16px rgba(0,0,0,0.06);
+  padding: 0 0 env(safe-area-inset-bottom, 0px) 0;
   box-sizing: border-box;
 }
 .wbn-item {
   flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 3px;
   text-decoration: none;
   color: #64748b;
   font-size: 10px;
   font-weight: 600;
   transition: color 0.18s;
-  padding: 4px 2px 6px;
+  padding: 4px 1px 2px;
   text-align: center;
   line-height: 1.2;
   min-width: 0;
@@ -220,20 +222,21 @@
 }
 .wbn-item span {
   display: block;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
   white-space: nowrap;
   overflow: visible;
   line-height: 1.2;
+  text-align: center;
 }
 .wbn-item.active { color: var(--primary); }
 .wbn-item.active span { color: var(--primary); font-weight: 700; }
-.wbn-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.wbn-icon { width: 20px; height: 20px; flex-shrink: 0; display: block; }
 
 @media (max-width: 380px) {
-  .wbn-item span { font-size: 8.5px; }
-  .wbn-icon { width: 20px; height: 20px; }
+  .wbn-item span { font-size: 9px; }
+  .wbn-icon { width: 19px; height: 19px; }
 }
 
 /* Desktop & Tablet Sidebar Styles */
@@ -593,9 +596,9 @@
   z-index: 200;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
-  padding: 18px 16px 8px 16px;
+  padding: 6px 14px;
   height: auto;
-  min-height: 56px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -698,7 +701,7 @@
   .pi-row { padding: 10px 0; font-size: 13px; }
   .logout-btn { padding: 12px; font-size: 14px; }
   .wp-title h1 { font-size: 19px; }
-  .worker-top-header { padding: max(env(safe-area-inset-top), 14px) 12px 10px 12px !important; height: auto !important; min-height: 60px !important; }
+  .worker-top-header { padding: 6px 12px !important; height: auto !important; min-height: 52px !important; }
   .wth-brand { font-size: 17px; }
 }
 
@@ -731,7 +734,7 @@
 /* 3. Add bottom margin to brand footer so it does not overlap with fixed bottom navigation bar */
 @media (max-width: 768px) {
   .brand-footer {
-    margin-bottom: 80px !important;
+    margin-bottom: 16px !important;
   }
 }
 

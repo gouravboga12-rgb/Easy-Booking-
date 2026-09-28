@@ -20,12 +20,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./public/logo.png",
+        "foregroundImage": "./public/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.parrowskills.finder",
-      "versionCode": 1,
-      "targetSdkVersion": 35
+      "versionCode": 3,
+      "targetSdkVersion": 36
     },
     "web": {
       "favicon": "./public/favicon.png"
@@ -36,6 +36,16 @@
         {
           "icon": "./public/logo.png",
           "color": "#ff8c00"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
         }
       ]
     ],

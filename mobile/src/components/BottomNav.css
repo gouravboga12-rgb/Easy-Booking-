@@ -7,26 +7,30 @@
   background: #fff;
   border-top: 1px solid #eaeaea;
   display: flex;
-  align-items: stretch;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
-  height: auto;
-  min-height: 72px;
-  padding: 6px 0 max(env(safe-area-inset-bottom), 16px) 0;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.06);
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  min-height: 64px;
+  padding: 0 0 env(safe-area-inset-bottom, 0px) 0;
   box-sizing: border-box;
 }
 
 .bn-tab {
   flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 3px;
   text-decoration: none;
   color: #64748b;
   position: relative;
   transition: color 0.18s;
-  padding: 4px 4px 6px;
+  padding: 4px 2px 2px;
+  box-sizing: border-box;
+  overflow: visible;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -42,6 +46,7 @@
   height: 22px;
   transition: transform 0.18s;
   flex-shrink: 0;
+  display: block;
 }
 
 .bn-tab.active .bn-icon {
@@ -49,16 +54,18 @@
 }
 
 .bn-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1px;
   white-space: nowrap;
+  line-height: 1.2;
+  display: block;
 }
 
 /* Active indicator dot */
 .bn-dot {
   position: absolute;
-  bottom: 5px;
+  bottom: 3px;
   left: 50%;
   transform: translateX(-50%);
   width: 4px;

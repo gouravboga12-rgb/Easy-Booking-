@@ -270,8 +270,13 @@
 }
 
 @media (max-width: 600px) {
+  .navbar {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
   .nav-inner {
     padding: 0 12px !important;
+    height: 48px !important;
   }
   .cat-nav-row {
     padding: 0 12px 10px !important;

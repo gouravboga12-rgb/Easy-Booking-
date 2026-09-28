@@ -444,7 +444,7 @@ function Layout() {
       </div>
 
       {!hideHeaderFooter && <Navbar />}
-      <main style={{ paddingBottom: hideHeaderFooter ? '0' : '72px', paddingTop: hideHeaderFooter ? '0' : '68px' }}>
+      <main style={{ paddingBottom: hideHeaderFooter ? '0' : '84px', paddingTop: hideHeaderFooter ? '0' : '62px' }}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />

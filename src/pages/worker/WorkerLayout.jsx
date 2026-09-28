@@ -364,7 +364,7 @@ export default function WorkerLayout() {
         </header>
 
         {/* Dynamic content rendering */}
-        <main className="worker-content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 70px)', paddingBottom: '0' }}>
+        <main className="worker-content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 70px)', paddingBottom: '84px' }}>
           <div style={{ flex: 1, padding: '20px' }}>
             <Outlet />
           </div>

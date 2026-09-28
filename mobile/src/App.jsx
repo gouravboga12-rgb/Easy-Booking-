@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
   StatusBar,
   View,
@@ -12,6 +11,7 @@ import {
   Linking
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -25,6 +25,15 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
+  return (
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <MainApp />
+    </SafeAreaProvider>
+  );
+}
+
+function MainApp() {
+  const insets = useSafeAreaInsets();
   const webViewRef = useRef(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -322,83 +331,163 @@ export default function App() {
           styleEl = document.createElement('style');
           styleEl.id = 'mobile-app-safe-area-fix';
           document.head.appendChild(styleEl);
+        }
         styleEl.innerHTML = \`
+          /* Customer Navbar */
           .navbar {
-            padding-top: 8px !important;
-            padding-bottom: 8px !important;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
             height: auto !important;
-            min-height: 56px !important;
+            min-height: 54px !important;
+            top: 0 !important;
           }
           .nav-inner {
-            height: 50px !important;
+            height: 48px !important;
           }
+
+          /* Worker Top Header */
           .worker-top-header {
-            padding-top: 8px !important;
-            padding-bottom: 8px !important;
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
             height: auto !important;
             min-height: 52px !important;
+            top: 0 !important;
           }
+
+          /* Customer Bottom Navigation */
           .bottom-nav {
-            padding-top: 6px !important;
-            padding-bottom: 8px !important;
-            height: auto !important;
-            min-height: 60px !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 64px !important;
+            min-height: 64px !important;
+            max-height: 64px !important;
+            padding: 0 !important;
+            display: flex !important;
             align-items: center !important;
+            justify-content: space-around !important;
             background: #ffffff !important;
             border-top: 1px solid #eaeaea !important;
-          }
-          .worker-bottom-nav {
-            padding-top: 6px !important;
-            padding-bottom: 8px !important;
-            height: auto !important;
-            min-height: 60px !important;
-            align-items: center !important;
-            background: #ffffff !important;
-            border-top: 1px solid #eaeaea !important;
+            box-shadow: 0 -3px 16px rgba(0,0,0,0.06) !important;
+            z-index: 300 !important;
           }
           .bn-tab {
+            flex: 1 !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
             justify-content: center !important;
-            padding: 4px 4px !important;
+            gap: 3px !important;
+            padding: 4px 2px 2px !important;
+            text-decoration: none !important;
+            position: relative !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
           }
           .bn-icon {
             font-size: 22px !important;
             width: 22px !important;
             height: 22px !important;
             transform: none !important;
+            flex-shrink: 0 !important;
+            display: block !important;
           }
           .bn-label {
-            font-size: 10.5px !important;
+            font-size: 11px !important;
             font-weight: 600 !important;
+            line-height: 1.2 !important;
+            white-space: nowrap !important;
+            display: block !important;
+            letter-spacing: 0.1px !important;
+          }
+          .bn-tab.active::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 20% !important;
+            right: 20% !important;
+            height: 2.5px !important;
+            background: #ff8c00 !important;
+            border-radius: 0 0 3px 3px !important;
+          }
+          .bn-dot {
+            position: absolute !important;
+            bottom: 3px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 4px !important;
+            height: 4px !important;
+            border-radius: 50% !important;
+            background: #ff8c00 !important;
+          }
+
+          /* Worker Bottom Navigation */
+          .worker-bottom-nav {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 64px !important;
+            min-height: 64px !important;
+            max-height: 64px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-around !important;
+            background: #ffffff !important;
+            border-top: 1px solid #eaeaea !important;
+            box-shadow: 0 -3px 16px rgba(0,0,0,0.06) !important;
+            z-index: 300 !important;
           }
           .wbn-item {
+            flex: 1 !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
             justify-content: center !important;
-            padding: 4px 2px !important;
+            gap: 3px !important;
+            padding: 4px 1px 2px !important;
+            text-decoration: none !important;
+            box-sizing: border-box !important;
+            min-width: 0 !important;
             overflow: visible !important;
           }
           .wbn-item span {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            font-size: 9.5px !important;
+            font-size: 10px !important;
             font-weight: 600 !important;
             color: #64748b !important;
             white-space: nowrap !important;
             overflow: visible !important;
             line-height: 1.2 !important;
+            text-align: center !important;
           }
           .wbn-item.active span {
             color: #ff8c00 !important;
             font-weight: 700 !important;
           }
           .wbn-icon {
-            width: 22px !important;
-            height: 22px !important;
+            font-size: 20px !important;
+            width: 20px !important;
+            height: 20px !important;
+            flex-shrink: 0 !important;
+            display: block !important;
+          }
+
+          /* Responsive Content Bottom Spacing */
+          main {
+            padding-bottom: 84px !important;
           }
           .worker-content {
-            padding-bottom: 90px !important;
+            padding-bottom: 84px !important;
           }
           .brand-footer {
-            margin-bottom: 90px !important;
+            margin-bottom: 16px !important;
           }
         \`;
       }
@@ -412,84 +501,82 @@ export default function App() {
     true;
   `;
 
+  // Responsive safe-area insets:
+  // insets.top: True status bar / notch / camera cutout height (e.g. 24 - 44dp).
+  // insets.bottom: True system navigation bar / gesture navigation inset (48dp for 3-button, 16-24dp for gesture, 0 if separate window).
+  const topInset = insets.top > 0 ? insets.top : (Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset }]}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#ffffff"
         translucent={Platform.OS === 'android'}
       />
-      <View style={styles.container}>
-        <WebView
-          ref={webViewRef}
-          source={{ uri: 'https://parrowskills.com/login-select' }}
-          style={styles.webview}
-          injectedJavaScriptBeforeContentLoaded={injectedSafeLayoutJS}
-          injectedJavaScript={injectedSafeLayoutJS}
-          userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
-          applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
-          javaScriptEnabled={true}
-          javaScriptCanOpenWindowsAutomatically={true}
-          setSupportMultipleWindows={false}
-          domStorageEnabled={true}
-          thirdPartyCookiesEnabled={true}
-          sharedCookiesEnabled={true}
-          cacheEnabled={true}
-          cacheMode="LOAD_DEFAULT"
-          androidHardwareAccelerationDisabled={false}
-          overScrollMode="never"
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          geolocationEnabled={true}
-          startInLoadingState={true}
-          allowFileAccess={true}
-          allowContentAccess={true}
-          allowFileAccessFromFileURLs={true}
-          allowUniversalAccessFromFileURLs={true}
-          mixedContentMode="always"
-          originWhitelist={['*']}
-          onMessage={handleMessage}
-          onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-          onNavigationStateChange={(navState) => {
-            setCanGoBack(navState.canGoBack);
-          }}
-          onLoadEnd={() => setLoading(false)}
-          onError={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent;
-            console.warn('WebView error: ', nativeEvent);
-            setHasError(true);
-            setLoading(false);
-          }}
-          renderLoading={() => (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#ff8c00" />
-            </View>
-          )}
-        />
-        {hasError && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>Connection Issue</Text>
-            <Text style={styles.errorSub}>Unable to connect to Parrow Skills service. Please check your internet connection.</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={reloadApp}>
-              <Text style={styles.retryText}>Reload App</Text>
-            </TouchableOpacity>
+      <WebView
+        ref={webViewRef}
+        source={{ uri: 'https://parrowskills.com/login-select' }}
+        style={styles.webview}
+        injectedJavaScriptBeforeContentLoaded={injectedSafeLayoutJS}
+        injectedJavaScript={injectedSafeLayoutJS}
+        userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        applicationNameForUserAgent="Chrome/124.0.0.0 Mobile Safari/537.36"
+        javaScriptEnabled={true}
+        javaScriptCanOpenWindowsAutomatically={true}
+        setSupportMultipleWindows={false}
+        domStorageEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        sharedCookiesEnabled={true}
+        cacheEnabled={true}
+        cacheMode="LOAD_DEFAULT"
+        androidHardwareAccelerationDisabled={false}
+        overScrollMode="never"
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        geolocationEnabled={true}
+        startInLoadingState={true}
+        allowFileAccess={true}
+        allowContentAccess={true}
+        allowFileAccessFromFileURLs={true}
+        allowUniversalAccessFromFileURLs={true}
+        mixedContentMode="always"
+        originWhitelist={['*']}
+        onMessage={handleMessage}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        onNavigationStateChange={(navState) => {
+          setCanGoBack(navState.canGoBack);
+        }}
+        onLoadEnd={() => setLoading(false)}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error: ', nativeEvent);
+          setHasError(true);
+          setLoading(false);
+        }}
+        renderLoading={() => (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ff8c00" />
           </View>
         )}
-      </View>
-    </SafeAreaView>
+      />
+      {hasError && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Connection Issue</Text>
+          <Text style={styles.errorSub}>Unable to connect to Parrow Skills service. Please check your internet connection.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={reloadApp}>
+            <Text style={styles.retryText}>Reload App</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 28) + 8 : 0,
-    paddingBottom: Platform.OS === 'android' ? 24 : 0,
   },
   webview: {
     flex: 1,
